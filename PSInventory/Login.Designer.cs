@@ -28,29 +28,36 @@
         /// </summary>
         private void InitializeComponent()
         {
-            materialButton1 = new MaterialSkin.Controls.MaterialButton();
+            entrarBtn = new MaterialSkin.Controls.MaterialButton();
             materialTextBox21 = new MaterialSkin.Controls.MaterialTextBox2();
             materialTextBox22 = new MaterialSkin.Controls.MaterialTextBox2();
+            pictureBox1 = new PictureBox();
+            cerrarBtn = new MaterialSkin.Controls.MaterialButton();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
-            // materialButton1
+            // entrarBtn
             // 
-            materialButton1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            materialButton1.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
-            materialButton1.Depth = 0;
-            materialButton1.HighEmphasis = true;
-            materialButton1.Icon = null;
-            materialButton1.Location = new Point(57, 260);
-            materialButton1.Margin = new Padding(4, 6, 4, 6);
-            materialButton1.MouseState = MaterialSkin.MouseState.HOVER;
-            materialButton1.Name = "materialButton1";
-            materialButton1.NoAccentTextColor = Color.Empty;
-            materialButton1.Size = new Size(158, 36);
-            materialButton1.TabIndex = 0;
-            materialButton1.Text = "materialButton1";
-            materialButton1.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
-            materialButton1.UseAccentColor = false;
-            materialButton1.UseVisualStyleBackColor = true;
+            entrarBtn.AutoSize = false;
+            entrarBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            entrarBtn.CharacterCasing = MaterialSkin.Controls.MaterialButton.CharacterCasingEnum.Normal;
+            entrarBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
+            entrarBtn.Depth = 0;
+            entrarBtn.Font = new Font("Segoe UI", 14.25F);
+            entrarBtn.HighEmphasis = true;
+            entrarBtn.Icon = null;
+            entrarBtn.Location = new Point(40, 248);
+            entrarBtn.Margin = new Padding(4, 6, 4, 6);
+            entrarBtn.MouseState = MaterialSkin.MouseState.HOVER;
+            entrarBtn.Name = "entrarBtn";
+            entrarBtn.NoAccentTextColor = Color.Empty;
+            entrarBtn.Size = new Size(250, 46);
+            entrarBtn.TabIndex = 0;
+            entrarBtn.Text = "Entrar";
+            entrarBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
+            entrarBtn.UseAccentColor = false;
+            entrarBtn.UseVisualStyleBackColor = true;
+            entrarBtn.Click += entrarBtn_Click;
             // 
             // materialTextBox21
             // 
@@ -58,10 +65,11 @@
             materialTextBox21.BackgroundImageLayout = ImageLayout.None;
             materialTextBox21.CharacterCasing = CharacterCasing.Normal;
             materialTextBox21.Depth = 0;
-            materialTextBox21.Font = new Font("Roboto", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            materialTextBox21.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
             materialTextBox21.HideSelection = true;
+            materialTextBox21.Hint = "Usuario";
             materialTextBox21.LeadingIcon = null;
-            materialTextBox21.Location = new Point(18, 95);
+            materialTextBox21.Location = new Point(40, 102);
             materialTextBox21.MaxLength = 32767;
             materialTextBox21.MouseState = MaterialSkin.MouseState.OUT;
             materialTextBox21.Name = "materialTextBox21";
@@ -76,7 +84,6 @@
             materialTextBox21.Size = new Size(250, 48);
             materialTextBox21.TabIndex = 1;
             materialTextBox21.TabStop = false;
-            materialTextBox21.Text = "materialTextBox21";
             materialTextBox21.TextAlign = HorizontalAlignment.Left;
             materialTextBox21.TrailingIcon = null;
             materialTextBox21.UseSystemPasswordChar = false;
@@ -89,8 +96,9 @@
             materialTextBox22.Depth = 0;
             materialTextBox22.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
             materialTextBox22.HideSelection = true;
+            materialTextBox22.Hint = "Contraseña";
             materialTextBox22.LeadingIcon = null;
-            materialTextBox22.Location = new Point(18, 154);
+            materialTextBox22.Location = new Point(40, 162);
             materialTextBox22.MaxLength = 32767;
             materialTextBox22.MouseState = MaterialSkin.MouseState.OUT;
             materialTextBox22.Name = "materialTextBox22";
@@ -105,30 +113,67 @@
             materialTextBox22.Size = new Size(250, 48);
             materialTextBox22.TabIndex = 2;
             materialTextBox22.TabStop = false;
-            materialTextBox22.Text = "materialTextBox22";
             materialTextBox22.TextAlign = HorizontalAlignment.Left;
             materialTextBox22.TrailingIcon = null;
             materialTextBox22.UseSystemPasswordChar = false;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = Properties.Resources.Logo_Presidente_Sports;
+            pictureBox1.Location = new Point(317, 69);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(279, 279);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox1.TabIndex = 3;
+            pictureBox1.TabStop = false;
+            // 
+            // cerrarBtn
+            // 
+            cerrarBtn.AutoSize = false;
+            cerrarBtn.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            cerrarBtn.CharacterCasing = MaterialSkin.Controls.MaterialButton.CharacterCasingEnum.Normal;
+            cerrarBtn.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
+            cerrarBtn.Depth = 0;
+            cerrarBtn.Font = new Font("Segoe UI", 14.25F);
+            cerrarBtn.HighEmphasis = true;
+            cerrarBtn.Icon = null;
+            cerrarBtn.Location = new Point(40, 300);
+            cerrarBtn.Margin = new Padding(4, 6, 4, 6);
+            cerrarBtn.MouseState = MaterialSkin.MouseState.HOVER;
+            cerrarBtn.Name = "cerrarBtn";
+            cerrarBtn.NoAccentTextColor = Color.Empty;
+            cerrarBtn.Size = new Size(250, 46);
+            cerrarBtn.TabIndex = 4;
+            cerrarBtn.Text = "Cerrar";
+            cerrarBtn.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Outlined;
+            cerrarBtn.UseAccentColor = true;
+            cerrarBtn.UseVisualStyleBackColor = true;
+            cerrarBtn.Click += cerrarBtn_Click;
             // 
             // Login
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(554, 305);
+            ClientSize = new Size(622, 364);
+            Controls.Add(cerrarBtn);
+            Controls.Add(pictureBox1);
             Controls.Add(materialTextBox22);
             Controls.Add(materialTextBox21);
-            Controls.Add(materialButton1);
+            Controls.Add(entrarBtn);
             Name = "Login";
-            Text = "Login";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Inventario IT";
             Load += Login_Load;
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
 
-        private MaterialSkin.Controls.MaterialButton materialButton1;
+        private MaterialSkin.Controls.MaterialButton entrarBtn;
         private MaterialSkin.Controls.MaterialTextBox2 materialTextBox21;
         private MaterialSkin.Controls.MaterialTextBox2 materialTextBox22;
+        private PictureBox pictureBox1;
+        private MaterialSkin.Controls.MaterialButton cerrarBtn;
     }
 }

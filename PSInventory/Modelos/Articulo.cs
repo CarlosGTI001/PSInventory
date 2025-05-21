@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace PSInventory.Modelos
 {
-    internal class Articulo
+    public class Articulo
     {
         [Key]
-        public int id { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public string marca { get; set; }

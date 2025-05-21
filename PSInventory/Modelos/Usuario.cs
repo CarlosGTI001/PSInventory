@@ -11,16 +11,16 @@ namespace PSInventory.Modelos
     {
         [Key]
         [Required]
-        public string UsuarioId { get; set; }
+        public string Id { get; set; }
 
         [Required]
-        public string UsuarioNombre { get; set; }
+        public string Nombre { get; set; }
 
         [Required]
-        public string UsuarioPassword { get; set; }
+        public string Password { get; set; }
 
         [Required]
-        public string UsuarioEmail { get; set; }
+        public string Email { get; set; }
 
         [Required]
         public string Rol { get; set; }

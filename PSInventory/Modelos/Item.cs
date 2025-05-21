@@ -7,14 +7,17 @@ using System.Threading.Tasks;
 
 namespace PSInventory.Modelos
 {
-    internal class Item
+    public class Item
     {
         [Key]
         [Required]
-        public string serial { get; set; }
-        public Articulo articulo { get; set; }
-        public string? localidad { get; set; }
-        public string? estado { get; set; } 
-        public string? departamento { get; set; }
+        public string Serial { get; set; }
+        [Required]
+        public int ArticuloId { get; set; }
+        public Articulo? Articulo { get; set; }
+        public string? SucursalId { get; set; }
+        public Sucursal? Sucursal { get; set; }
+        public string? Estado { get; set; } 
+        public string? Departamento { get; set; }
     }
 }

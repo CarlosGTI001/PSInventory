@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace PSInventory.Modelos
 {
-    public class Sucursal
+    public class Compra
     {
         [Key]
-        public string Id { get; set; }
+        public int Id { get; set; }
+
         [Required]
-        public string Nombre { get; set; }
-        public string? Telefono { get; set; }
-        public string? Direccion { get; set; }
+        public string Tienda { get; set; }
+        public decimal costoTotal { get; set; }
     }
 }

@@ -1,3 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+
 namespace PSInventory
 {
     internal static class Program
@@ -8,10 +11,22 @@ namespace PSInventory
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            // Run the main form
             Application.Run(new Login());
         }
+
+        //private static void ConfigureServices(IServiceCollection services)
+        //{
+        //    // Registrar el DbContext (usa tu conexión LocalDB aquí)
+        //    services.AddDbContext<InventarioContext>(options =>
+        //        options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=PSInventoryDB;Trusted_Connection=True;"));
+
+        //    // Registrar tus formularios y servicios
+        //    services.AddScoped<Login>();
+        //    // Agrega otros formularios o servicios aquí
+        //}
     }
 }

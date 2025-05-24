@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             entrarBtn = new MaterialSkin.Controls.MaterialButton();
-            materialTextBox21 = new MaterialSkin.Controls.MaterialTextBox2();
-            materialTextBox22 = new MaterialSkin.Controls.MaterialTextBox2();
+            usuarioTxt = new MaterialSkin.Controls.MaterialTextBox2();
+            contrasenaTxt = new MaterialSkin.Controls.MaterialTextBox2();
             pictureBox1 = new PictureBox();
             cerrarBtn = new MaterialSkin.Controls.MaterialButton();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
@@ -59,63 +59,63 @@
             entrarBtn.UseVisualStyleBackColor = true;
             entrarBtn.Click += entrarBtn_Click;
             // 
-            // materialTextBox21
+            // usuarioTxt
             // 
-            materialTextBox21.AnimateReadOnly = false;
-            materialTextBox21.BackgroundImageLayout = ImageLayout.None;
-            materialTextBox21.CharacterCasing = CharacterCasing.Normal;
-            materialTextBox21.Depth = 0;
-            materialTextBox21.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
-            materialTextBox21.HideSelection = true;
-            materialTextBox21.Hint = "Usuario";
-            materialTextBox21.LeadingIcon = null;
-            materialTextBox21.Location = new Point(40, 102);
-            materialTextBox21.MaxLength = 32767;
-            materialTextBox21.MouseState = MaterialSkin.MouseState.OUT;
-            materialTextBox21.Name = "materialTextBox21";
-            materialTextBox21.PasswordChar = '\0';
-            materialTextBox21.PrefixSuffixText = null;
-            materialTextBox21.ReadOnly = false;
-            materialTextBox21.RightToLeft = RightToLeft.No;
-            materialTextBox21.SelectedText = "";
-            materialTextBox21.SelectionLength = 0;
-            materialTextBox21.SelectionStart = 0;
-            materialTextBox21.ShortcutsEnabled = true;
-            materialTextBox21.Size = new Size(250, 48);
-            materialTextBox21.TabIndex = 1;
-            materialTextBox21.TabStop = false;
-            materialTextBox21.TextAlign = HorizontalAlignment.Left;
-            materialTextBox21.TrailingIcon = null;
-            materialTextBox21.UseSystemPasswordChar = false;
+            usuarioTxt.AnimateReadOnly = false;
+            usuarioTxt.BackgroundImageLayout = ImageLayout.None;
+            usuarioTxt.CharacterCasing = CharacterCasing.Normal;
+            usuarioTxt.Depth = 0;
+            usuarioTxt.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            usuarioTxt.HideSelection = true;
+            usuarioTxt.Hint = "Usuario";
+            usuarioTxt.LeadingIcon = null;
+            usuarioTxt.Location = new Point(40, 102);
+            usuarioTxt.MaxLength = 32767;
+            usuarioTxt.MouseState = MaterialSkin.MouseState.OUT;
+            usuarioTxt.Name = "usuarioTxt";
+            usuarioTxt.PasswordChar = '\0';
+            usuarioTxt.PrefixSuffixText = null;
+            usuarioTxt.ReadOnly = false;
+            usuarioTxt.RightToLeft = RightToLeft.No;
+            usuarioTxt.SelectedText = "";
+            usuarioTxt.SelectionLength = 0;
+            usuarioTxt.SelectionStart = 0;
+            usuarioTxt.ShortcutsEnabled = true;
+            usuarioTxt.Size = new Size(250, 48);
+            usuarioTxt.TabIndex = 1;
+            usuarioTxt.TabStop = false;
+            usuarioTxt.TextAlign = HorizontalAlignment.Left;
+            usuarioTxt.TrailingIcon = null;
+            usuarioTxt.UseSystemPasswordChar = false;
             // 
-            // materialTextBox22
+            // contrasenaTxt
             // 
-            materialTextBox22.AnimateReadOnly = false;
-            materialTextBox22.BackgroundImageLayout = ImageLayout.None;
-            materialTextBox22.CharacterCasing = CharacterCasing.Normal;
-            materialTextBox22.Depth = 0;
-            materialTextBox22.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
-            materialTextBox22.HideSelection = true;
-            materialTextBox22.Hint = "Contraseña";
-            materialTextBox22.LeadingIcon = null;
-            materialTextBox22.Location = new Point(40, 162);
-            materialTextBox22.MaxLength = 32767;
-            materialTextBox22.MouseState = MaterialSkin.MouseState.OUT;
-            materialTextBox22.Name = "materialTextBox22";
-            materialTextBox22.PasswordChar = '\0';
-            materialTextBox22.PrefixSuffixText = null;
-            materialTextBox22.ReadOnly = false;
-            materialTextBox22.RightToLeft = RightToLeft.No;
-            materialTextBox22.SelectedText = "";
-            materialTextBox22.SelectionLength = 0;
-            materialTextBox22.SelectionStart = 0;
-            materialTextBox22.ShortcutsEnabled = true;
-            materialTextBox22.Size = new Size(250, 48);
-            materialTextBox22.TabIndex = 2;
-            materialTextBox22.TabStop = false;
-            materialTextBox22.TextAlign = HorizontalAlignment.Left;
-            materialTextBox22.TrailingIcon = null;
-            materialTextBox22.UseSystemPasswordChar = false;
+            contrasenaTxt.AnimateReadOnly = false;
+            contrasenaTxt.BackgroundImageLayout = ImageLayout.None;
+            contrasenaTxt.CharacterCasing = CharacterCasing.Normal;
+            contrasenaTxt.Depth = 0;
+            contrasenaTxt.Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Regular, GraphicsUnit.Pixel);
+            contrasenaTxt.HideSelection = true;
+            contrasenaTxt.Hint = "Contraseña";
+            contrasenaTxt.LeadingIcon = null;
+            contrasenaTxt.Location = new Point(40, 162);
+            contrasenaTxt.MaxLength = 32767;
+            contrasenaTxt.MouseState = MaterialSkin.MouseState.OUT;
+            contrasenaTxt.Name = "contrasenaTxt";
+            contrasenaTxt.PasswordChar = '•';
+            contrasenaTxt.PrefixSuffixText = null;
+            contrasenaTxt.ReadOnly = false;
+            contrasenaTxt.RightToLeft = RightToLeft.No;
+            contrasenaTxt.SelectedText = "";
+            contrasenaTxt.SelectionLength = 0;
+            contrasenaTxt.SelectionStart = 0;
+            contrasenaTxt.ShortcutsEnabled = true;
+            contrasenaTxt.Size = new Size(250, 48);
+            contrasenaTxt.TabIndex = 2;
+            contrasenaTxt.TabStop = false;
+            contrasenaTxt.TextAlign = HorizontalAlignment.Left;
+            contrasenaTxt.TrailingIcon = null;
+            contrasenaTxt.UseSystemPasswordChar = false;
             // 
             // pictureBox1
             // 
@@ -157,8 +157,8 @@
             ClientSize = new Size(622, 364);
             Controls.Add(cerrarBtn);
             Controls.Add(pictureBox1);
-            Controls.Add(materialTextBox22);
-            Controls.Add(materialTextBox21);
+            Controls.Add(contrasenaTxt);
+            Controls.Add(usuarioTxt);
             Controls.Add(entrarBtn);
             Name = "Login";
             StartPosition = FormStartPosition.CenterScreen;
@@ -171,8 +171,8 @@
         #endregion
 
         private MaterialSkin.Controls.MaterialButton entrarBtn;
-        private MaterialSkin.Controls.MaterialTextBox2 materialTextBox21;
-        private MaterialSkin.Controls.MaterialTextBox2 materialTextBox22;
+        private MaterialSkin.Controls.MaterialTextBox2 usuarioTxt;
+        private MaterialSkin.Controls.MaterialTextBox2 contrasenaTxt;
         private PictureBox pictureBox1;
         private MaterialSkin.Controls.MaterialButton cerrarBtn;
     }

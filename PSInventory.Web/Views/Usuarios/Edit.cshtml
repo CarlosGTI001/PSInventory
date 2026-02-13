@@ -1,0 +1,149 @@
+@model PSData.Modelos.Usuario
+
+@{
+    ViewData["Title"] = "Editar Usuario";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Administración</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Usuarios</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Editar: @Model.Nombre</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Usuario</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Modifica los datos del usuario <strong>@Model.Nombre</strong>
+        </p>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    
+    <!-- Sección 1: Datos de Autenticación -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">person</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Datos de Autenticación</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Información de login del usuario</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Nombre de Usuario" 
+                    name="IdDisplay" 
+                    value="@Model.Id"
+                    disabled
+                    supporting-text="No se puede modificar el ID">
+                    <md-icon slot="leading-icon">person</md-icon>
+                </md-filled-text-field>
+            </div>
+            
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Email *" 
+                    name="Email" 
+                    type="email"
+                    required
+                    value="@Model.Email"
+                    supporting-text="Correo electrónico">
+                    <md-icon slot="leading-icon">email</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Email" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Contraseña" 
+                    name="Password" 
+                    type="password"
+                    value="@Model.Password"
+                    supporting-text="Dejar en blanco para mantener la actual">
+                    <md-icon slot="leading-icon">lock</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Password" class="field-error"></span>
+            </div>
+
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Nombre Completo *" 
+                    name="Nombre" 
+                    required
+                    value="@Model.Nombre"
+                    supporting-text="Nombre completo del usuario">
+                    <md-icon slot="leading-icon">badge</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Nombre" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 2: Asignación de Rol -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-secondary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">admin_panel_settings</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Asignación de Rol</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Permisos y nivel de acceso</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">security</md-icon>
+                    <select asp-for="Rol" class="md3-select" required>
+                        <option value="Administrador" selected="@(Model.Rol == "Administrador")">Administrador</option>
+                        <option value="Supervisor" selected="@(Model.Rol == "Supervisor")">Supervisor</option>
+                        <option value="Usuario" selected="@(Model.Rol == "Usuario")">Usuario</option>
+                    </select>
+                    <label class="md3-select-label">Rol *</label>
+                </div>
+                <p class="md3-select-supporting">Define los permisos del usuario</p>
+                <span asp-validation-for="Rol" class="field-error"></span>
+            </div>
+        </div>
+
+        <div style="background: var(--md-sys-color-secondary-container); border-radius: 12px; padding: 16px; margin-top: 16px;">
+            <div class="md-typescale-body-small" style="color: var(--md-sys-color-on-secondary-container);">
+                <strong>Roles disponibles:</strong><br>
+                • <strong>Administrador:</strong> Acceso total, gestión de usuarios<br>
+                • <strong>Supervisor:</strong> Puede ver y editar inventario<br>
+                • <strong>Usuario:</strong> Solo visualización de información
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Cambios
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

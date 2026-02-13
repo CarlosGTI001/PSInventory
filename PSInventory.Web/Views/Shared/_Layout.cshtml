@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PSInventory</title>
+    
+    <!-- Material Design 3 -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols (iconos MD3 modernos) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <!-- Material Icons (compatibilidad) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Material Web Components CSS -->
+    <link rel="stylesheet" href="~/css/material-theme.css" />
+    <link rel="stylesheet" href="~/css/md3-select.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    
+    <!-- Material Web Components -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@@material/web/": "https://esm.run/@@material/web/"
+        }
+    }
+    </script>
+    <script type="module">
+        import '@@material/web/all.js';
+        import {styles as typescaleStyles} from '@@material/web/typography/md-typescale-styles.js';
+        document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-bar">
+            <md-icon-button id="menu-button">
+                <md-icon>menu</md-icon>
+            </md-icon-button>
+            <div class="app-bar-title">
+                <span class="md-typescale-title-large">PSInventory</span>
+            </div>
+            <div class="app-bar-actions">
+                <span class="md-typescale-label-medium">
+                    @Context.Session.GetString("UserName")
+                    @if (!string.IsNullOrEmpty(Context.Session.GetString("UserRole")))
+                    {
+                        <span class="badge" style="margin-left: 8px;">@Context.Session.GetString("UserRole")</span>
+                    }
+                </span>
+                <md-icon-button href="/Auth/Logout">
+                    <md-icon>logout</md-icon>
+                </md-icon-button>
+            </div>
+        </header>
+
+        <!-- Navigation Drawer -->
+        <aside class="navigation-drawer" id="drawer">
+            <div class="drawer-header">
+                <img src="~/images/logo.png" alt="Logo" style="width: 150px; height: auto; margin-bottom: 8px;" />
+                <span class="md-typescale-title-small" style="color: var(--md-sys-color-on-surface-variant);">Sistema de Inventario</span>
+            </div>
+            
+            <nav class="drawer-content">
+                <a href="/Home/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")">
+                    <md-icon>dashboard</md-icon>
+                    <span>Dashboard</span>
+                </a>
+                
+                <div class="nav-section">
+                    <span class="nav-section-title md-typescale-label-small">CATÁLOGO</span>
+                </div>
+                
+                <a href="/Categorias/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Categorias" ? "active" : "")">
+                    <md-icon>category</md-icon>
+                    <span>Categorías</span>
+                </a>
+                
+                <a href="/Articulos/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Articulos" ? "active" : "")">
+                    <md-icon>inventory</md-icon>
+                    <span>Artículos</span>
+                </a>
+                
+                <div class="nav-section">
+                    <span class="nav-section-title md-typescale-label-small">INVENTARIO</span>
+                </div>
+                
+                <a href="/Compras/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Compras" ? "active" : "")">
+                    <md-icon>shopping_cart</md-icon>
+                    <span>Compras</span>
+                </a>
+                
+                <a href="/Items/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Items" ? "active" : "")">
+                    <md-icon>qr_code_2</md-icon>
+                    <span>Items</span>
+                </a>
+                
+                <div class="nav-section">
+                    <span class="nav-section-title md-typescale-label-small">UBICACIONES</span>
+                </div>
+                
+                <a href="/Regiones/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Regiones" ? "active" : "")">
+                    <md-icon>public</md-icon>
+                    <span>Regiones</span>
+                </a>
+                
+                <a href="/Sucursales/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Sucursales" ? "active" : "")">
+                    <md-icon>store</md-icon>
+                    <span>Sucursales</span>
+                </a>
+                
+                <a href="/Departamentos/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Departamentos" ? "active" : "")">
+                    <md-icon>business_center</md-icon>
+                    <span>Departamentos</span>
+                </a>
+                
+                <div class="nav-section">
+                    <span class="nav-section-title md-typescale-label-small">OPERACIONES</span>
+                </div>
+                
+                <a href="/Movimientos/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Movimientos" ? "active" : "")">
+                    <md-icon>history</md-icon>
+                    <span>Historial Movimientos</span>
+                </a>
+                
+                <a href="/Reportes/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reportes" ? "active" : "")">
+                    <md-icon>picture_as_pdf</md-icon>
+                    <span>Reportes PDF</span>
+                </a>
+                
+                @if (Context.Session.GetString("UserRole") == "Administrador")
+                {
+                    <div class="nav-section">
+                        <span class="nav-section-title md-typescale-label-small">ADMINISTRACIÓN</span>
+                    </div>
+                    
+                    <a href="/Usuarios/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Usuarios" ? "active" : "")">
+                        <md-icon>group</md-icon>
+                        <span>Usuarios</span>
+                    </a>
+                }
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/searchable-select.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

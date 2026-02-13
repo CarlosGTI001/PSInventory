@@ -8,6 +8,7 @@ namespace PSInventory
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
+        public static string UserName { get; set; } =  "Default User";
         [STAThread]
         static void Main()
         {
@@ -15,7 +16,7 @@ namespace PSInventory
             Application.SetCompatibleTextRenderingDefault(false);
 
             // Run the main form
-            Application.Run(new Login());
+            Application.Run(new Menu());
         }
 
         //private static void ConfigureServices(IServiceCollection services)

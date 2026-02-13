@@ -1,0 +1,186 @@
+@model IEnumerable<PSData.Modelos.Articulo>
+
+@{
+    ViewData["Title"] = "Artículos";
+    var totalArticulos = Model.Count();
+    var conStock = Model.Count(a => a.StockMinimo > 0);
+    var categorias = Model.Select(a => a.Categoria?.Nombre).Distinct().Count();
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Catálogo</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Artículos</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Artículos del Catálogo</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Gestiona y controla todos los artículos del catálogo
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+        <md-icon slot="icon">add</md-icon>
+        Nuevo Artículo
+    </md-filled-button>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@totalArticulos</div>
+                <div class="stat-card-label">Total Artículos</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>inventory</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-success);">@conStock</div>
+                <div class="stat-card-label">Con Stock Definido</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                <md-icon style="color: var(--md-sys-color-success);">inventory_2</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@categorias</div>
+                <div class="stat-card-label">Categorías</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-secondary);">category</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-primary);">@Model.Select(a => a.Marca).Distinct().Count()</div>
+                <div class="stat-card-label">Marcas</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(4, 115, 148, 0.15);">
+                <md-icon style="color: var(--md-sys-color-primary);">business</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<!-- Data Table -->
+<div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: var(--md-sys-color-primary);">table_chart</md-icon>
+            <h3 class="md-typescale-title-medium" style="margin: 0;">Lista de Artículos</h3>
+        </div>
+        <span class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+            @totalArticulos artículo@(totalArticulos != 1 ? "s" : "") registrado@(totalArticulos != 1 ? "s" : "")
+        </span>
+    </div>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                    <th>Stock Mínimo</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@item.Marca</strong>
+                        </td>
+                        <td>@item.Modelo</td>
+                        <td>
+                            <span class="badge badge-primary">@item.Categoria?.Nombre</span>
+                        </td>
+                        <td>@item.Descripcion</td>
+                        <td>
+                            <span class="badge">@item.StockMinimo</span>
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDelete(@item.Id, '@item.Marca @item.Modelo')">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <md-icon style="font-size: 64px; color: var(--md-sys-color-outline);">inventory</md-icon>
+        <h3 class="md-typescale-headline-small">No hay artículos registrados</h3>
+        <p class="md-typescale-body-medium">Comienza creando tu primer artículo</p>
+        <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+            <md-icon slot="icon">add</md-icon>
+            Crear Artículo
+        </md-filled-button>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function confirmDelete(id, nombre) {
+            if (await showConfirmDialog(
+                'Eliminar Artículo',
+                `¿Estás seguro de eliminar el artículo "${nombre}"?`,
+                'Eliminar'
+            )) {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                
+                const response = await fetch(`@Url.Action("Delete")/` + id, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSnackbar(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showSnackbar(result.message, 'error');
+                }
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

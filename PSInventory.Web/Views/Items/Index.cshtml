@@ -1,0 +1,265 @@
+@model IEnumerable<PSData.Modelos.Item>
+
+@{
+    ViewData["Title"] = "Items";
+    var estadoFiltro = ViewBag.EstadoFiltro as string;
+    var totalItems = Model.Count();
+    var disponibles = Model.Count(i => i.Estado == "Disponible");
+    var asignados = Model.Count(i => i.Estado == "Asignado");
+    var enReparacion = Model.Count(i => i.Estado == "En Reparación");
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Items</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Items del Inventario</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Gestiona y controla todos los items individuales del inventario
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+        <md-icon slot="icon">add</md-icon>
+        Registrar Nuevo Item
+    </md-filled-button>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@totalItems</div>
+                <div class="stat-card-label">Total Items</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>inventory_2</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-success);">@disponibles</div>
+                <div class="stat-card-label">Disponibles</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                <md-icon style="color: var(--md-sys-color-success);">check_circle</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@asignados</div>
+                <div class="stat-card-label">Asignados</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-secondary);">deployed_code</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-warning);">@enReparacion</div>
+                <div class="stat-card-label">En Reparación</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 152, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-warning);">build</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<!-- Filters Card -->
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <md-icon style="color: var(--md-sys-color-primary);">filter_list</md-icon>
+        <h3 class="md-typescale-title-medium" style="margin: 0;">Filtrar por Estado</h3>
+    </div>
+    
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <md-filter-chip label="Todos (@totalItems)" 
+                        @(string.IsNullOrEmpty(estadoFiltro) ? "selected" : "")
+                        onclick="window.location.href='@Url.Action("Index")'">
+            <md-icon slot="icon">apps</md-icon>
+        </md-filter-chip>
+        
+        <md-filter-chip label="Disponibles (@disponibles)" 
+                        @(estadoFiltro == "Disponible" ? "selected" : "")
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Disponible" })'">
+            <md-icon slot="icon">check_circle</md-icon>
+        </md-filter-chip>
+        
+        <md-filter-chip label="Asignados (@asignados)" 
+                        @(estadoFiltro == "Asignado" ? "selected" : "")
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Asignado" })'">
+            <md-icon slot="icon">deployed_code</md-icon>
+        </md-filter-chip>
+        
+        <md-filter-chip label="En Reparación (@enReparacion)" 
+                        @(estadoFiltro == "En Reparación" ? "selected" : "")
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "En Reparación" })'">
+            <md-icon slot="icon">build</md-icon>
+        </md-filter-chip>
+        
+        <md-filter-chip label="Baja" 
+                        @(estadoFiltro == "Baja" ? "selected" : "")
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Baja" })'">
+            <md-icon slot="icon">cancel</md-icon>
+        </md-filter-chip>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <md-icon style="font-size: 80px; color: var(--md-sys-color-outline);">inventory_2</md-icon>
+        <h3 class="md-typescale-headline-small">No hay items registrados</h3>
+        <p class="md-typescale-body-medium">Comienza registrando tu primer item en el inventario</p>
+        <md-filled-button onclick="window.location.href='@Url.Action("Create")'" style="margin-top: 16px;">
+            <md-icon slot="icon">add</md-icon>
+            Registrar Primer Item
+        </md-filled-button>
+    </div>
+}
+else
+{
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">qr_code</md-icon>Serial</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">devices</md-icon>Artículo</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">category</md-icon>Categoría</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">store</md-icon>Sucursal</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">attach_money</md-icon>Costo</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">info</md-icon>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var estadoClass = item.Estado switch
+                    {
+                        "Disponible" => "badge-success",
+                        "Asignado" => "badge-primary",
+                        "En Reparación" => "badge-warning",
+                        "Baja" => "badge-error",
+                        _ => "badge-info"
+                    };
+                    
+                    var estadoIcon = item.Estado switch
+                    {
+                        "Disponible" => "check_circle",
+                        "Asignado" => "deployed_code",
+                        "En Reparación" => "build",
+                        "Baja" => "cancel",
+                        _ => "info"
+                    };
+                    
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
+                                <strong>@item.Serial</strong>
+                            </div>
+                        </td>
+                        <td>@item.Articulo?.Marca @item.Articulo?.Modelo</td>
+                        <td>
+                            <span class="badge badge-info">@item.Articulo?.Categoria?.Nombre</span>
+                        </td>
+                        <td>
+                            @if (item.Sucursal != null)
+                            {
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <md-icon style="font-size: 18px; color: var(--md-sys-color-secondary);">store</md-icon>
+                                    <span>@item.Sucursal.Nombre</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color: var(--md-sys-color-outline);">Sin asignar</span>
+                            }
+                        </td>
+                        <td>
+                            <strong style="color: var(--md-sys-color-primary);">$@item.Costo.ToString("N2")</strong>
+                        </td>
+                        <td>
+                            <span class="badge @estadoClass" style="display: flex; align-items: center; gap: 6px; width: fit-content;">
+                                <md-icon style="font-size: 16px;">@estadoIcon</md-icon>
+                                @item.Estado
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            @if (item.Estado == "Disponible" && string.IsNullOrEmpty(item.SucursalId))
+                            {
+                                <md-icon-button onclick="window.location.href='@Url.Action("Asignar", new { id = item.Serial })'" title="Asignar a sucursal">
+                                    <md-icon>send</md-icon>
+                                </md-icon-button>
+                            }
+                            @if (item.Estado == "Asignado" && !string.IsNullOrEmpty(item.SucursalId))
+                            {
+                                <md-icon-button onclick="window.location.href='@Url.Action("Transferir", new { id = item.Serial })'" title="Transferir a otra sucursal">
+                                    <md-icon>swap_horiz</md-icon>
+                                </md-icon-button>
+                            }
+                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Serial })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDelete('@item.Serial', '@item.Articulo?.Marca @item.Articulo?.Modelo')">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function confirmDelete(id, nombre) {
+            if (confirm(`¿Estás seguro de eliminar el item "${nombre}" con serial "${id}"?\n\nEsta acción no se puede deshacer.`)) {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                
+                const response = await fetch(`@Url.Action("Delete")/` + id, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

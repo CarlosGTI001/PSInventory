@@ -1,0 +1,153 @@
+@model PSData.Modelos.Item
+
+@{
+    ViewData["Title"] = "Asignar Item";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Items</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Asignar</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Asignar Item a Sucursal</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Asignar el item <strong>@Model.Serial</strong> a una sucursal con responsable
+        </p>
+    </div>
+</div>
+
+<form asp-action="Asignar" method="post">
+    <input type="hidden" name="id" value="@Model.Serial" />
+    
+    <!-- Sección 1: Información del Item -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">inventory_2</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Información del Item</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Datos del item a asignar</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Serial" 
+                    value="@Model.Serial"
+                    disabled
+                    supporting-text="Identificador único">
+                    <md-icon slot="leading-icon">qr_code</md-icon>
+                </md-filled-text-field>
+            </div>
+            
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Artículo" 
+                    value="@Model.Articulo?.Marca @Model.Articulo?.Modelo"
+                    disabled
+                    supporting-text="@Model.Articulo?.Categoria?.Nombre">
+                    <md-icon slot="leading-icon">devices</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Estado Actual" 
+                    value="@Model.Estado"
+                    disabled>
+                    <md-icon slot="leading-icon">info</md-icon>
+                </md-filled-text-field>
+            </div>
+            
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Costo" 
+                    value="$@Model.Costo.ToString("N2")"
+                    disabled>
+                    <md-icon slot="leading-icon">attach_money</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 2: Datos de Asignación -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-secondary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">send</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Datos de Asignación</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Destino y responsable del item</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select name="sucursalId" class="md3-select" required>
+                        <option value="">Seleccione sucursal destino</option>
+                        @foreach (var sucursal in ViewBag.Sucursales)
+                        {
+                            <option value="@sucursal.Value">@sucursal.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sucursal Destino *</label>
+                </div>
+                <p class="md3-select-supporting">Sucursal donde se asignará el item</p>
+            </div>
+            
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Responsable Empleado *" 
+                    name="responsableEmpleado" 
+                    required
+                    supporting-text="Nombre del empleado responsable">
+                    <md-icon slot="leading-icon">person</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="width: 100%;">
+                <md-filled-text-field 
+                    label="Observaciones" 
+                    name="observaciones" 
+                    type="textarea"
+                    rows="3"
+                    supporting-text="Notas adicionales sobre la asignación (opcional)">
+                    <md-icon slot="leading-icon">note</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit">
+            <md-icon slot="icon">send</md-icon>
+            Asignar Item
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,235 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="content-container">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+        <md-icon style="font-size: 18px;">home</md-icon>
+        <span style="color: var(--md-sys-color-primary);">Dashboard</span>
+    </div>
+
+    <div class="page-header">
+        <div>
+            <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Dashboard</h1>
+            <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+                Resumen del sistema de inventario
+            </p>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="stats-grid" style="margin-bottom: 32px;">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value">@ViewBag.TotalItems</div>
+                    <div class="stat-card-label">Total Items</div>
+                </div>
+                <div class="stat-card-icon">
+                    <md-icon>qr_code_2</md-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value" style="color: var(--md-sys-color-success);">@ViewBag.ItemsDisponibles</div>
+                    <div class="stat-card-label">Disponibles</div>
+                </div>
+                <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                    <md-icon style="color: var(--md-sys-color-success);">check_circle</md-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@ViewBag.ItemsAsignados</div>
+                    <div class="stat-card-label">Asignados</div>
+                </div>
+                <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                    <md-icon style="color: var(--md-sys-color-secondary);">deployed_code</md-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value">@ViewBag.TotalSucursales</div>
+                    <div class="stat-card-label">Sucursales Activas</div>
+                </div>
+                <div class="stat-card-icon">
+                    <md-icon>store</md-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value">@ViewBag.TotalArticulos</div>
+                    <div class="stat-card-label">Artículos</div>
+                </div>
+                <div class="stat-card-icon">
+                    <md-icon>inventory</md-icon>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-card-value" style="color: @(ViewBag.AlertasStockBajo > 0 ? "var(--md-sys-color-error)" : "var(--md-sys-color-on-surface)");">
+                        @ViewBag.AlertasStockBajo
+                    </div>
+                    <div class="stat-card-label">Alertas Stock Bajo</div>
+                </div>
+                <div class="stat-card-icon" style="background: @(ViewBag.AlertasStockBajo > 0 ? "rgba(244, 67, 54, 0.15)" : "rgba(4, 115, 148, 0.15)");">
+                    <md-icon style="color: @(ViewBag.AlertasStockBajo > 0 ? "var(--md-sys-color-error)" : "var(--md-sys-color-primary)");">@(ViewBag.AlertasStockBajo > 0 ? "warning" : "inventory_2")</md-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+            <md-icon style="color: var(--md-sys-color-primary);">bolt</md-icon>
+            <h2 class="md-typescale-title-large" style="margin: 0;">Acciones Rápidas</h2>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <a href="/Compras/Create" style="text-decoration: none;">
+                <md-filled-tonal-button style="width: 100%; height: 80px;">
+                    <md-icon slot="icon">add_shopping_cart</md-icon>
+                    Nueva Compra
+                </md-filled-tonal-button>
+            </a>
+            
+            <a href="/Items/Create" style="text-decoration: none;">
+                <md-filled-tonal-button style="width: 100%; height: 80px;">
+                    <md-icon slot="icon">add_box</md-icon>
+                    Agregar Item
+                </md-filled-tonal-button>
+            </a>
+            
+            <a href="/Operaciones/Asignar" style="text-decoration: none;">
+                <md-filled-tonal-button style="width: 100%; height: 80px;">
+                    <md-icon slot="icon">send</md-icon>
+                    Asignar a Sucursal
+                </md-filled-tonal-button>
+            </a>
+            
+            <a href="/Operaciones/Transferir" style="text-decoration: none;">
+                <md-filled-tonal-button style="width: 100%; height: 80px;">
+                    <md-icon slot="icon">swap_horiz</md-icon>
+                    Transferir Items
+                </md-filled-tonal-button>
+            </a>
+        </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div style="margin-top: 32px;">
+        <h2 class="md-typescale-headline-medium" style="margin-bottom: 24px; color: var(--md-sys-color-on-surface);">
+            <md-icon style="vertical-align: middle;">analytics</md-icon>
+            Análisis y Estadísticas
+        </h2>
+
+        <div class="charts-grid">
+            <!-- Gráfica 1: Items por Estado (Pie Chart) -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="md-typescale-title-medium">Items por Estado</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartItemsPorEstado"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica 2: Items por Categoría (Bar Chart) -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="md-typescale-title-medium">Top 5 Categorías</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartItemsPorCategoria"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica 3: Items por Sucursal (Horizontal Bar) -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="md-typescale-title-medium">Items por Sucursal</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartItemsPorSucursal"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica 4: Compras por Mes (Line Chart) -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="md-typescale-title-medium">Compras Últimos 6 Meses</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartComprasPorMes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (ViewBag.AlertasStockBajo > 0)
+    {
+        <div class="card" style="border-left: 4px solid var(--md-sys-color-error);">
+            <div class="card-header">
+                <h2 class="card-title md-typescale-title-large">
+                    <md-icon style="vertical-align: middle; color: var(--md-sys-color-error);">warning</md-icon>
+                    Alertas de Stock Bajo
+                </h2>
+            </div>
+            <p class="md-typescale-body-medium">
+                Hay <strong>@ViewBag.AlertasStockBajo artículos</strong> con stock por debajo del mínimo establecido.
+            </p>
+            <div style="margin-top: 16px;">
+                <a href="/Articulos/Index">
+                    <md-text-button>
+                        Ver Artículos
+                        <md-icon slot="icon">arrow_forward</md-icon>
+                    </md-text-button>
+                </a>
+            </div>
+        </div>
+    }
+
+    @if (ViewBag.ComprasPendientes > 0)
+    {
+        <div class="card" style="border-left: 4px solid var(--md-sys-color-warning);">
+            <div class="card-header">
+                <h2 class="card-title md-typescale-title-large">
+                    <md-icon style="vertical-align: middle; color: var(--md-sys-color-warning);">info</md-icon>
+                    Compras Pendientes
+                </h2>
+            </div>
+            <p class="md-typescale-body-medium">
+                Tienes <strong>@ViewBag.ComprasPendientes compras</strong> pendientes de recibir.
+            </p>
+            <div style="margin-top: 16px;">
+                <a href="/Compras/Index">
+                    <md-text-button>
+                        Ver Compras
+                        <md-icon slot="icon">arrow_forward</md-icon>
+                    </md-text-button>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+}

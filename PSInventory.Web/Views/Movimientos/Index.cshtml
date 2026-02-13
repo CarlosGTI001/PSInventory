@@ -1,0 +1,241 @@
+@model IEnumerable<PSData.Modelos.MovimientoItem>
+
+@{
+    ViewData["Title"] = "Historial de Movimientos";
+    var totalMovimientos = Model.Count();
+    var asignaciones = Model.Count(m => m.Motivo == "Asignación Inicial");
+    var transferencias = Model.Count(m => m.Motivo == "Transferencia");
+    var hoy = Model.Count(m => m.FechaMovimiento.Date == DateTime.Today);
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Movimientos</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Historial de Movimientos</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Registro completo de asignaciones y transferencias de items
+        </p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@totalMovimientos</div>
+                <div class="stat-card-label">Total Movimientos</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>history</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-tertiary);">@asignaciones</div>
+                <div class="stat-card-label">Asignaciones</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(149, 117, 205, 0.15);">
+                <md-icon style="color: var(--md-sys-color-tertiary);">add_circle</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@transferencias</div>
+                <div class="stat-card-label">Transferencias</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-secondary);">swap_horiz</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-success);">@hoy</div>
+                <div class="stat-card-label">Hoy</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                <md-icon style="color: var(--md-sys-color-success);">today</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <md-icon style="color: var(--md-sys-color-primary);">filter_list</md-icon>
+        <h2 class="md-typescale-title-large" style="margin: 0;">Filtros</h2>
+    </div>
+
+    <form method="get" action="@Url.Action("Index")">
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select name="sucursalId" class="md3-select">
+                        <option value="">Todas las sucursales</option>
+                        @foreach (var sucursal in ViewBag.Sucursales)
+                        {
+                            <option value="@sucursal.Id" selected="@(ViewBag.SucursalFiltro == sucursal.Id)">@sucursal.Nombre</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sucursal</label>
+                </div>
+                <p class="md3-select-supporting">Filtrar por sucursal origen o destino</p>
+            </div>
+
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Fecha Inicio" 
+                    name="fechaInicio" 
+                    type="date"
+                    value="@ViewBag.FechaInicio"
+                    supporting-text="Fecha inicial del rango">
+                    <md-icon slot="leading-icon">event</md-icon>
+                </md-filled-text-field>
+            </div>
+
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Fecha Fin" 
+                    name="fechaFin" 
+                    type="date"
+                    value="@ViewBag.FechaFin"
+                    supporting-text="Fecha final del rango">
+                    <md-icon slot="leading-icon">event</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+            <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+                <md-icon slot="icon">clear</md-icon>
+                Limpiar
+            </md-text-button>
+            <md-filled-button type="submit">
+                <md-icon slot="icon">search</md-icon>
+                Filtrar
+            </md-filled-button>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla de Movimientos -->
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <md-icon style="font-size: 64px; color: var(--md-sys-color-outline);">history</md-icon>
+        <h3 class="md-typescale-headline-small">No hay movimientos registrados</h3>
+        <p class="md-typescale-body-medium">
+            @if (!string.IsNullOrEmpty(ViewBag.SucursalFiltro as string) || !string.IsNullOrEmpty(ViewBag.FechaInicio as string))
+            {
+                <text>No se encontraron movimientos con los filtros aplicados.</text>
+            }
+            else
+            {
+                <text>Los movimientos de items aparecerán aquí cuando se realicen asignaciones o transferencias.</text>
+            }
+        </p>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <md-icon style="color: var(--md-sys-color-primary);">table_chart</md-icon>
+                <h3 class="md-typescale-title-medium" style="margin: 0;">Registro de Movimientos</h3>
+            </div>
+            <span class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+                @totalMovimientos movimiento@(totalMovimientos != 1 ? "s" : "") registrado@(totalMovimientos != 1 ? "s" : "")
+            </span>
+        </div>
+
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Item</th>
+                        <th>Artículo</th>
+                        <th>Origen</th>
+                        <th>Destino</th>
+                        <th>Motivo</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movimiento in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span class="md-typescale-body-medium">@movimiento.FechaMovimiento.ToString("dd/MM/yyyy")</span>
+                                    <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">@movimiento.FechaMovimiento.ToString("HH:mm")</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-primary">@movimiento.ItemSerial</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <strong>@movimiento.Item?.Articulo?.Marca @movimiento.Item?.Articulo?.Modelo</strong>
+                                    <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">@movimiento.Item?.Articulo?.Categoria?.Nombre</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (movimiento.SucursalOrigen != null)
+                                {
+                                    <span class="badge badge-secondary">@movimiento.SucursalOrigen.Nombre</span>
+                                }
+                                else
+                                {
+                                    <span class="badge">Almacén</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge badge-success">@movimiento.SucursalDestino?.Nombre</span>
+                            </td>
+                            <td>
+                                @if (movimiento.Motivo == "Asignación Inicial")
+                                {
+                                    <span class="badge" style="background: rgba(149, 117, 205, 0.15); color: var(--md-sys-color-tertiary);">
+                                        Asignación Inicial
+                                    </span>
+                                }
+                                else if (movimiento.Motivo == "Transferencia")
+                                {
+                                    <span class="badge badge-warning">Transferencia</span>
+                                }
+                                else
+                                {
+                                    <span class="badge">@movimiento.Motivo</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="md-typescale-body-small">@movimiento.UsuarioResponsable</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

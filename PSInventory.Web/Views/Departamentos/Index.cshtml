@@ -1,0 +1,204 @@
+@model IEnumerable<PSData.Modelos.Departamento>
+
+@{
+    ViewData["Title"] = "Departamentos";
+    var totalDepartamentos = Model.Count();
+    var activos = Model.Count(d => d.Activo);
+    var conResponsable = Model.Count(d => !string.IsNullOrEmpty(d.Responsable));
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Configuración</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Departamentos</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Departamentos</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Gestiona los departamentos de la organización
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+        <md-icon slot="icon">add</md-icon>
+        Nuevo Departamento
+    </md-filled-button>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@totalDepartamentos</div>
+                <div class="stat-card-label">Total Departamentos</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>business_center</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-success);">@activos</div>
+                <div class="stat-card-label">Activos</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                <md-icon style="color: var(--md-sys-color-success);">check_circle</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@conResponsable</div>
+                <div class="stat-card-label">Con Responsable</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-secondary);">person</md-icon>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-primary);">@(totalDepartamentos - activos)</div>
+                <div class="stat-card-label">Inactivos</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(4, 115, 148, 0.15);">
+                <md-icon style="color: var(--md-sys-color-primary);">block</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<!-- Data Table -->
+<div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: var(--md-sys-color-primary);">table_chart</md-icon>
+            <h3 class="md-typescale-title-medium" style="margin: 0;">Lista de Departamentos</h3>
+        </div>
+        <span class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+            @totalDepartamentos departamento@(totalDepartamentos != 1 ? "s" : "") registrado@(totalDepartamentos != 1 ? "s" : "")
+        </span>
+    </div>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Responsable</th>
+                    <th>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">corporate_fare</md-icon>
+                                <strong>@item.Nombre</strong>
+                            </div>
+                        </td>
+                        <td>@item.Descripcion</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.Responsable))
+                            {
+                                <div style="display: flex; align-items: center; gap: 4px;">
+                                    <md-icon style="font-size: 16px; color: var(--md-sys-color-on-surface-variant);">person</md-icon>
+                                    <span>@item.Responsable</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color: var(--md-sys-color-outline);">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge">Inactivo</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDelete(@item.Id, '@item.Nombre')">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <md-icon style="font-size: 64px; color: var(--md-sys-color-outline);">business_center</md-icon>
+        <h3 class="md-typescale-headline-small">No hay departamentos registrados</h3>
+        <p class="md-typescale-body-medium">Comienza creando tu primer departamento</p>
+        <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+            <md-icon slot="icon">add</md-icon>
+            Crear Departamento
+        </md-filled-button>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function confirmDelete(id, nombre) {
+            if (await showConfirmDialog(
+                'Eliminar Departamento',
+                `¿Estás seguro de eliminar el departamento "${nombre}"?`,
+                'Eliminar'
+            )) {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                
+                const response = await fetch(`@Url.Action("Delete")/` + id, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSnackbar(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showSnackbar(result.message, 'error');
+                }
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

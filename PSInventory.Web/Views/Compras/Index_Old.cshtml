@@ -1,0 +1,107 @@
+@model IEnumerable<PSData.Modelos.Compra>
+
+@{
+    ViewData["Title"] = "Compras";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-headline-medium">Compras</h1>
+        <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+            Gestiona las compras de inventario
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+        <md-icon slot="icon">add</md-icon>
+        Nueva Compra
+    </md-filled-button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        @TempData["Success"]
+    </div>
+}
+
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Costo Total</th>
+                <th>Observaciones</th>
+                <th class="actions-column">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@item.FechaCompra.ToString("dd/MM/yyyy")</strong>
+                    </td>
+                    <td>@item.Proveedor</td>
+                    <td>$@item.CostoTotal.ToString("N2")</td>
+                    <td>@item.Observaciones</td>
+                    <td class="actions-cell">
+                        <md-icon-button onclick="window.location.href='@Url.Action("Details", new { id = item.Id })'">
+                            <md-icon>visibility</md-icon>
+                        </md-icon-button>
+                        <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
+                            <md-icon>edit</md-icon>
+                        </md-icon-button>
+                        <md-icon-button onclick="confirmDelete(@item.Id, '@item.FechaCompra.ToString("dd/MM/yyyy")')">
+                            <md-icon>delete</md-icon>
+                        </md-icon-button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <md-icon style="font-size: 64px; color: var(--md-sys-color-outline);">shopping_cart</md-icon>
+        <h3 class="md-typescale-headline-small">No hay compras registradas</h3>
+        <p class="md-typescale-body-medium">Comienza registrando tu primera compra</p>
+        <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+            <md-icon slot="icon">add</md-icon>
+            Crear Compra
+        </md-filled-button>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        async function confirmDelete(id, fecha) {
+            if (await showConfirmDialog(
+                'Eliminar Compra',
+                `¿Estás seguro de eliminar la compra del ${fecha}?`,
+                'Eliminar'
+            )) {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                
+                const response = await fetch(`@Url.Action("Delete")/` + id, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSnackbar(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showSnackbar(result.message, 'error');
+                }
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

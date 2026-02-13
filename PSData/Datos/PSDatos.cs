@@ -1,38 +1,106 @@
-﻿using PSData.Modelos;
+﻿using Microsoft.EntityFrameworkCore;
+using PSData.Modelos;
 using System;
-using System.Data.Entity;
 using System.Linq;
 
 namespace PSData.Datos
 {
     public class PSDatos : DbContext
     {
-        // El contexto se ha configurado para usar una cadena de conexión 'PSDatos' del archivo 
-        // de configuración de la aplicación (App.config o Web.config). De forma predeterminada, 
-        // esta cadena de conexión tiene como destino la base de datos 'PSData.Datos.PSDatos' de la instancia LocalDb. 
-        // 
-        // Si desea tener como destino una base de datos y/o un proveedor de base de datos diferente, 
-        // modifique la cadena de conexión 'PSDatos'  en el archivo de configuración de la aplicación.
+        // Constructor para ASP.NET Core (inyección de dependencias)
+        public PSDatos(DbContextOptions<PSDatos> options)
+            : base(options)
+        {
+        }
+
+        // Constructor sin parámetros para Windows Forms
         public PSDatos()
-            : base("name=PSDatos")
-        { }
+            : base(GetOptions())
+        {
+        }
+
+        private static DbContextOptions<PSDatos> GetOptions()
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<PSDatos>();
+            optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=PSInventoryDB;Trusted_Connection=True;MultipleActiveResultSets=true");
+            return optionsBuilder.Options;
+        }
+
         public DbSet<Articulo> Articulos { get; set; }
         public DbSet<Compra> Compras { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<Sucursal> Sucursales { get; set; }
         public DbSet<Region> Regiones { get; set; }
-
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Categoria> Categorias { get; set; }
+        public DbSet<MovimientoItem> MovimientosItem { get; set; }
+        public DbSet<Departamento> Departamentos { get; set; }
 
-        // Agregue un DbSet para cada tipo de entidad que desee incluir en el modelo. Para obtener más información 
-        // sobre cómo configurar y usar un modelo Code First, vea http://go.microsoft.com/fwlink/?LinkId=390109.
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Índices para mejorar performance
+            modelBuilder.Entity<Item>()
+                .HasIndex(i => i.ArticuloId)
+                .HasDatabaseName("IX_Item_ArticuloId");
 
-        // public virtual DbSet<MyEntity> MyEntities { get; set; }
+            modelBuilder.Entity<Item>()
+                .HasIndex(i => i.CompraId)
+                .HasDatabaseName("IX_Item_CompraId");
+
+            modelBuilder.Entity<Item>()
+                .HasIndex(i => i.SucursalId)
+                .HasDatabaseName("IX_Item_SucursalId");
+
+            modelBuilder.Entity<Item>()
+                .HasIndex(i => i.Estado)
+                .HasDatabaseName("IX_Item_Estado");
+
+            modelBuilder.Entity<Articulo>()
+                .HasIndex(a => a.CategoriaId)
+                .HasDatabaseName("IX_Articulo_CategoriaId");
+
+            modelBuilder.Entity<Sucursal>()
+                .HasIndex(s => s.RegionId)
+                .HasDatabaseName("IX_Sucursal_RegionId");
+
+            modelBuilder.Entity<Usuario>()
+                .HasIndex(u => u.Nombre)
+                .HasDatabaseName("IX_Usuario_Nombre");
+
+            modelBuilder.Entity<Categoria>()
+                .HasIndex(c => c.Nombre)
+                .HasDatabaseName("IX_Categoria_Nombre");
+
+            modelBuilder.Entity<MovimientoItem>()
+                .HasIndex(m => m.ItemSerial)
+                .HasDatabaseName("IX_MovimientoItem_ItemSerial");
+
+            modelBuilder.Entity<MovimientoItem>()
+                .HasIndex(m => m.FechaMovimiento)
+                .HasDatabaseName("IX_MovimientoItem_FechaMovimiento");
+
+            modelBuilder.Entity<Compra>()
+                .HasIndex(c => c.DepartamentoId)
+                .HasDatabaseName("IX_Compra_DepartamentoId");
+
+            modelBuilder.Entity<Departamento>()
+                .HasIndex(d => d.Nombre)
+                .HasDatabaseName("IX_Departamento_Nombre");
+
+            // Configurar relaciones de Sucursal con MovimientoItem
+            modelBuilder.Entity<MovimientoItem>()
+                .HasOne(m => m.SucursalOrigen)
+                .WithMany(s => s.MovimientosOrigen)
+                .HasForeignKey(m => m.SucursalOrigenId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MovimientoItem>()
+                .HasOne(m => m.SucursalDestino)
+                .WithMany(s => s.MovimientosDestino)
+                .HasForeignKey(m => m.SucursalDestinoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
-
-    //public class MyEntity
-    //{
-    //    public int Id { get; set; }
-    //    public string Name { get; set; }
-    //}
 }

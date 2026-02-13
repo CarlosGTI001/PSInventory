@@ -1,0 +1,173 @@
+@model PSData.Modelos.Articulo
+
+@{
+    ViewData["Title"] = "Editar Artículo";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Artículos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Editar: @Model.Marca @Model.Modelo</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Artículo</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Modifica la información del artículo <strong>@Model.Marca @Model.Modelo</strong>
+        </p>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    
+    <!-- Sección 1: Información Básica -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">inventory</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Información Básica</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Marca y modelo del artículo</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Marca *" 
+                    name="Marca" 
+                    required
+                    value="@Model.Marca"
+                    supporting-text="Marca del fabricante">
+                    <md-icon slot="leading-icon">business</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Marca" class="field-error"></span>
+            </div>
+            
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Modelo *" 
+                    name="Modelo" 
+                    required
+                    value="@Model.Modelo"
+                    supporting-text="Modelo o versión">
+                    <md-icon slot="leading-icon">tag</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Modelo" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">category</md-icon>
+                    <select asp-for="CategoriaId" class="md3-select" required>
+                        <option value="">Seleccione una categoría</option>
+                        @foreach (var categoria in ViewBag.Categorias)
+                        {
+                            <option value="@categoria.Value" selected="@(Model.CategoriaId.ToString() == categoria.Value)">@categoria.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Categoría *</label>
+                </div>
+                <p class="md3-select-supporting">Clasificación del artículo</p>
+                <span asp-validation-for="CategoriaId" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 2: Especificaciones -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-secondary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">info</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Especificaciones</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Características y requisitos técnicos</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Descripción" 
+                    name="Descripcion" 
+                    type="textarea"
+                    rows="3"
+                    value="@Model.Descripcion"
+                    supporting-text="Descripción detallada">
+                    <md-icon slot="leading-icon">description</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Descripcion" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Especificaciones Técnicas" 
+                    name="Especificaciones" 
+                    type="textarea"
+                    rows="3"
+                    value="@Model.Especificaciones"
+                    supporting-text="Características técnicas (opcional)">
+                    <md-icon slot="leading-icon">tools</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Especificaciones" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 3: Control de Inventario -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-tertiary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(91, 201, 229, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-tertiary); font-size: 28px;">warehouse</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Control de Inventario</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Parámetros de stock</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Stock Mínimo" 
+                    name="StockMinimo" 
+                    type="number"
+                    value="@Model.StockMinimo"
+                    supporting-text="Cantidad mínima antes de reordenar">
+                    <md-icon slot="leading-icon">low_priority</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="StockMinimo" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Cambios
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,109 @@
+@model PSData.Modelos.Departamento
+
+@{
+    ViewData["Title"] = "Editar Departamento";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Configuración</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Departamentos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Editar</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Departamento</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Modifica los datos del departamento
+        </p>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    
+    <!-- Sección 1: Información Básica -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">business_center</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Información del Departamento</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Datos generales del departamento</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Nombre *" 
+                    name="Nombre" 
+                    required
+                    value="@Model.Nombre"
+                    supporting-text="Nombre del departamento">
+                    <md-icon slot="leading-icon">label</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Nombre" class="field-error"></span>
+            </div>
+
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Responsable" 
+                    name="Responsable" 
+                    value="@Model.Responsable"
+                    supporting-text="Nombre del responsable del departamento">
+                    <md-icon slot="leading-icon">person</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Responsable" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Descripción" 
+                    name="Descripcion" 
+                    type="textarea"
+                    rows="3"
+                    value="@Model.Descripcion"
+                    supporting-text="Descripción o función del departamento">
+                    <md-icon slot="leading-icon">description</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Descripcion" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="display: flex; align-items: center; gap: 12px;">
+                <input type="checkbox" name="Activo" value="true" @(Model.Activo ? "checked" : "") style="width: 20px; height: 20px; cursor: pointer;" />
+                <input type="hidden" name="Activo" value="false" />
+                <label class="md-typescale-body-large" style="cursor: pointer;">
+                    Departamento activo
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Cambios
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

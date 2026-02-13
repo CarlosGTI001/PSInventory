@@ -24,5 +24,11 @@ namespace PSData.Modelos
 
         [Required]
         public string Rol { get; set; }
+
+        // Soft Delete
+        public bool Eliminado { get; set; } = false;
+        public DateTime? FechaEliminacion { get; set; }
+        [StringLength(100)]
+        public string? UsuarioEliminacion { get; set; }
     }
 }

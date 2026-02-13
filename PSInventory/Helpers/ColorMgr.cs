@@ -27,5 +27,24 @@ namespace PSInventory.Helpers
                     TextShade.WHITE                  // Texto claro sobre fondo oscuro
                 );
         }
+
+        public Color ObtenerColor(int id)
+        {
+            if (id >= 0 && id <= 3)
+            {
+                List<Color> colores = new List<Color>();
+                colores.Add(Color.FromArgb(0x04, 0x73, 0x94));
+                colores.Add(Color.FromArgb(0x03, 0x5a, 0x72));
+                colores.Add(Color.FromArgb(0x5b, 0xc9, 0xe5));
+                colores.Add(Color.FromArgb(0xff, 0x5c, 0x00));
+                return colores[id];
+            }
+            else
+            {
+                return Color.FromArgb(0x04, 0x73, 0x94);
+            }
+            
+            
+        }
     }
 }

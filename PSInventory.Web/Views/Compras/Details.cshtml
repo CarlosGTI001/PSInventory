@@ -1,0 +1,162 @@
+@model PSData.Modelos.Compra
+
+@{
+    ViewData["Title"] = "Detalle de Compra";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-headline-medium">Detalle de Compra</h1>
+        <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+            Información completa de la compra
+        </p>
+    </div>
+    <md-outlined-button onclick="window.location.href='@Url.Action("Index")'">
+        <md-icon slot="icon">arrow_back</md-icon>
+        Volver
+    </md-outlined-button>
+</div>
+
+<div class="detail-container">
+    <div class="detail-card">
+        <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Información General</h2>
+        
+        <div class="detail-row">
+            <div class="detail-label">Fecha:</div>
+            <div class="detail-value">@Model.FechaCompra.ToString("dd/MM/yyyy")</div>
+        </div>
+        
+        <div class="detail-row">
+            <div class="detail-label">Proveedor:</div>
+            <div class="detail-value">@Model.Proveedor</div>
+        </div>
+        
+        <div class="detail-row">
+            <div class="detail-label">Costo Total:</div>
+            <div class="detail-value" style="color: var(--md-sys-color-primary); font-weight: 500;">
+                $@Model.CostoTotal.ToString("N2")
+            </div>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.Observaciones))
+        {
+            <div class="detail-row">
+                <div class="detail-label">Observaciones:</div>
+                <div class="detail-value">@Model.Observaciones</div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.RutaFactura))
+        {
+            <div class="detail-row">
+                <div class="detail-label">Factura:</div>
+                <div class="detail-value" style="display: flex; align-items: center; gap: 12px;">
+                    @{
+                        var extension = System.IO.Path.GetExtension(Model.RutaFactura).ToLower();
+                        var isImage = extension == ".jpg" || extension == ".jpeg" || extension == ".png";
+                        var fileName = System.IO.Path.GetFileName(Model.RutaFactura);
+                    }
+                    @if (isImage)
+                    {
+                        <md-icon style="color: var(--md-sys-color-secondary); font-size: 20px;">image</md-icon>
+                    }
+                    else
+                    {
+                        <md-icon style="color: var(--md-sys-color-secondary); font-size: 20px;">picture_as_pdf</md-icon>
+                    }
+                    <a href="@Url.Action("DescargarFactura", new { id = Model.Id })" 
+                       style="color: var(--md-sys-color-primary); text-decoration: none; cursor: pointer; font-weight: 500;"
+                       onmouseover="this.style.textDecoration='underline'"
+                       onmouseout="this.style.textDecoration='none'">
+                        @fileName
+                    </a>
+                </div>
+            </div>
+
+            @if (isImage)
+            {
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--md-sys-color-outline-variant);">
+                    <h3 class="md-typescale-title-medium" style="margin-bottom: 12px;">Vista Previa</h3>
+                    <img src="@Url.Action("DescargarFactura", new { id = Model.Id })" 
+                         alt="Factura" 
+                         style="max-width: 300px; max-height: 300px; border-radius: 12px; border: 1px solid var(--md-sys-color-outline); box-shadow: var(--md-sys-elevation-level1);">
+                </div>
+            }
+        }
+    </div>
+    
+    @if (Model.Items?.Any() == true)
+    {
+        <div class="detail-card" style="margin-top: 24px;">
+            <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Items Asociados (@Model.Items.Count)</h2>
+            
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Artículo</th>
+                            <th>N° Serie</th>
+                            <th>Costo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.Articulo?.Marca @item.Articulo?.Modelo</td>
+                                <td>@item.Serial</td>
+                                <td>$@item.Costo.ToString("N2")</td>
+                                <td>
+                                    <span class="badge @(item.Estado == "Activo" ? "badge-success" : "")">
+                                        @item.Estado
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state" style="margin-top: 24px;">
+            <md-icon style="font-size: 48px; color: var(--md-sys-color-outline);">inventory_2</md-icon>
+            <p class="md-typescale-body-medium">No hay items asociados a esta compra</p>
+        </div>
+    }
+</div>
+
+<style>
+    .detail-container {
+        padding: 24px;
+    }
+    
+    .detail-card {
+        background: var(--md-sys-color-surface);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--md-sys-elevation-level1);
+    }
+    
+    .detail-row {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface-variant);
+    }
+    
+    .detail-value {
+        color: var(--md-sys-color-on-surface);
+    }
+</style>

@@ -10,7 +10,7 @@ namespace PSData.Modelos
     public class Region
     {
         [Key]
-        public int Id { get; set; }
+        public int RegionId { get; set; }
 
         [Required]
         [StringLength(200)]

@@ -109,7 +109,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">security</md-icon>
-                    <select asp-for="Rol" class="md3-select" required>
+                    <select asp-for="Rol" name="Rol" class="md3-select" required>
                         <option value="Administrador" selected="@(Model.Rol == "Administrador")">Administrador</option>
                         <option value="Supervisor" selected="@(Model.Rol == "Supervisor")">Supervisor</option>
                         <option value="Usuario" selected="@(Model.Rol == "Usuario")">Usuario</option>
@@ -146,4 +146,25 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            const originalData = {};
+            new FormData(form).forEach((value, key) => originalData[key] = value);
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const currentData = {};
+                new FormData(form).forEach((value, key) => currentData[key] = value);
+                
+                if (await showEditConfirmationDialog(originalData, currentData, 'Usuario')) {
+                    form.removeEventListener('submit', arguments.callee);
+                    if (window.syncMdTextFields) syncMdTextFields(form);
+                    form.submit();
+                }
+            });
+        });
+    </script>
 }

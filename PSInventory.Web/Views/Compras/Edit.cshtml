@@ -84,7 +84,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">check_circle</md-icon>
-                    <select asp-for="Estado" class="md3-select" required>
+                    <select asp-for="Estado" name="Estado" class="md3-select" required>
                         <option value="Pendiente" selected="@(Model.Estado == "Pendiente")">Pendiente</option>
                         <option value="Completada" selected="@(Model.Estado == "Completada")">Completada</option>
                         <option value="Cancelada" selected="@(Model.Estado == "Cancelada")">Cancelada</option>

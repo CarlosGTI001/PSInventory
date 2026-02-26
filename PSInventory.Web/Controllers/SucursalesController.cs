@@ -31,23 +31,60 @@ namespace PSInventory.Web.Controllers
         // GET: Sucursales/Create
         public async Task<IActionResult> Create()
         {
-            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "Id", "Nombre");
+            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "RegionId", "Nombre");
             return View();
         }
 
         // POST: Sucursales/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Nombre,Direccion,Telefono,RegionId")] Sucursal sucursal)
+        public async Task<IActionResult> Create([Bind("Nombre,Direccion,Telefono,RegionId,Activo")] Sucursal sucursal)
         {
+            // Validar que la región sea válida
+            if (sucursal.RegionId <= 0)
+            {
+                ModelState.AddModelError("RegionId", "Debe seleccionar una región");
+            }
+            else
+            {
+                var regionExists = await _context.Regiones
+                    .AnyAsync(r => r.RegionId == sucursal.RegionId && !r.Eliminado);
+                
+                if (!regionExists)
+                {
+                    ModelState.AddModelError("RegionId", "La región seleccionada no existe o está inactiva");
+                }
+            }
+            
             if (ModelState.IsValid)
             {
+                // Generar ID automáticamente: SUC-001, SUC-002, etc.
+                var ultimoId = await _context.Sucursales
+                    .Where(s => s.Id.StartsWith("SUC-"))
+                    .OrderByDescending(s => s.Id)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync();
+                
+                int siguienteNumero = 1;
+                if (!string.IsNullOrEmpty(ultimoId))
+                {
+                    // Extraer el número del último ID (SUC-001 -> 001 -> 1)
+                    var numeroStr = ultimoId.Substring(4); // después de "SUC-"
+                    if (int.TryParse(numeroStr, out int numero))
+                    {
+                        siguienteNumero = numero + 1;
+                    }
+                }
+                
+                // Formatear con 3 dígitos: SUC-001, SUC-002, etc.
+                sucursal.Id = $"SUC-{siguienteNumero:D3}";
+                
                 _context.Add(sucursal);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = "Sucursal creada exitosamente";
+                TempData["Success"] = $"Sucursal creada exitosamente con código {sucursal.Id}";
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "Id", "Nombre", sucursal.RegionId);
+            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "RegionId", "Nombre", sucursal.RegionId);
             return View(sucursal);
         }
 
@@ -66,7 +103,7 @@ namespace PSInventory.Web.Controllers
             {
                 return NotFound();
             }
-            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "Id", "Nombre", sucursal.RegionId);
+            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "RegionId", "Nombre", sucursal.RegionId);
             return View(sucursal);
         }
 
@@ -101,7 +138,7 @@ namespace PSInventory.Web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "Id", "Nombre", sucursal.RegionId);
+            ViewBag.Regiones = new SelectList(await _context.Regiones.Where(r => !r.Eliminado).OrderBy(r => r.Nombre).ToListAsync(), "RegionId", "Nombre", sucursal.RegionId);
             return View(sucursal);
         }
 

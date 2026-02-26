@@ -119,10 +119,10 @@
                         </td>
                         <td>@item.Descripcion</td>
                         <td class="actions-cell">
-                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
+                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.RegionId })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button onclick="confirmDelete(@item.Id, '@item.Nombre')">
+                            <md-icon-button onclick="confirmDelete(@item.RegionId, '@item.Nombre')">
                                 <md-icon>delete</md-icon>
                             </md-icon-button>
                         </td>

@@ -57,7 +57,7 @@ namespace PSInventory.Web.Controllers
 
             var region = await _context.Regiones
                 .Where(r => !r.Eliminado)
-                .FirstOrDefaultAsync(r => r.Id == id);
+                .FirstOrDefaultAsync(r => r.RegionId == id);
             if (region == null)
             {
                 return NotFound();
@@ -68,9 +68,9 @@ namespace PSInventory.Web.Controllers
         // POST: Regiones/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Descripcion")] Region region)
+        public async Task<IActionResult> Edit(int id, [Bind("RegionId,Nombre,Descripcion")] Region region)
         {
-            if (id != region.Id)
+            if (id != region.RegionId)
             {
                 return NotFound();
             }
@@ -85,7 +85,7 @@ namespace PSInventory.Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!RegionExists(region.Id))
+                    if (!RegionExists(region.RegionId))
                     {
                         return NotFound();
                     }
@@ -106,7 +106,7 @@ namespace PSInventory.Web.Controllers
         {
             var region = await _context.Regiones
                 .Where(r => !r.Eliminado)
-                .FirstOrDefaultAsync(r => r.Id == id);
+                .FirstOrDefaultAsync(r => r.RegionId == id);
             if (region == null)
             {
                 return Json(new { success = false, message = "Región no encontrada" });
@@ -132,7 +132,7 @@ namespace PSInventory.Web.Controllers
 
         private bool RegionExists(int id)
         {
-            return _context.Regiones.Any(e => e.Id == id && !e.Eliminado);
+            return _context.Regiones.Any(e => e.RegionId == id && !e.Eliminado);
         }
     }
 }

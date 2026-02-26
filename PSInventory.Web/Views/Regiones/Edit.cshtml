@@ -26,7 +26,7 @@
 
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="RegionId" />
     
     <!-- Sección 1: Información Básica -->
     <div class="card" style="margin-bottom: 24px;">
@@ -85,4 +85,26 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            const originalData = {};
+            new FormData(form).forEach((value, key) => originalData[key] = value);
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const currentData = {};
+                new FormData(form).forEach((value, key) => currentData[key] = value);
+                
+                if (await showEditConfirmationDialog(originalData, currentData, 'Región')) {
+                    form.removeEventListener('submit', arguments.callee);
+                    if (window.syncMdTextFields) syncMdTextFields(form);
+                    form.submit();
+                }
+            });
+        });
+    </script>
 }

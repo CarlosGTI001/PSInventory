@@ -26,6 +26,7 @@ namespace PSData.Modelos
 
         [Required]
         public int RegionId { get; set; }
+
         [ForeignKey("RegionId")]
         public virtual Region Region { get; set; }
 

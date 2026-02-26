@@ -41,6 +41,11 @@ namespace PSInventory.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Marca,Modelo,Descripcion,CategoriaId,StockMinimo,Especificaciones")] Articulo articulo)
         {
+            if (articulo.CategoriaId <= 0 || !await _context.Categorias.AnyAsync(c => c.Id == articulo.CategoriaId && !c.Eliminado))
+            {
+                ModelState.AddModelError("CategoriaId", "Debe seleccionar una categoría válida");
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(articulo);
@@ -79,6 +84,11 @@ namespace PSInventory.Web.Controllers
             if (id != articulo.Id)
             {
                 return NotFound();
+            }
+
+            if (articulo.CategoriaId <= 0 || !await _context.Categorias.AnyAsync(c => c.Id == articulo.CategoriaId && !c.Eliminado))
+            {
+                ModelState.AddModelError("CategoriaId", "Debe seleccionar una categoría válida");
             }
 
             if (ModelState.IsValid)

@@ -85,4 +85,41 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Configurar confirmación de edición
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            // Guardar datos originales al cargar
+            const originalData = {};
+            const formData = new FormData(form);
+            formData.forEach((value, key) => {
+                originalData[key] = value;
+            });
+            
+            // Interceptar submit
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Obtener datos actuales
+                const currentData = {};
+                const currentFormData = new FormData(form);
+                currentFormData.forEach((value, key) => {
+                    currentData[key] = value;
+                });
+                
+                // Mostrar diálogo de confirmación
+                const confirmed = await showEditConfirmationDialog(originalData, currentData, 'Categoría');
+                
+                if (confirmed) {
+                    // Remover listener para evitar loop y enviar
+                    form.removeEventListener('submit', arguments.callee);
+                    if (window.syncMdTextFields) syncMdTextFields(form);
+                    form.submit();
+                }
+            });
+        });
+    </script>
 }

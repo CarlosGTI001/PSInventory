@@ -69,7 +69,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">category</md-icon>
-                    <select asp-for="CategoriaId" class="md3-select" required>
+                    <select asp-for="CategoriaId" name="CategoriaId" class="md3-select" required>
                         <option value="">Seleccione una categoría</option>
                         @foreach (var categoria in ViewBag.Categorias)
                         {

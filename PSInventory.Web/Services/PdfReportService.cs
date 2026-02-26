@@ -42,47 +42,50 @@ namespace PSInventory.Web.Services
 
         public static void GenerarHeader(IContainer container, string tituloReporte, string usuario)
         {
-            container.Row(row =>
+            container.Column(col =>
             {
-                // Logo placeholder (izquierda)
-                row.ConstantItem(80).Column(column =>
+                col.Item().Row(row =>
                 {
-                    column.Item().AlignCenter().AlignMiddle().Height(50).Width(50)
-                        .Border(2).BorderColor(ColorPrimario)
-                        .Background(Colors.Grey.Lighten3)
-                        .AlignCenter().AlignMiddle()
-                        .Text("PS").FontSize(20).Bold().FontColor(ColorPrimario);
+                    // Logo placeholder (izquierda)
+                    row.ConstantItem(80).Column(column =>
+                    {
+                        column.Item().AlignCenter().AlignMiddle().Height(50).Width(50)
+                            .Border(2).BorderColor(ColorPrimario)
+                            .Background(Colors.Grey.Lighten3)
+                            .AlignCenter().AlignMiddle()
+                            .Text("PS").FontSize(20).Bold().FontColor(ColorPrimario);
+                    });
+
+                    // Información empresa (centro)
+                    row.RelativeItem().Column(column =>
+                    {
+                        column.Item().AlignCenter().Text(EmpresaNombre)
+                            .FontSize(16).Bold().FontColor(ColorPrimario);
+                        
+                        column.Item().AlignCenter().Text(tituloReporte)
+                            .FontSize(14).Bold().FontColor(Colors.Grey.Darken3);
+                        
+                        column.Item().AlignCenter().PaddingTop(5).Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .FontSize(9).FontColor(Colors.Grey.Medium);
+                    });
+
+                    // Usuario (derecha)
+                    row.ConstantItem(100).Column(column =>
+                    {
+                        column.Item().AlignRight().Text($"Usuario: {usuario}")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                        
+                        column.Item().AlignRight().Text($"Fecha: {DateTime.Now:dd/MM/yyyy}")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                        
+                        column.Item().AlignRight().Text($"Hora: {DateTime.Now:HH:mm:ss}")
+                            .FontSize(9).FontColor(Colors.Grey.Darken2);
+                    });
                 });
 
-                // Información empresa (centro)
-                row.RelativeItem().Column(column =>
-                {
-                    column.Item().AlignCenter().Text(EmpresaNombre)
-                        .FontSize(16).Bold().FontColor(ColorPrimario);
-                    
-                    column.Item().AlignCenter().Text(tituloReporte)
-                        .FontSize(14).Bold().FontColor(Colors.Grey.Darken3);
-                    
-                    column.Item().AlignCenter().PaddingTop(5).Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}")
-                        .FontSize(9).FontColor(Colors.Grey.Medium);
-                });
-
-                // Usuario (derecha)
-                row.ConstantItem(100).Column(column =>
-                {
-                    column.Item().AlignRight().Text($"Usuario: {usuario}")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-                    
-                    column.Item().AlignRight().Text($"Fecha: {DateTime.Now:dd/MM/yyyy}")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-                    
-                    column.Item().AlignRight().Text($"Hora: {DateTime.Now:HH:mm:ss}")
-                        .FontSize(9).FontColor(Colors.Grey.Darken2);
-                });
+                // Línea separadora
+                col.Item().PaddingTop(10).BorderBottom(2).BorderColor(ColorPrimario).Text("");
             });
-
-            // Línea separadora
-            container.PaddingTop(10).BorderBottom(2).BorderColor(ColorPrimario);
         }
 
         public static void GenerarFiltros(IContainer container, Dictionary<string, string> filtros)

@@ -36,17 +36,21 @@ async function showEditConfirmationDialog(originalData, newData, entityName = "R
             // No hay cambios
             const noChangesDialog = document.createElement('md-dialog');
             noChangesDialog.innerHTML = `
-                <div slot="headline">
+                <div slot="headline" style="font-size: 24px; font-weight: 500; padding: 24px 24px 0 24px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <md-icon style="color: var(--md-sys-color-primary);">info</md-icon>
+                        <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">info</md-icon>
                         <span>Sin Cambios</span>
                     </div>
                 </div>
-                <div slot="content">
-                    <p>No se detectaron cambios en los datos.</p>
+                <div slot="content" style="padding: 24px; min-width: 320px;">
+                    <p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--md-sys-color-on-surface);">
+                        No se detectaron cambios en los datos del formulario.
+                    </p>
                 </div>
-                <div slot="actions">
-                    <md-filled-button class="close-btn">Entendido</md-filled-button>
+                <div slot="actions" style="padding: 0 24px 24px 24px; display: flex; gap: 8px; justify-content: flex-end;">
+                    <md-filled-button class="close-btn">
+                        Entendido
+                    </md-filled-button>
                 </div>
             `;
             document.body.appendChild(noChangesDialog);
@@ -60,32 +64,36 @@ async function showEditConfirmationDialog(originalData, newData, entityName = "R
         }
 
         dialog.innerHTML = `
-            <div slot="headline">
+            <div slot="headline" style="font-size: 24px; font-weight: 500; padding: 24px 24px 0 24px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <md-icon style="color: var(--md-sys-color-warning);">edit_note</md-icon>
+                    <md-icon style="color: var(--md-sys-color-tertiary); font-size: 28px;">edit_note</md-icon>
                     <span>Confirmar Modificación</span>
                 </div>
             </div>
-            <div slot="content">
-                <p class="md-typescale-body-medium" style="margin-bottom: 16px;">
+            <div slot="content" style="padding: 24px; min-width: 500px; max-width: 700px;">
+                <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 24px; color: var(--md-sys-color-on-surface);">
                     Se detectaron <strong>${changes.length} cambio${changes.length > 1 ? 's' : ''}</strong> en ${entityName}:
                 </p>
                 
-                <div style="max-height: 400px; overflow-y: auto;">
+                <div style="max-height: 450px; overflow-y: auto; padding-right: 4px;">
                     ${changes.map(change => `
                         <div style="
                             background: var(--md-sys-color-surface-variant);
                             border-radius: 12px;
                             padding: 16px;
-                            margin-bottom: 12px;
+                            margin-bottom: 16px;
                             border-left: 4px solid var(--md-sys-color-primary);
                         ">
-                            <div class="md-typescale-label-large" style="
+                            <div style="
                                 color: var(--md-sys-color-primary);
-                                margin-bottom: 8px;
+                                margin-bottom: 12px;
                                 display: flex;
                                 align-items: center;
                                 gap: 8px;
+                                font-size: 14px;
+                                font-weight: 600;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
                             ">
                                 <md-icon style="font-size: 18px;">arrow_forward</md-icon>
                                 ${change.field}
@@ -98,22 +106,26 @@ async function showEditConfirmationDialog(originalData, newData, entityName = "R
                                     border-radius: 8px;
                                     padding: 12px;
                                 ">
-                                    <div class="md-typescale-label-small" style="
+                                    <div style="
                                         color: var(--md-sys-color-error);
-                                        margin-bottom: 4px;
+                                        margin-bottom: 6px;
                                         display: flex;
                                         align-items: center;
                                         gap: 4px;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.5px;
                                     ">
                                         <md-icon style="font-size: 16px;">remove</md-icon>
                                         Anterior
                                     </div>
-                                    <div class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface);">
+                                    <div style="color: var(--md-sys-color-on-surface); font-size: 14px; line-height: 20px;">
                                         ${change.oldValue || '<em style="opacity: 0.5;">Sin valor</em>'}
                                     </div>
                                 </div>
                                 
-                                <md-icon style="color: var(--md-sys-color-primary);">arrow_forward</md-icon>
+                                <md-icon style="color: var(--md-sys-color-primary); font-size: 24px;">arrow_forward</md-icon>
                                 
                                 <div style="
                                     background: rgba(76, 175, 80, 0.1);
@@ -121,17 +133,21 @@ async function showEditConfirmationDialog(originalData, newData, entityName = "R
                                     border-radius: 8px;
                                     padding: 12px;
                                 ">
-                                    <div class="md-typescale-label-small" style="
-                                        color: var(--md-sys-color-success);
-                                        margin-bottom: 4px;
+                                    <div style="
+                                        color: #2e7d32;
+                                        margin-bottom: 6px;
                                         display: flex;
                                         align-items: center;
                                         gap: 4px;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.5px;
                                     ">
                                         <md-icon style="font-size: 16px;">add</md-icon>
                                         Nuevo
                                     </div>
-                                    <div class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface);">
+                                    <div style="color: var(--md-sys-color-on-surface); font-size: 14px; line-height: 20px;">
                                         ${change.newValue || '<em style="opacity: 0.5;">Sin valor</em>'}
                                     </div>
                                 </div>
@@ -141,21 +157,21 @@ async function showEditConfirmationDialog(originalData, newData, entityName = "R
                 </div>
                 
                 <div style="
-                    background: var(--md-sys-color-warning-container);
+                    background: var(--md-sys-color-tertiary-container);
                     border-radius: 8px;
-                    padding: 12px;
-                    margin-top: 16px;
+                    padding: 12px 16px;
+                    margin-top: 20px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
                 ">
-                    <md-icon style="color: var(--md-sys-color-on-warning-container);">help</md-icon>
-                    <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-warning-container);">
+                    <md-icon style="color: var(--md-sys-color-on-tertiary-container);">help</md-icon>
+                    <span style="color: var(--md-sys-color-on-tertiary-container); font-size: 13px; line-height: 18px;">
                         ¿Deseas continuar con esta modificación?
                     </span>
                 </div>
             </div>
-            <div slot="actions">
+            <div slot="actions" style="padding: 0 24px 24px 24px; display: flex; gap: 8px; justify-content: flex-end;">
                 <md-text-button class="cancel-btn">
                     <md-icon slot="icon">cancel</md-icon>
                     Cancelar
@@ -204,28 +220,28 @@ async function showDeleteConfirmationDialog(entityName, entityData) {
             }));
 
         dialog.innerHTML = `
-            <div slot="headline">
+            <div slot="headline" style="font-size: 24px; font-weight: 500; padding: 24px 24px 0 24px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <md-icon style="color: var(--md-sys-color-error); font-size: 28px;">delete_forever</md-icon>
                     <span>Confirmar Eliminación</span>
                 </div>
             </div>
-            <div slot="content">
+            <div slot="content" style="padding: 24px; min-width: 400px; max-width: 600px;">
                 <div style="
                     background: var(--md-sys-color-error-container);
                     border-radius: 12px;
                     padding: 16px;
-                    margin-bottom: 16px;
+                    margin-bottom: 20px;
                     border-left: 4px solid var(--md-sys-color-error);
                 ">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                         <md-icon style="color: var(--md-sys-color-error); font-size: 24px;">warning</md-icon>
-                        <span class="md-typescale-title-medium" style="color: var(--md-sys-color-on-error-container);">
+                        <span style="color: var(--md-sys-color-on-error-container); font-size: 16px; font-weight: 500;">
                             ¡Esta acción no se puede deshacer!
                         </span>
                     </div>
-                    <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-error-container); margin: 0;">
-                        Estás a punto de eliminar permanentemente este registro de ${entityName}.
+                    <p style="color: var(--md-sys-color-on-error-container); margin: 0; font-size: 14px; line-height: 20px;">
+                        Estás a punto de eliminar este registro de ${entityName}.
                     </p>
                 </div>
 
@@ -233,22 +249,23 @@ async function showDeleteConfirmationDialog(entityName, entityData) {
                     background: var(--md-sys-color-surface-variant);
                     border-radius: 12px;
                     padding: 16px;
-                    margin-bottom: 16px;
+                    margin-bottom: 20px;
                 ">
-                    <div class="md-typescale-title-small" style="margin-bottom: 12px; color: var(--md-sys-color-primary);">
-                        Información del Registro:
+                    <div style="margin-bottom: 16px; color: var(--md-sys-color-primary); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Información del Registro
                     </div>
                     ${displayFields.map(field => `
                         <div style="
                             display: flex;
                             justify-content: space-between;
-                            padding: 8px 0;
+                            padding: 12px 0;
                             border-bottom: 1px solid var(--md-sys-color-outline-variant);
+                            gap: 16px;
                         ">
-                            <span class="md-typescale-label-medium" style="color: var(--md-sys-color-on-surface-variant);">
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-size: 14px; font-weight: 500; min-width: 120px;">
                                 ${field.field}:
                             </span>
-                            <span class="md-typescale-body-medium" style="font-weight: 500;">
+                            <span style="font-size: 14px; font-weight: 400; text-align: right; flex: 1;">
                                 ${field.value || '<em style="opacity: 0.5;">Sin valor</em>'}
                             </span>
                         </div>
@@ -258,18 +275,18 @@ async function showDeleteConfirmationDialog(entityName, entityData) {
                 <div style="
                     background: var(--md-sys-color-tertiary-container);
                     border-radius: 8px;
-                    padding: 12px;
+                    padding: 12px 16px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
                 ">
                     <md-icon style="color: var(--md-sys-color-on-tertiary-container);">info</md-icon>
-                    <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-tertiary-container);">
+                    <span style="color: var(--md-sys-color-on-tertiary-container); font-size: 13px; line-height: 18px;">
                         Verifica que sea el registro correcto antes de continuar.
                     </span>
                 </div>
             </div>
-            <div slot="actions">
+            <div slot="actions" style="padding: 0 24px 24px 24px; display: flex; gap: 8px; justify-content: flex-end;">
                 <md-text-button class="cancel-btn">
                     <md-icon slot="icon">cancel</md-icon>
                     Cancelar
@@ -359,6 +376,8 @@ function setupEditConfirmation(formSelector, entityName) {
         if (confirmed) {
             // Remover listener para evitar loop
             form.removeEventListener('submit', arguments.callee);
+            // Sincronizar md-filled-text-field antes de enviar
+            if (window.syncMdTextFields) syncMdTextFields(form);
             form.submit();
         }
     });
@@ -368,3 +387,62 @@ function setupEditConfirmation(formSelector, entityName) {
 window.showEditConfirmationDialog = showEditConfirmationDialog;
 window.showDeleteConfirmationDialog = showDeleteConfirmationDialog;
 window.setupEditConfirmation = setupEditConfirmation;
+
+/**
+ * Función simple de confirmación para compatibilidad con vistas existentes
+ * @param {string} message - Mensaje a mostrar
+ * @param {string} title - Título del diálogo (opcional)
+ * @returns {Promise<boolean>} - true si confirma, false si cancela
+ */
+async function showConfirmDialog(message, title = "Confirmar") {
+    return new Promise((resolve) => {
+        const dialog = document.createElement('md-dialog');
+        
+        dialog.innerHTML = `
+            <div slot="headline" style="font-size: 24px; font-weight: 500; padding: 24px 24px 16px 24px;">
+                ${title}
+            </div>
+            <div slot="content" style="padding: 0 24px 24px 24px; min-width: 280px; max-width: 560px;">
+                <p style="margin: 0; color: var(--md-sys-color-on-surface); font-size: 16px; line-height: 24px;">
+                    ${message}
+                </p>
+            </div>
+            <div slot="actions" style="padding: 0 24px 24px 24px; display: flex; gap: 8px; justify-content: flex-end;">
+                <md-text-button class="cancel-btn">
+                    Cancelar
+                </md-text-button>
+                <md-filled-button class="confirm-btn" style="--md-filled-button-container-color: var(--md-sys-color-error);">
+                    Confirmar
+                </md-filled-button>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        dialog.show();
+        
+        const confirmBtn = dialog.querySelector('.confirm-btn');
+        const cancelBtn = dialog.querySelector('.cancel-btn');
+        
+        confirmBtn.addEventListener('click', () => {
+            dialog.close();
+            document.body.removeChild(dialog);
+            resolve(true);
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            dialog.close();
+            document.body.removeChild(dialog);
+            resolve(false);
+        });
+        
+        dialog.addEventListener('close', () => {
+            if (dialog.parentElement) {
+                document.body.removeChild(dialog);
+            }
+            resolve(false);
+        });
+    });
+}
+
+// Exportar también la función simple
+window.showConfirmDialog = showConfirmDialog;

@@ -17,6 +17,48 @@
     <link rel="stylesheet" href="~/css/md3-select.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     
+    <!-- Estilos para centrar diálogos -->
+    <style>
+        /* Centrar diálogos Material Design */
+        md-dialog {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            margin: 0 !important;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        md-dialog::part(dialog) {
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+        }
+        
+        /* Overlay oscuro */
+        md-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Estilos para searchable select */
+        .searchable-select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .searchable-select-wrapper .search-button {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            z-index: 10;
+        }
+        
+        .md3-select-field.has-leading-icon.has-search-button {
+            padding-right: 48px;
+        }
+    </style>
+    
     <!-- Material Web Components -->
     <script type="importmap">
     {
@@ -154,6 +196,45 @@
     
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/searchable-select.js" asp-append-version="true"></script>
+    <script src="~/js/search-dialog.js" asp-append-version="true"></script>
+    <script src="~/js/confirmation-dialogs.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    @{
+        var validationErrors = ViewData.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .ToList();
+    }
+    @if (validationErrors.Any())
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var errors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(validationErrors));
+                var dialog = document.createElement('md-dialog');
+                dialog.innerHTML = `
+                    <div slot="headline" style="display:flex;align-items:center;gap:12px;">
+                        <md-icon style="color:var(--md-sys-color-error);font-size:28px;">error</md-icon>
+                        <span>Errores de validación</span>
+                    </div>
+                    <div slot="content" style="min-width:320px;">
+                        <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;">
+                            ${errors.map(e => `<li style="font-size:14px;line-height:20px;">${e}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div slot="actions">
+                        <md-filled-button id="close-validation-dialog">Entendido</md-filled-button>
+                    </div>
+                `;
+                document.body.appendChild(dialog);
+                dialog.show();
+                dialog.querySelector('#close-validation-dialog').addEventListener('click', function () {
+                    dialog.close();
+                    setTimeout(() => dialog.remove(), 300);
+                });
+            });
+        </script>
+    }
 </body>
 </html>

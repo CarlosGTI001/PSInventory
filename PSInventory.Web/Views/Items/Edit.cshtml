@@ -71,7 +71,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">devices</md-icon>
-                    <select asp-for="ArticuloId" class="md3-select" required>
+                    <select asp-for="ArticuloId" name="ArticuloId" class="md3-select" required>
                         <option value="">Seleccione un artículo</option>
                         @foreach (var articulo in ViewBag.Articulos)
                         {
@@ -87,7 +87,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">shopping_cart</md-icon>
-                    <select asp-for="CompraId" class="md3-select" required>
+                    <select asp-for="CompraId" name="CompraId" class="md3-select" required>
                         <option value="">Seleccione una compra</option>
                         @foreach (var compra in ViewBag.Compras)
                         {
@@ -118,7 +118,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">store</md-icon>
-                    <select asp-for="SucursalId" class="md3-select">
+                    <select asp-for="SucursalId" name="SucursalId" class="md3-select">
                         <option value="">Sin asignar (Disponible en almacén)</option>
                         @foreach (var sucursal in ViewBag.Sucursales)
                         {
@@ -134,7 +134,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">info</md-icon>
-                    <select asp-for="Estado" class="md3-select" required>
+                    <select asp-for="Estado" name="Estado" class="md3-select" required>
                         <option value="Disponible" selected="@(Model.Estado == "Disponible")">Disponible</option>
                         <option value="Asignado" selected="@(Model.Estado == "Asignado")">Asignado</option>
                         <option value="En Reparación" selected="@(Model.Estado == "En Reparación")">En Reparación</option>

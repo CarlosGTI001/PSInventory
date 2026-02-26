@@ -56,7 +56,7 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">location_on</md-icon>
-                    <select asp-for="RegionId" class="md3-select" required>
+                    <select asp-for="RegionId" name="RegionId" class="md3-select" required>
                         @foreach (var region in ViewBag.Regiones)
                         {
                             <option value="@region.Value" selected="@(Model.RegionId.ToString() == region.Value)">@region.Text</option>
@@ -123,4 +123,25 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (!form) return;
+            
+            const originalData = {};
+            new FormData(form).forEach((value, key) => originalData[key] = value);
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const currentData = {};
+                new FormData(form).forEach((value, key) => currentData[key] = value);
+                
+                if (await showEditConfirmationDialog(originalData, currentData, 'Sucursal')) {
+                    form.removeEventListener('submit', arguments.callee);
+                    if (window.syncMdTextFields) syncMdTextFields(form);
+                    form.submit();
+                }
+            });
+        });
+    </script>
 }

@@ -1,5 +1,35 @@
 // PSInventory - Site JavaScript
 
+/**
+ * Sincroniza los valores de md-filled-text-field y md-outlined-text-field
+ * a inputs ocultos para garantizar que se incluyan en el form submission.
+ * Necesario porque los web components de Material Web usan Shadow DOM
+ * y no todos los navegadores soportan Form-Associated Custom Elements.
+ */
+function syncMdTextFields(form) {
+    form.querySelectorAll('md-filled-text-field[name], md-outlined-text-field[name]').forEach(function(field) {
+        var name = field.getAttribute('name');
+        var value = field.value;
+        var hidden = form.querySelector('input[type="hidden"][name="' + name + '"][data-md-sync]');
+        if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = name;
+            hidden.setAttribute('data-md-sync', 'true');
+            form.appendChild(hidden);
+        }
+        hidden.value = value;
+    });
+}
+window.syncMdTextFields = syncMdTextFields;
+
+// Sincronización automática en todos los forms al hacer submit
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.tagName === 'FORM') {
+        syncMdTextFields(e.target);
+    }
+}, true); // capture=true para ejecutar antes de otros listeners
+
 // Toggle drawer on mobile
 document.addEventListener('DOMContentLoaded', function() {
     const menuButton = document.getElementById('menu-button');

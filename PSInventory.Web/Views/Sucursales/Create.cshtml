@@ -51,18 +51,30 @@
                 </md-filled-text-field>
                 <span asp-validation-for="Nombre" class="field-error"></span>
             </div>
-            
+        </div>
+        
+        <div class="form-row">
             <div class="form-field">
-                <div class="md3-select-field has-leading-icon">
-                    <md-icon class="md3-select-leading-icon">location_on</md-icon>
-                    <select asp-for="RegionId" class="md3-select" required>
-                        <option value="">Seleccione una región</option>
-                        @foreach (var region in ViewBag.Regiones)
-                        {
-                            <option value="@region.Value">@region.Text</option>
-                        }
-                    </select>
-                    <label class="md3-select-label">Región *</label>
+                <div class="searchable-select-wrapper">
+                    <div class="md3-select-field has-leading-icon">
+                        <md-icon class="md3-select-leading-icon">location_on</md-icon>
+                        <select asp-for="RegionId" name="RegionId" id="RegionId" class="md3-select" required>
+                            <option value="">Seleccione una región</option>
+                            @foreach (var region in ViewBag.Regiones)
+                            {
+                                <option value="@region.Value">@region.Text</option>
+                            }
+                        </select>
+                        <label class="md3-select-label">Región *</label>
+                    </div>
+                    <md-icon-button 
+                        class="search-button" 
+                        type="button"
+                        data-title="Buscar Región"
+                        data-placeholder="Escriba el nombre de la región..."
+                        style="position: absolute; right: 8px; top: 8px;">
+                        <md-icon>search</md-icon>
+                    </md-icon-button>
                 </div>
                 <p class="md3-select-supporting">Región donde está ubicada</p>
                 <span asp-validation-for="RegionId" class="field-error"></span>

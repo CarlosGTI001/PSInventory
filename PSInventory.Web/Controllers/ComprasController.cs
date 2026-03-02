@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Models.ViewModels;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace PSInventory.Web.Controllers
 {
@@ -24,78 +26,65 @@ namespace PSInventory.Web.Controllers
             var compras = await _context.Compras
                 .Where(c => !c.Eliminado)
                 .Include(c => c.Departamento)
-                .Include(c => c.Items)
+                .Include(c => c.Lotes)
+                    .ThenInclude(l => l.Items)
                 .OrderByDescending(c => c.FechaCompra)
                 .ToListAsync();
             return View(compras);
         }
 
         // GET: Compras/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            ViewBag.Departamentos = await _context.Departamentos
-                .Where(d => d.Activo && !d.Eliminado)
-                .OrderBy(d => d.Nombre)
-                .ToListAsync();
-                
-            return View(new Compra { 
+            return View(new Compra
+            {
                 FechaCompra = DateTime.Now,
-                FechaSolicitud = DateTime.Now,
                 Estado = "Solicitud",
-                UsuarioSolicitante = User.Identity?.Name
+                UsuarioSolicitante = User.Identity?.Name // Default to current user
             });
         }
 
         // POST: Compras/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("FechaCompra,FechaSolicitud,Proveedor,CostoTotal,NumeroFactura,Estado,Observaciones,DepartamentoId,UsuarioSolicitante")] Compra compra, IFormFile? facturaFile)
+        public async Task<IActionResult> Create([Bind("Proveedor,FechaCompra,NumeroFactura,Estado,Observaciones,RutaFactura,UsuarioSolicitante")] Compra compra, IFormFile? facturaFile)
         {
             if (ModelState.IsValid)
             {
-                // Guardar archivo de factura si se proporcionó
+                // Handle file upload
                 if (facturaFile != null && facturaFile.Length > 0)
                 {
-                    // Validar tamaño máximo (10 MB)
-                    const long maxFileSize = 10 * 1024 * 1024;
-                    if (facturaFile.Length > maxFileSize)
-                    {
-                        ModelState.AddModelError("", "El archivo no debe superar los 10 MB");
-                        return View(compra);
-                    }
-                    
                     var extension = Path.GetExtension(facturaFile.FileName).ToLowerInvariant();
                     var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
-                    
-                    if (allowedExtensions.Contains(extension))
+                    if (!allowedExtensions.Contains(extension))
                     {
-                        var fileName = $"factura_{DateTime.Now:yyyyMMddHHmmss}_{Path.GetRandomFileName()}{extension}";
-                        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "facturas");
-                        var filePath = Path.Combine(uploadsFolder, fileName);
-                        
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await facturaFile.CopyToAsync(stream);
-                        }
-                        
-                        compra.RutaFactura = $"/uploads/facturas/{fileName}";
-                    }
-                    else
-                    {
-                        ModelState.AddModelError("", "Solo se permiten archivos PDF, JPG, JPEG o PNG");
+                        ModelState.AddModelError("facturaFile", "Solo se permiten archivos PDF, JPG, JPEG o PNG.");
                         return View(compra);
                     }
+                    if (facturaFile.Length > 10 * 1024 * 1024) // Max 10MB
+                    {
+                        ModelState.AddModelError("facturaFile", "El archivo no debe superar los 10 MB.");
+                        return View(compra);
+                    }
+
+                    var fileName = $"{Guid.NewGuid()}{extension}";
+                    var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "facturas");
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await facturaFile.CopyToAsync(stream);
+                    }
+                    compra.RutaFactura = $"/uploads/facturas/{fileName}";
                 }
-                
+
                 _context.Add(compra);
                 await _context.SaveChangesAsync();
-                TempData["Success"] = "Compra registrada exitosamente";
-                return RedirectToAction(nameof(Index));
+                TempData["Success"] = "Compra creada exitosamente. Ahora puedes agregar lotes.";
+                return RedirectToAction("Details", new { id = compra.Id }); // Redirect to details to add lots
             }
             return View(compra);
         }
 
-        // GET: Compras/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -114,7 +103,7 @@ namespace PSInventory.Web.Controllers
         // POST: Compras/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,FechaCompra,Proveedor,CostoTotal,NumeroFactura,Estado,Observaciones,RutaFactura")] Compra compra, IFormFile? facturaFile)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Proveedor,FechaCompra,NumeroFactura,Estado,Observaciones,RutaFactura,UsuarioSolicitante")] Compra compra, IFormFile? facturaFile)
         {
             if (id != compra.Id)
             {
@@ -125,53 +114,45 @@ namespace PSInventory.Web.Controllers
             {
                 try
                 {
-                    // Guardar nuevo archivo de factura si se proporcionó
+                    // Handle file upload
                     if (facturaFile != null && facturaFile.Length > 0)
                     {
-                        // Validar tamaño máximo (10 MB)
-                        const long maxFileSize = 10 * 1024 * 1024;
-                        if (facturaFile.Length > maxFileSize)
-                        {
-                            ModelState.AddModelError("", "El archivo no debe superar los 10 MB");
-                            return View(compra);
-                        }
-                        
                         var extension = Path.GetExtension(facturaFile.FileName).ToLowerInvariant();
                         var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
-                        
-                        if (allowedExtensions.Contains(extension))
+                        if (!allowedExtensions.Contains(extension))
                         {
-                            // Eliminar archivo anterior si existe
-                            if (!string.IsNullOrEmpty(compra.RutaFactura))
-                            {
-                                var oldFilePath = Path.Combine(_webHostEnvironment.WebRootPath, compra.RutaFactura.TrimStart('/'));
-                                if (System.IO.File.Exists(oldFilePath))
-                                {
-                                    System.IO.File.Delete(oldFilePath);
-                                }
-                            }
-                            
-                            var fileName = $"factura_{DateTime.Now:yyyyMMddHHmmss}_{Path.GetRandomFileName()}{extension}";
-                            var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "facturas");
-                            var filePath = Path.Combine(uploadsFolder, fileName);
-                            
-                            using (var stream = new FileStream(filePath, FileMode.Create))
-                            {
-                                await facturaFile.CopyToAsync(stream);
-                            }
-                            
-                            compra.RutaFactura = $"/uploads/facturas/{fileName}";
-                        }
-                        else
-                        {
-                            ModelState.AddModelError("", "Solo se permiten archivos PDF, JPG, JPEG o PNG");
+                            ModelState.AddModelError("facturaFile", "Solo se permiten archivos PDF, JPG, JPEG o PNG.");
                             return View(compra);
                         }
+                        if (facturaFile.Length > 10 * 1024 * 1024) // Max 10MB
+                        {
+                            ModelState.AddModelError("facturaFile", "El archivo no debe superar los 10 MB.");
+                            return View(compra);
+                        }
+
+                        // Delete old file if exists
+                        if (!string.IsNullOrEmpty(compra.RutaFactura))
+                        {
+                            var oldFilePath = Path.Combine(_webHostEnvironment.WebRootPath, compra.RutaFactura.TrimStart('/'));
+                            if (System.IO.File.Exists(oldFilePath))
+                            {
+                                System.IO.File.Delete(oldFilePath);
+                            }
+                        }
+                        
+                        var fileName = $"{Guid.NewGuid()}{extension}";
+                        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "facturas");
+                        var filePath = Path.Combine(uploadsFolder, fileName);
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await facturaFile.CopyToAsync(stream);
+                        }
+                        compra.RutaFactura = $"/uploads/facturas/{fileName}";
                     }
-                    
+
                     _context.Update(compra);
                     await _context.SaveChangesAsync();
-                    TempData["Success"] = "Compra actualizada exitosamente";
+                    TempData["Success"] = "Compra actualizada exitosamente.";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -198,7 +179,8 @@ namespace PSInventory.Web.Controllers
             }
 
             var compra = await _context.Compras
-                .Include(c => c.Items)
+                .Include(c => c.Lotes)
+                .ThenInclude(l => l.Items)
                 .ThenInclude(i => i.Articulo)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -223,11 +205,11 @@ namespace PSInventory.Web.Controllers
                 return Json(new { success = false, message = "Compra no encontrada" });
             }
 
-            // Verificar si tiene items asociados activos
-            var tieneItems = await _context.Items.AnyAsync(i => i.CompraId == id && !i.Eliminado);
-            if (tieneItems)
+            // Verificar si tiene lotes asociados activos
+            var tieneLotes = await _context.Lotes.AnyAsync(l => l.CompraId == id && l.Items.Any(i => !i.Eliminado));
+            if (tieneLotes)
             {
-                return Json(new { success = false, message = "No se puede eliminar la compra porque tiene items asociados" });
+                return Json(new { success = false, message = "No se puede eliminar la compra porque tiene lotes con items asociados" });
             }
 
             // Soft delete

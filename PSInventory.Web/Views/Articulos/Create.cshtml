@@ -152,6 +152,34 @@
                 <span asp-validation-for="StockMinimo" class="field-error"></span>
             </div>
         </div>
+
+        <!-- Tipo de control: Con o Sin Serial -->
+        <div style="margin-top: 8px;">
+            <p class="md-typescale-label-large" style="margin: 0 0 12px 0; color: var(--md-sys-color-on-surface-variant);">
+                ¿Cómo se controlan las unidades de este artículo? *
+            </p>
+            <input type="hidden" name="RequiereSerial" id="RequiereSerialHidden" value="true" />
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <label id="card-serial" onclick="selectSerial(true)" style="cursor:pointer; display:flex; flex-direction:column; gap:10px; padding:20px; border-radius:12px; border:2px solid var(--md-sys-color-primary); background:rgba(4,115,148,0.08);">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <md-icon style="color:var(--md-sys-color-primary); font-size:28px;">qr_code_scanner</md-icon>
+                        <span class="md-typescale-title-medium" style="color:var(--md-sys-color-primary);">Con Serial</span>
+                    </div>
+                    <span class="md-typescale-body-small" style="color:var(--md-sys-color-on-surface-variant);">
+                        Cada unidad tiene un número de serie único (equipos, dispositivos, etc.)
+                    </span>
+                </label>
+                <label id="card-noSerial" onclick="selectSerial(false)" style="cursor:pointer; display:flex; flex-direction:column; gap:10px; padding:20px; border-radius:12px; border:2px solid var(--md-sys-color-outline-variant); background:transparent;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <md-icon style="font-size:28px; color:var(--md-sys-color-on-surface-variant);">format_list_numbered</md-icon>
+                        <span class="md-typescale-title-medium">Sin Serial</span>
+                    </div>
+                    <span class="md-typescale-body-small" style="color:var(--md-sys-color-on-surface-variant);">
+                        Se controla por cantidad total (cables, accesorios, consumibles, etc.)
+                    </span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <!-- Form Actions -->
@@ -169,4 +197,30 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function selectSerial(value) {
+            document.getElementById('RequiereSerialHidden').value = value ? 'true' : 'false';
+            const cardSerial   = document.getElementById('card-serial');
+            const cardNoSerial = document.getElementById('card-noSerial');
+            if (value) {
+                cardSerial.style.borderColor   = 'var(--md-sys-color-primary)';
+                cardSerial.style.background    = 'rgba(4,115,148,0.08)';
+                cardSerial.querySelector('md-icon').style.color = 'var(--md-sys-color-primary)';
+                cardSerial.querySelector('.md-typescale-title-medium').style.color = 'var(--md-sys-color-primary)';
+                cardNoSerial.style.borderColor = 'var(--md-sys-color-outline-variant)';
+                cardNoSerial.style.background  = 'transparent';
+                cardNoSerial.querySelector('md-icon').style.color = 'var(--md-sys-color-on-surface-variant)';
+                cardNoSerial.querySelector('.md-typescale-title-medium').style.color = '';
+            } else {
+                cardNoSerial.style.borderColor = 'var(--md-sys-color-secondary)';
+                cardNoSerial.style.background  = 'rgba(255,92,0,0.08)';
+                cardNoSerial.querySelector('md-icon').style.color = 'var(--md-sys-color-secondary)';
+                cardNoSerial.querySelector('.md-typescale-title-medium').style.color = 'var(--md-sys-color-secondary)';
+                cardSerial.style.borderColor   = 'var(--md-sys-color-outline-variant)';
+                cardSerial.style.background    = 'transparent';
+                cardSerial.querySelector('md-icon').style.color = 'var(--md-sys-color-on-surface-variant)';
+                cardSerial.querySelector('.md-typescale-title-medium').style.color = '';
+            }
+        }
+    </script>
 }

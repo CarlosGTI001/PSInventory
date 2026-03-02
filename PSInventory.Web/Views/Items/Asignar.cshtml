@@ -19,13 +19,13 @@
     <div>
         <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Asignar Item a Sucursal</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
-            Asignar el item <strong>@Model.Serial</strong> a una sucursal con responsable
+            Asignar el item <strong>@(Model.Serial ?? $"[Lote {Model.LoteId}]")</strong> a una sucursal con responsable
         </p>
     </div>
 </div>
 
 <form asp-action="Asignar" method="post">
-    <input type="hidden" name="id" value="@Model.Serial" />
+    <input type="hidden" name="id" value="@Model.Id" />
     
     <!-- Sección 1: Información del Item -->
     <div class="card" style="margin-bottom: 24px;">
@@ -43,7 +43,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Serial" 
-                    value="@Model.Serial"
+                    value="@(Model.Serial ?? $"[Lote {Model.LoteId}]")"
                     disabled
                     supporting-text="Identificador único">
                     <md-icon slot="leading-icon">qr_code</md-icon>
@@ -74,7 +74,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Costo" 
-                    value="$@Model.Costo.ToString("N2")"
+                    value="$@(Model.Lote?.CostoUnitario.ToString("N2"))"
                     disabled>
                     <md-icon slot="leading-icon">attach_money</md-icon>
                 </md-filled-text-field>
@@ -120,6 +120,25 @@
                 </md-filled-text-field>
             </div>
         </div>
+        
+        @if (!Model.Articulo.RequiereSerial && Model.Cantidad > 1)
+        {
+            <div class="form-row">
+                <div class="form-field">
+                    <md-filled-text-field 
+                        label="Cantidad a Asignar *" 
+                        name="cantidadAsignar" 
+                        type="number"
+                        min="1"
+                        max="@Model.Cantidad"
+                        value="@Model.Cantidad"
+                        required
+                        supporting-text="Máximo disponible: @Model.Cantidad">
+                        <md-icon slot="leading-icon">inventory_2</md-icon>
+                    </md-filled-text-field>
+                </div>
+            </div>
+        }
 
         <div class="form-row">
             <div class="form-field" style="width: 100%;">

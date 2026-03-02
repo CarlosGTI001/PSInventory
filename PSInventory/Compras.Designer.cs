@@ -28,6 +28,7 @@ namespace PSInventory
             this.lblCostoTotal = new MaterialSkin.Controls.MaterialLabel();
             this.lblFechaCompra = new MaterialSkin.Controls.MaterialLabel();
             this.lblEstado = new MaterialSkin.Controls.MaterialLabel();
+            this.btnGestionarLotes = new MaterialSkin.Controls.MaterialButton();
             ((System.ComponentModel.ISupportInitialize)(this.numCostoTotal)).BeginInit();
             this.SuspendLayout();
             // 
@@ -184,18 +185,40 @@ namespace PSInventory
             this.lblEstado.TabIndex = 10;
             this.lblEstado.Text = "Estado:";
             // 
+            // btnGestionarLotes
+            // 
+            this.btnGestionarLotes.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.btnGestionarLotes.Density = MaterialSkin.Controls.MaterialButton.MaterialButtonDensity.Default;
+            this.btnGestionarLotes.Depth = 0;
+            this.btnGestionarLotes.HighEmphasis = true;
+            this.btnGestionarLotes.Icon = null;
+            this.btnGestionarLotes.Location = new System.Drawing.Point(20, 460);
+            this.btnGestionarLotes.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            this.btnGestionarLotes.MouseState = MaterialSkin.MouseState.HOVER;
+            this.btnGestionarLotes.Name = "btnGestionarLotes";
+            this.btnGestionarLotes.NoAccentTextColor = System.Drawing.Color.Empty;
+            this.btnGestionarLotes.Size = new System.Drawing.Size(156, 36);
+            this.btnGestionarLotes.TabIndex = 11;
+            this.btnGestionarLotes.Text = "Gestionar Lotes";
+            this.btnGestionarLotes.Type = MaterialSkin.Controls.MaterialButton.MaterialButtonType.Contained;
+            this.btnGestionarLotes.UseAccentColor = false;
+            this.btnGestionarLotes.UseVisualStyleBackColor = true;
+            this.btnGestionarLotes.Visible = false; // Solo visible en modo edición
+            this.btnGestionarLotes.Click += new System.EventHandler(this.btnGestionarLotes_Click);
+            // 
             // Compras
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(440, 520);
             this.Controls.Add(this.lblEstado);
+            this.Controls.Add(this.btnGestionarLotes);
             this.Controls.Add(this.lblFechaCompra);
             this.Controls.Add(this.lblCostoTotal);
             this.Controls.Add(this.btnCancelar);
             this.Controls.Add(this.btnGuardar);
             this.Controls.Add(this.txtObservaciones);
-            this.Controls.Add(this.cmbEstado);
+            this.Controls.Add(this.btnGestionarLotes);
             this.Controls.Add(this.dtpFechaCompra);
             this.Controls.Add(this.numCostoTotal);
             this.Controls.Add(this.txtNumeroFactura);
@@ -224,5 +247,6 @@ namespace PSInventory
         private MaterialSkin.Controls.MaterialLabel lblCostoTotal;
         private MaterialSkin.Controls.MaterialLabel lblFechaCompra;
         private MaterialSkin.Controls.MaterialLabel lblEstado;
+        private MaterialSkin.Controls.MaterialButton btnGestionarLotes;
     }
 }

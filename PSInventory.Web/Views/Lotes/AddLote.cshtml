@@ -1,0 +1,236 @@
+@model PSInventory.Web.Models.ViewModels.CompraViewModel
+
+@{
+    ViewData["Title"] = "Agregar Lote de Compra";
+    var selectedArticulo = ViewBag.SelectedArticulo as PSData.Modelos.Articulo;
+    string fileLabelDefaultText = "Adjuntar factura escaneada"; // Always for new form
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Catálogo</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index", "Articulos")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Artículos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Details", "Articulos", new { id = selectedArticulo?.Id })" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">@selectedArticulo?.Marca @selectedArticulo?.Modelo</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Agregar Lote</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Agregar Lote de Compra</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Registra una nueva compra para el artículo: <strong>@selectedArticulo?.Marca @selectedArticulo?.Modelo</strong>
+        </p>
+    </div>
+</div>
+
+<form asp-action="AddLote" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    
+    <!-- Sección 1: Detalles de la Compra -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">receipt_long</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Información de la Compra</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Datos básicos de la compra asociada a este lote</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label class="md3-input-label">Fecha de Compra *</label>
+                <input type="date" 
+                       asp-for="FechaCompra" 
+                       class="md3-input-field" 
+                       required 
+                       placeholder="YYYY-MM-DD">
+                <p class="md3-input-supporting-text">Fecha en que se realizó la compra</p>
+                <span asp-validation-for="FechaCompra" class="field-error"></span>
+            </div>
+            
+            <div class="form-field">
+                <label class="md3-input-label">Proveedor *</label>
+                <input type="text" 
+                       asp-for="Proveedor" 
+                       class="md3-input-field" 
+                       required 
+                       placeholder="Nombre del Proveedor">
+                <p class="md3-input-supporting-text">Nombre o razón social del proveedor</p>
+                <span asp-validation-for="Proveedor" class="field-error"></span>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-field">
+                <label class="md3-input-label">Número de Factura</label>
+                <input type="text" 
+                       asp-for="NumeroFactura" 
+                       class="md3-input-field" 
+                       placeholder="Número de Factura">
+                <p class="md3-input-supporting-text">Número de factura del proveedor (opcional)</p>
+                <span asp-validation-for="NumeroFactura" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">check_circle</md-icon>
+                    <select asp-for="Estado" class="md3-select" required>
+                        <option value="Completada" selected="@(Model.Estado == "Completada")">Completada</option>
+                        <option value="Pendiente" selected="@(Model.Estado == "Pendiente")">Pendiente</option>
+                        <option value="Aprobada" selected="@(Model.Estado == "Aprobada")">Aprobada</option>
+                        <option value="Cancelada" selected="@(Model.Estado == "Cancelada")">Cancelada</option>
+                    </select>
+                    <label class="md3-select-label">Estado de la Compra *</label>
+                </div>
+                <p class="md3-select-supporting">Estado actual de la compra</p>
+                <span asp-validation-for="Estado" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="width: 100%;">
+                <label id="facturaFileLabel" style="display: flex; align-items: center; gap: 12px; padding: 20px; background: var(--md-sys-color-surface-container-high); border-radius: 12px; border: 2px dashed var(--md-sys-color-outline); cursor: pointer; transition: all 0.3s ease;" data-default-text="@fileLabelDefaultText">
+                    <input type="file" 
+                           name="facturaFile" 
+                           id="facturaFile" 
+                           accept=".pdf,.jpg,.jpeg,.png"
+                           style="display: none;"
+                           onchange="updateFileLabel(this)">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">attach_file</md-icon>
+                    </div>
+                    <div style="flex: 1;">
+                        <div id="fileLabel" class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface); margin-bottom: 4px;">
+                            Adjuntar factura escaneada
+                        </div>
+                        <div class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">
+                            PDF, JPG, JPEG o PNG (Opcional)
+                        </div>
+                    </div>
+                    <md-icon style="color: var(--md-sys-color-on-surface-variant);">cloud_upload</md-icon>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <label class="md3-input-label">Observaciones</label>
+                <textarea asp-for="Observaciones" 
+                          class="md3-input-field" 
+                          rows="4" 
+                          placeholder="Información relevante sobre la compra (opcional)"></textarea>
+                <p class="md3-input-supporting-text">Información relevante sobre la compra (opcional)</p>
+                <span asp-validation-for="Observaciones" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección 2: Detalles del Lote -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-tertiary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(91, 201, 229, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-tertiary); font-size: 28px;">inventory_2</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Detalles del Lote</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Información específica del lote de artículos</p>
+            </div>
+        </div>
+        
+        <!-- Hidden input for ArticuloId -->
+        <input type="hidden" name="Lotes[0].ArticuloId" value="@selectedArticulo?.Id" />
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field 
+                    label="Artículo" 
+                    value="@(selectedArticulo?.Marca + " " + selectedArticulo?.Modelo)"
+                    disabled>
+                    <md-icon slot="leading-icon">devices</md-icon>
+                </md-filled-text-field>
+            </div>
+            <div class="form-field">
+                <label class="md3-input-label">Cantidad del Lote *</label>
+                <input type="number" 
+                       asp-for="Lotes[0].Cantidad" 
+                       class="md3-input-field" 
+                       min="1" 
+                       required 
+                       placeholder="Cantidad">
+                <p class="md3-input-supporting-text">Cantidad de artículos en este lote</p>
+                <span asp-validation-for="Lotes[0].Cantidad" class="field-error"></span>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-field">
+                <label class="md3-input-label">Costo Unitario *</label>
+                <input type="number" 
+                       asp-for="Lotes[0].CostoUnitario" 
+                       class="md3-input-field" 
+                       step="0.01" 
+                       required 
+                       placeholder="Costo Unitario">
+                <p class="md3-input-supporting-text">Costo unitario de cada artículo en este lote</p>
+                <span asp-validation-for="Lotes[0].CostoUnitario" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <!-- Placeholder for layout -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Details", "Articulos", new { id = selectedArticulo?.Id })'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Lote de Compra
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        const defaultFileLabelText = document.getElementById('facturaFileLabel').getAttribute('data-default-text');
+
+        function updateFileLabel(input) {
+            const label = document.getElementById('facturaFileLabel'); // Use the ID
+            // const defaultFileLabelText = label.getAttribute('data-default-text'); // No need to re-read, already global
+
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(2); // KB
+                label.innerHTML = `<md-icon style="font-size: 20px; color: var(--md-sys-color-primary);">check_circle</md-icon> ${fileName} (${fileSize} KB)`;
+                
+                input.closest('label').style.borderColor = 'var(--md-sys-color-primary)';
+                input.closest('label').style.background = 'rgba(4, 115, 148, 0.08)';
+            } else {
+                label.innerHTML = `<div id="fileLabel" class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface); margin-bottom: 4px;">${defaultFileLabelText}</div>
+                                   <div class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">
+                                       PDF, JPG, JPEG o PNG (Opcional)
+                                   </div>`;
+                input.closest('label').style.borderColor = 'var(--md-sys-color-outline)';
+                input.closest('label').style.background = 'var(--md-sys-color-surface-container-high)';
+            }
+        }
+        
+        document.getElementById('facturaFileLabel')?.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT') {
+                document.getElementById('facturaFile').click();
+            }
+        });
+    </script>
+}

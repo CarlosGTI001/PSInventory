@@ -17,29 +17,7 @@
     <link rel="stylesheet" href="~/css/md3-select.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     
-    <!-- Estilos para centrar diálogos -->
     <style>
-        /* Centrar diálogos Material Design */
-        md-dialog {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            margin: 0 !important;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        md-dialog::part(dialog) {
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
-        }
-        
-        /* Overlay oscuro */
-        md-dialog::backdrop {
-            background: rgba(0, 0, 0, 0.5);
-        }
-        
         /* Estilos para searchable select */
         .searchable-select-wrapper {
             position: relative;
@@ -125,20 +103,6 @@
                 </a>
                 
                 <div class="nav-section">
-                    <span class="nav-section-title md-typescale-label-small">INVENTARIO</span>
-                </div>
-                
-                <a href="/Compras/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Compras" ? "active" : "")">
-                    <md-icon>shopping_cart</md-icon>
-                    <span>Compras</span>
-                </a>
-                
-                <a href="/Items/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Items" ? "active" : "")">
-                    <md-icon>qr_code_2</md-icon>
-                    <span>Items</span>
-                </a>
-                
-                <div class="nav-section">
                     <span class="nav-section-title md-typescale-label-small">UBICACIONES</span>
                 </div>
                 
@@ -164,6 +128,11 @@
                 <a href="/Movimientos/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Movimientos" ? "active" : "")">
                     <md-icon>history</md-icon>
                     <span>Historial Movimientos</span>
+                </a>
+                
+                <a href="/Despacho/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Despacho" ? "active" : "")">
+                    <md-icon>local_shipping</md-icon>
+                    <span>Enviar Artículos</span>
                 </a>
                 
                 <a href="/Reportes/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reportes" ? "active" : "")">
@@ -199,6 +168,55 @@
     <script src="~/js/search-dialog.js" asp-append-version="true"></script>
     <script src="~/js/confirmation-dialogs.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Fix md-dialog centering: el <dialog> interno no tiene atributo part,
+         solo se puede centrar inyectando CSS en el shadowRoot -->
+    <script>
+    (function () {
+        const DIALOG_CENTER_CSS = `
+            dialog {
+                position: fixed !important;
+                inset: 0 !important;
+                margin: auto !important;
+                max-height: min(90vh, 100% - 48px) !important;
+                max-width: min(90vw, 100% - 48px) !important;
+            }
+        `;
+
+        function fixMdDialog(el) {
+            if (!el || el.tagName !== 'MD-DIALOG') return;
+            // Esperar a que el shadow root esté disponible
+            if (!el.shadowRoot) {
+                requestAnimationFrame(() => fixMdDialog(el));
+                return;
+            }
+            const style = document.createElement('style');
+            style.textContent = DIALOG_CENTER_CSS;
+            el.shadowRoot.appendChild(style);
+        }
+
+        // Fijar elementos existentes cuando el DOM esté listo
+        function fixAll() {
+            document.querySelectorAll('md-dialog').forEach(fixMdDialog);
+        }
+
+        // Observar nuevos md-dialog añadidos dinámicamente
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(m => m.addedNodes.forEach(node => {
+                if (!node || node.nodeType !== 1) return;
+                if (node.tagName === 'MD-DIALOG') fixMdDialog(node);
+                node.querySelectorAll && node.querySelectorAll('md-dialog').forEach(fixMdDialog);
+            }));
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fixAll);
+        } else {
+            fixAll();
+        }
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    </script>
 
     @{
         var validationErrors = ViewData.ModelState.Values

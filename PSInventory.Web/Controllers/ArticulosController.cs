@@ -33,13 +33,13 @@ namespace PSInventory.Web.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Categorias = new SelectList(await _context.Categorias.Where(c => !c.Eliminado).OrderBy(c => c.Nombre).ToListAsync(), "Id", "Nombre");
-            return View();
+            return View(new Articulo { RequiereSerial = true });
         }
 
         // POST: Articulos/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Marca,Modelo,Descripcion,CategoriaId,StockMinimo,Especificaciones")] Articulo articulo)
+        public async Task<IActionResult> Create([Bind("Marca,Modelo,Descripcion,CategoriaId,StockMinimo,Especificaciones,RequiereSerial")] Articulo articulo)
         {
             if (articulo.CategoriaId <= 0 || !await _context.Categorias.AnyAsync(c => c.Id == articulo.CategoriaId && !c.Eliminado))
             {
@@ -54,6 +54,30 @@ namespace PSInventory.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
             ViewBag.Categorias = new SelectList(await _context.Categorias.Where(c => !c.Eliminado).OrderBy(c => c.Nombre).ToListAsync(), "Id", "Nombre", articulo.CategoriaId);
+            return View(articulo);
+        }
+
+        // GET: Articulos/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var articulo = await _context.Articulos
+                .Include(a => a.Categoria)
+                .Include(a => a.Lotes.OrderByDescending(l => l.Compra.FechaCompra))
+                    .ThenInclude(l => l.Compra)
+                .Include(a => a.Lotes)
+                    .ThenInclude(l => l.Items)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (articulo == null)
+            {
+                return NotFound();
+            }
+
             return View(articulo);
         }
 
@@ -79,7 +103,7 @@ namespace PSInventory.Web.Controllers
         // POST: Articulos/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Marca,Modelo,Descripcion,CategoriaId,StockMinimo,Especificaciones")] Articulo articulo)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Marca,Modelo,Descripcion,CategoriaId,StockMinimo,Especificaciones,RequiereSerial")] Articulo articulo)
         {
             if (id != articulo.Id)
             {

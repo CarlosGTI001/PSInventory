@@ -12,8 +12,8 @@ using PSData.Datos;
 namespace PSData.Migrations
 {
     [DbContext(typeof(PSDatos))]
-    [Migration("20260213150128_depto1")]
-    partial class depto1
+    [Migration("20260228193948_InitialConLotes")]
+    partial class InitialConLotes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -59,6 +59,9 @@ namespace PSData.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("RequiereSerial")
+                        .HasColumnType("bit");
 
                     b.Property<int>("StockMinimo")
                         .HasColumnType("int");
@@ -221,18 +224,17 @@ namespace PSData.Migrations
 
             modelBuilder.Entity("PSData.Modelos.Item", b =>
                 {
-                    b.Property<string>("Serial")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ArticuloId")
                         .HasColumnType("int");
 
-                    b.Property<int>("CompraId")
+                    b.Property<int>("Cantidad")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("Costo")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("Eliminado")
                         .HasColumnType("bit");
@@ -257,6 +259,9 @@ namespace PSData.Migrations
                     b.Property<DateTime?>("FechaUltimaTransferencia")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("LoteId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("MesesGarantia")
                         .HasColumnType("int");
 
@@ -267,6 +272,10 @@ namespace PSData.Migrations
                     b.Property<string>("ResponsableEmpleado")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Serial")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("SucursalId")
                         .HasColumnType("nvarchar(50)");
@@ -279,21 +288,50 @@ namespace PSData.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("Serial");
+                    b.HasKey("Id");
 
                     b.HasIndex("ArticuloId")
                         .HasDatabaseName("IX_Item_ArticuloId");
 
-                    b.HasIndex("CompraId")
-                        .HasDatabaseName("IX_Item_CompraId");
-
                     b.HasIndex("Estado")
                         .HasDatabaseName("IX_Item_Estado");
+
+                    b.HasIndex("LoteId")
+                        .HasDatabaseName("IX_Item_LoteId");
 
                     b.HasIndex("SucursalId")
                         .HasDatabaseName("IX_Item_SucursalId");
 
                     b.ToTable("Items");
+                });
+
+            modelBuilder.Entity("PSData.Modelos.Lote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ArticuloId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompraId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CostoUnitario")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticuloId");
+
+                    b.HasIndex("CompraId");
+
+                    b.ToTable("Lotes");
                 });
 
             modelBuilder.Entity("PSData.Modelos.MovimientoItem", b =>
@@ -304,16 +342,17 @@ namespace PSData.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("FechaMovimiento")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("FechaRecepcion")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ItemSerial")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Motivo")
                         .IsRequired()
@@ -347,8 +386,8 @@ namespace PSData.Migrations
                     b.HasIndex("FechaMovimiento")
                         .HasDatabaseName("IX_MovimientoItem_FechaMovimiento");
 
-                    b.HasIndex("ItemSerial")
-                        .HasDatabaseName("IX_MovimientoItem_ItemSerial");
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("IX_MovimientoItem_ItemId");
 
                     b.HasIndex("SucursalDestinoId");
 
@@ -359,11 +398,11 @@ namespace PSData.Migrations
 
             modelBuilder.Entity("PSData.Modelos.Region", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("RegionId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RegionId"));
 
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
@@ -387,7 +426,7 @@ namespace PSData.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("Id");
+                    b.HasKey("RegionId");
 
                     b.ToTable("Regiones");
                 });
@@ -499,13 +538,13 @@ namespace PSData.Migrations
                     b.HasOne("PSData.Modelos.Articulo", "Articulo")
                         .WithMany("Items")
                         .HasForeignKey("ArticuloId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PSData.Modelos.Compra", "Compra")
+                    b.HasOne("PSData.Modelos.Lote", "Lote")
                         .WithMany("Items")
-                        .HasForeignKey("CompraId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("LoteId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("PSData.Modelos.Sucursal", "Sucursal")
@@ -514,16 +553,35 @@ namespace PSData.Migrations
 
                     b.Navigation("Articulo");
 
-                    b.Navigation("Compra");
+                    b.Navigation("Lote");
 
                     b.Navigation("Sucursal");
+                });
+
+            modelBuilder.Entity("PSData.Modelos.Lote", b =>
+                {
+                    b.HasOne("PSData.Modelos.Articulo", "Articulo")
+                        .WithMany("Lotes")
+                        .HasForeignKey("ArticuloId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PSData.Modelos.Compra", "Compra")
+                        .WithMany("Lotes")
+                        .HasForeignKey("CompraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Articulo");
+
+                    b.Navigation("Compra");
                 });
 
             modelBuilder.Entity("PSData.Modelos.MovimientoItem", b =>
                 {
                     b.HasOne("PSData.Modelos.Item", "Item")
                         .WithMany()
-                        .HasForeignKey("ItemSerial")
+                        .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -559,6 +617,8 @@ namespace PSData.Migrations
             modelBuilder.Entity("PSData.Modelos.Articulo", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Lotes");
                 });
 
             modelBuilder.Entity("PSData.Modelos.Categoria", b =>
@@ -568,12 +628,17 @@ namespace PSData.Migrations
 
             modelBuilder.Entity("PSData.Modelos.Compra", b =>
                 {
-                    b.Navigation("Items");
+                    b.Navigation("Lotes");
                 });
 
             modelBuilder.Entity("PSData.Modelos.Departamento", b =>
                 {
                     b.Navigation("Compras");
+                });
+
+            modelBuilder.Entity("PSData.Modelos.Lote", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("PSData.Modelos.Region", b =>

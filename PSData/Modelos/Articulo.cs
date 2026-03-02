@@ -34,6 +34,8 @@ namespace PSData.Modelos
         [StringLength(2000)]
         public string Especificaciones { get; set; }
 
+        public bool RequiereSerial { get; set; } = true; // Por defecto requiere serial
+
         // Soft Delete
         public bool Eliminado { get; set; } = false;
         public DateTime? FechaEliminacion { get; set; }
@@ -41,5 +43,6 @@ namespace PSData.Modelos
         public string? UsuarioEliminacion { get; set; }
 
         public virtual ICollection<Item> Items { get; set; }
+        public virtual ICollection<Lote> Lotes { get; set; }
     }
 }

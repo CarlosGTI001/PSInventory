@@ -107,7 +107,7 @@
             "Cancelada" => "cancel",
             _ => "info"
         };
-        var itemsCount = compra.Items?.Count ?? 0;
+        var itemsCount = compra.Lotes?.Sum(l => l.Items?.Count ?? 0) ?? 0;
 
         <div class="card" style="padding: 0; overflow: hidden; transition: all 0.3s ease; cursor: pointer;" 
                           onclick="window.location.href='@Url.Action("Details", new { id = compra.Id })'"

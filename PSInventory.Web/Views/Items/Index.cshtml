@@ -182,7 +182,11 @@ else
                         <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
-                                <strong>@item.Serial</strong>
+                                <strong>@(item.Serial ?? $"[Lote {item.LoteId}]")</strong>
+                                @if (item.Cantidad > 1 || item.Serial == null)
+                                {
+                                    <span class="badge badge-info" style="margin-left: 8px;">Cant: @item.Cantidad</span>
+                                }
                             </div>
                         </td>
                         <td>@item.Articulo?.Marca @item.Articulo?.Modelo</td>
@@ -203,7 +207,7 @@ else
                             }
                         </td>
                         <td>
-                            <strong style="color: var(--md-sys-color-primary);">$@item.Costo.ToString("N2")</strong>
+                            <strong style="color: var(--md-sys-color-primary);">$@(item.Lote?.CostoUnitario.ToString("N2"))</strong>
                         </td>
                         <td>
                             <span class="badge @estadoClass" style="display: flex; align-items: center; gap: 6px; width: fit-content;">
@@ -214,20 +218,20 @@ else
                         <td class="actions-cell">
                             @if (item.Estado == "Disponible" && string.IsNullOrEmpty(item.SucursalId))
                             {
-                                <md-icon-button onclick="window.location.href='@Url.Action("Asignar", new { id = item.Serial })'" title="Asignar a sucursal">
+                                <md-icon-button onclick="window.location.href='@Url.Action("Asignar", new { id = item.Id })'" title="Asignar a sucursal">
                                     <md-icon>send</md-icon>
                                 </md-icon-button>
                             }
                             @if (item.Estado == "Asignado" && !string.IsNullOrEmpty(item.SucursalId))
                             {
-                                <md-icon-button onclick="window.location.href='@Url.Action("Transferir", new { id = item.Serial })'" title="Transferir a otra sucursal">
+                                <md-icon-button onclick="window.location.href='@Url.Action("Transferir", new { id = item.Id })'" title="Transferir a otra sucursal">
                                     <md-icon>swap_horiz</md-icon>
                                 </md-icon-button>
                             }
-                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Serial })'">
+                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button onclick="confirmDelete('@item.Serial', '@item.Articulo?.Marca @item.Articulo?.Modelo')">
+                            <md-icon-button onclick="confirmDelete(@item.Id, '@item.Articulo?.Marca @item.Articulo?.Modelo')">
                                 <md-icon>delete</md-icon>
                             </md-icon-button>
                         </td>

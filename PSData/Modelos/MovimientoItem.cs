@@ -14,10 +14,12 @@ namespace PSData.Modelos
         public int Id { get; set; }
 
         [Required]
-        [StringLength(100)]
-        public string ItemSerial { get; set; }
-        [ForeignKey("ItemSerial")]
+        public int ItemId { get; set; }
+        [ForeignKey("ItemId")]
         public virtual Item Item { get; set; }
+
+        [Required]
+        public int Cantidad { get; set; } = 1; // Cantidad movida
 
         [StringLength(50)]
         public string SucursalOrigenId { get; set; }

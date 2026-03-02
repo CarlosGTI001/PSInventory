@@ -26,7 +26,8 @@
 
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Serial" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="Cantidad" />
     
     <!-- Sección 1: Información Básica -->
     <div class="card" style="margin-bottom: 24px;">
@@ -44,26 +45,22 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Número de Serie" 
-                    name="SerialDisplay" 
+                    name="Serial" 
                     value="@Model.Serial"
-                    disabled
-                    supporting-text="El número de serie no se puede modificar">
+                    @(Model.Serial == null ? "disabled" : "")
+                    supporting-text="El número de serie no se puede modificar si se agrupa por cantidad">
                     <md-icon slot="leading-icon">qr_code</md-icon>
                 </md-filled-text-field>
             </div>
             
             <div class="form-field">
                 <md-filled-text-field 
-                    label="Costo *" 
-                    name="Costo" 
-                    type="number"
-                    step="0.01"
-                    required
-                    value="@Model.Costo"
-                    supporting-text="Precio de adquisición del item">
-                    <md-icon slot="leading-icon">attach_money</md-icon>
+                    label="Cantidad" 
+                    value="@Model.Cantidad"
+                    disabled
+                    supporting-text="Cantidad actual agrupada">
+                    <md-icon slot="leading-icon">inventory_2</md-icon>
                 </md-filled-text-field>
-                <span asp-validation-for="Costo" class="field-error"></span>
             </div>
         </div>
         
@@ -87,17 +84,17 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">shopping_cart</md-icon>
-                    <select asp-for="CompraId" name="CompraId" class="md3-select" required>
-                        <option value="">Seleccione una compra</option>
-                        @foreach (var compra in ViewBag.Compras)
+                    <select asp-for="LoteId" name="LoteId" class="md3-select" required>
+                        <option value="">Seleccione un lote</option>
+                        @foreach (var lote in ViewBag.Lotes)
                         {
-                            <option value="@compra.Value" selected="@(Model.CompraId.ToString() == compra.Value)">@compra.Text</option>
+                            <option value="@lote.Value" selected="@(Model.LoteId.ToString() == lote.Value)">@lote.Text</option>
                         }
                     </select>
-                    <label class="md3-select-label">Orden de Compra *</label>
+                    <label class="md3-select-label">Lote (Compra) *</label>
                 </div>
-                <p class="md3-select-supporting">Compra asociada a este item</p>
-                <span asp-validation-for="CompraId" class="field-error"></span>
+                <p class="md3-select-supporting">Lote asociado a este item</p>
+                <span asp-validation-for="LoteId" class="field-error"></span>
             </div>
         </div>
     </div>

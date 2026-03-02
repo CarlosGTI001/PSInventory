@@ -25,6 +25,7 @@ namespace PSInventory
         {
             compraIdEditar = compraId;
             CargarDatosCompraAsync(compraId);
+            btnGestionarLotes.Visible = true; // Mostrar el botón si estamos editando
         }
 
         private void InicializarEstados()
@@ -60,6 +61,7 @@ namespace PSInventory
                                 
                                 this.Text = "Editar Compra";
                                 btnGuardar.Text = "Actualizar";
+                                btnGestionarLotes.Visible = true;
                             }));
                         }
                     }
@@ -100,7 +102,7 @@ namespace PSInventory
                         }
                         else
                         {
-                            db.Compras.Add(new Compra
+                            var nuevaCompra = new Compra
                             {
                                 Proveedor = txtProveedor.Text.Trim(),
                                 NumeroFactura = txtNumeroFactura.Text.Trim(),
@@ -108,8 +110,10 @@ namespace PSInventory
                                 FechaCompra = dtpFechaCompra.Value,
                                 Estado = cmbEstado.SelectedItem.ToString(),
                                 Observaciones = txtObservaciones.Text.Trim()
-                            });
+                            };
+                            db.Compras.Add(nuevaCompra);
                             db.SaveChanges();
+                            compraIdEditar = nuevaCompra.Id; // Asignar el ID de la nueva compra
                             return true;
                         }
                     }
@@ -119,12 +123,34 @@ namespace PSInventory
                 if (exito)
                 {
                     this.DialogResult = DialogResult.OK;
+                    // Si es una nueva compra, mostrar el botón de gestionar lotes al guardar por primera vez
+                    if (!compraIdEditar.HasValue) 
+                    {
+                        btnGestionarLotes.Visible = true;
+                    }
                     this.Close();
                 }
             }
             finally
             {
                 loadingHelper.Hide();
+            }
+        }
+
+        private void btnGestionarLotes_Click(object sender, EventArgs e)
+        {
+            if (compraIdEditar.HasValue)
+            {
+                // Aquí abriremos el nuevo formulario GestionLotesForm, pasándole el compraIdEditar
+                var frmGestionLotes = new GestionLotesForm(compraIdEditar.Value);
+                frmGestionLotes.ShowDialog();
+                // Opcional: Recargar datos de la compra si los lotes afectan el costo total, etc.
+                // CargarDatosCompraAsync(compraIdEditar.Value);
+            }
+            else
+            {
+                MaterialMessageBox.Show("Primero debe guardar la compra para poder gestionar sus lotes.", "Advertencia", 
+                    MessageBoxButtons.OK, false, FlexibleMaterialForm.ButtonsPosition.Center);
             }
         }
 

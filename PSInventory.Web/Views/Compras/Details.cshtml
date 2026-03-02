@@ -85,28 +85,79 @@
         }
     </div>
     
-    @if (Model.Items?.Any() == true)
+    @if (Model.Lotes?.Any() == true)
     {
         <div class="detail-card" style="margin-top: 24px;">
-            <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Items Asociados (@Model.Items.Count)</h2>
+            <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Lotes de esta Compra (@Model.Lotes.Count)</h2>
             
             <div class="data-table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Artículo</th>
-                            <th>N° Serie</th>
-                            <th>Costo</th>
+                            <th>Cantidad Lote</th>
+                            <th>Costo Unitario</th>
+                            <th>Items Registrados</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lote in Model.Lotes)
+                        {
+                            <tr>
+                                <td>@lote.Articulo?.Marca @lote.Articulo?.Modelo</td>
+                                <td>@lote.Cantidad</td>
+                                <td>$@lote.CostoUnitario.ToString("N2")</td>
+                                <td>@(lote.Items?.Count ?? 0)</td>
+                                <td>
+                                    <md-filled-tonal-button onclick="window.location.href='@Url.Action("Details", "Lotes", new { id = lote.Id })'">
+                                        <md-icon slot="icon">qr_code_scanner</md-icon>
+                                        Gestionar Items
+                                    </md-filled-tonal-button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state" style="margin-top: 24px;">
+            <md-icon style="font-size: 48px; color: var(--md-sys-color-outline);">inventory_2</md-icon>
+            <p class="md-typescale-body-medium">No hay lotes asociados a esta compra</p>
+        </div>
+    }
+
+    @* Original Items Asociados section, now redundant. Can be removed or modified to show aggregated view. *@
+    @if (Model.Lotes?.SelectMany(l => l.Items)?.Any() == true)
+    {
+        <div class="detail-card" style="margin-top: 24px;">
+            <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Items Individuales Registrados (@Model.Lotes.Sum(l => l.Items?.Count ?? 0))</h2>
+            
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Serial / ID</th>
+                            <th>Artículo</th>
+                            <th>Costo Unitario</th>
                             <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in Model.Items)
+                        @foreach (var item in Model.Lotes.SelectMany(l => l.Items).OrderBy(i => i.Serial ?? i.Id.ToString()))
                         {
                             <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
+                                        <strong>@(item.Serial ?? $"ID: {item.Id}")</strong>
+                                    </div>
+                                </td>
                                 <td>@item.Articulo?.Marca @item.Articulo?.Modelo</td>
-                                <td>@item.Serial</td>
-                                <td>$@item.Costo.ToString("N2")</td>
+                                <td>$@(item.Lote?.CostoUnitario.ToString("N2"))</td>
                                 <td>
                                     <span class="badge @(item.Estado == "Activo" ? "badge-success" : "")">
                                         @item.Estado

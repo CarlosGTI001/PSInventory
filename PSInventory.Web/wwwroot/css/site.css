@@ -457,8 +457,53 @@ body {
     gap: 4px;
 }
 
-.form-field md-filled-text-field {
+/* Styles for standard HTML inputs that replace md-filled-text-field */
+.md3-input-label {
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant); /* label-text-color */
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.md3-input-field {
     width: 100%;
+    padding: 16px 12px; /* Adjusted padding to match md-filled-text-field */
+    background: var(--md-sys-color-surface-container-highest); /* container-color */
+    color: var(--md-sys-color-on-surface); /* input-text-color */
+    border: none;
+    border-bottom: 1px solid var(--md-sys-color-outline); /* default active-indicator-color */
+    border-radius: 4px 4px 0 0;
+    font-size: 16px;
+    font-family: 'Roboto', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.md3-input-field:focus {
+    outline: none;
+    border-bottom: 2px solid var(--md-sys-color-primary); /* focus-active-indicator-color */
+    padding-bottom: 15px; /* Adjust padding for thicker border */
+}
+
+.md3-input-field:hover {
+    background: var(--md-sys-color-surface-container-high);
+    border-bottom-color: var(--md-sys-color-on-surface); /* hover-active-indicator-color */
+}
+
+.md3-input-field::placeholder {
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.7;
+}
+
+/* Specific styling for textarea */
+textarea.md3-input-field {
+    min-height: 80px; /* default height for textarea */
+    resize: vertical;
+}
+
+.md3-input-supporting-text {
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 4px;
 }
 
 .form-actions {
@@ -866,4 +911,18 @@ md-filter-chip {
     font-size: 48px;
     margin-bottom: 16px;
     opacity: 0.7;
+}
+
+/* ── Centrar todos los <dialog> nativos ─────────────────────────── */
+dialog {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.45);
 }

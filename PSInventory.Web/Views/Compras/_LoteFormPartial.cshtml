@@ -1,0 +1,55 @@
+@model PSInventory.Web.Models.ViewModels.LoteViewModel
+
+@{
+    Layout = null; // This partial view doesn't need its own layout
+    string fileLabelDefaultText = "Adjuntar factura escaneada"; // Defined for clarity, though not directly used here
+}
+
+<div class="card" style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--md-sys-color-outline-variant);" data-lote-index="@ViewData["index"]">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 class="md-typescale-title-medium">Lote #@((int)ViewData["index"] + 1)</h4>
+        <md-icon-button type="button" class="remove-lote-btn">
+            <md-icon>delete</md-icon>
+        </md-icon-button>
+    </div>
+    @if (Model != null && Model.Id.HasValue)
+    {
+        <input type="hidden" name="Lotes[@ViewData["index"]].Id" value="@Model.Id" />
+    }
+    <div class="form-row">
+        <div class="form-field">
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">devices</md-icon>
+                                                <select name="Lotes[@ViewData["index"]].ArticuloId" class="md3-select" required>
+                                                    <option value="">Seleccione un artículo</option>
+                                                    @foreach (var articulo in ViewBag.Articulos as List<SelectListItem>)
+                                                    {
+                                                        <option value="@articulo.Value">@articulo.Text</option>
+                                                    }
+                                                </select>                <label class="md3-select-label">Artículo *</label>
+            </div>
+        </div>
+        <div class="form-field">
+            <md-filled-text-field 
+                label="Cantidad *" 
+                name="Lotes[@ViewData["index"]].Cantidad" 
+                type="number"
+                min="1"
+                value="@(Model?.Cantidad ?? 1)"
+                required>
+                <md-icon slot="leading-icon">format_list_numbered</md-icon>
+            </md-filled-text-field>
+        </div>
+        <div class="form-field">
+            <md-filled-text-field 
+                label="Costo Unitario *" 
+                name="Lotes[@ViewData["index"]].CostoUnitario" 
+                type="number"
+                step="0.01"
+                value="@(Model?.CostoUnitario.ToString("F2") ?? "0.00")"
+                required>
+                <md-icon slot="leading-icon">attach_money</md-icon>
+            </md-filled-text-field>
+        </div>
+    </div>
+</div>

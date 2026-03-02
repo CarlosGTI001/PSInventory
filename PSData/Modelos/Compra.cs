@@ -50,7 +50,7 @@ namespace PSData.Modelos
         [StringLength(100)]
         public string? UsuarioEliminacion { get; set; }
 
-        public virtual ICollection<Item> Items { get; set; }
+        public virtual ICollection<Lote> Lotes { get; set; }
     }
 }
 

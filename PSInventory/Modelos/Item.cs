@@ -11,8 +11,9 @@ namespace PSInventory.Modelos
     public class Item
     {
         [Key]
-        [Required]
-        public string Serial { get; set; }
+        public int Id { get; set; }
+        public string? Serial { get; set; }
+        public int Cantidad { get; set; } = 1;
         [Required]
         public int ArticuloId { get; set; }
 
@@ -23,13 +24,11 @@ namespace PSInventory.Modelos
         [NotMapped]
         public Sucursal? Sucursal { get; set; }
         public string? Estado { get; set; } 
-        public decimal Costo { get; set; }
-
         [Required]
-        public int CompraId   { get; set; }
+        public int LoteId   { get; set; }
 
         [NotMapped]
-        public Compra? Compra { get; set; }
+        public Lote? Lote { get; set; }
         public string? Departamento { get; set; }
     }
 }

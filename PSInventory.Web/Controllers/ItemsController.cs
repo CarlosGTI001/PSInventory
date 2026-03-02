@@ -24,7 +24,8 @@ namespace PSInventory.Web.Controllers
                 .Where(i => !i.Eliminado)
                 .Include(i => i.Articulo)
                 .ThenInclude(a => a.Categoria)
-                .Include(i => i.Compra)
+                .Include(i => i.Lote)
+                .ThenInclude(l => l.Compra)
                 .Include(i => i.Sucursal)
                 .AsQueryable();
 
@@ -52,10 +53,16 @@ namespace PSInventory.Web.Controllers
                 Display = $"{a.Marca} {a.Modelo}" 
             }), "Id", "Display");
             
-            ViewBag.Compras = new SelectList(await _context.Compras
-                .Where(c => !c.Eliminado)
-                .OrderByDescending(c => c.FechaCompra)
-                .ToListAsync(), "Id", "Proveedor");
+            var lotes = await _context.Lotes
+                .Include(l => l.Compra)
+                .Include(l => l.Articulo)
+                .Where(l => !l.Compra.Eliminado)
+                .OrderByDescending(l => l.Compra.FechaCompra)
+                .ToListAsync();
+            ViewBag.Lotes = new SelectList(lotes.Select(l => new {
+                Id = l.Id,
+                Display = $"Lote {l.Id} - {l.Compra.Proveedor} ({l.Articulo.Modelo})"
+            }), "Id", "Display");
             ViewBag.Sucursales = new SelectList(await _context.Sucursales
                 .Where(s => !s.Eliminado)
                 .OrderBy(s => s.Nombre)
@@ -70,7 +77,7 @@ namespace PSInventory.Web.Controllers
         // POST: Items/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Serial,ArticuloId,CompraId,SucursalId,Costo,Estado,MesesGarantia,FechaGarantiaInicio,Observaciones")] Item item)
+        public async Task<IActionResult> Create([Bind("Serial,ArticuloId,LoteId,SucursalId,Estado,MesesGarantia,FechaGarantiaInicio,Observaciones")] Item item)
         {
             if (ModelState.IsValid)
             {
@@ -92,13 +99,14 @@ namespace PSInventory.Web.Controllers
                 Display = $"{a.Marca} {a.Modelo}" 
             }), "Id", "Display", item.ArticuloId);
             
-            ViewBag.Compras = new SelectList(await _context.Compras.OrderByDescending(c => c.FechaCompra).ToListAsync(), "Id", "Proveedor", item.CompraId);
+            var lotes = await _context.Lotes.Include(l => l.Compra).Include(l => l.Articulo).OrderByDescending(l => l.Compra.FechaCompra).ToListAsync();
+            ViewBag.Lotes = new SelectList(lotes.Select(l => new { Id = l.Id, Display = $"Lote {l.Id} - {l.Compra.Proveedor} ({l.Articulo.Modelo})" }), "Id", "Display", item.LoteId);
             ViewBag.Sucursales = new SelectList(await _context.Sucursales.OrderBy(s => s.Nombre).ToListAsync(), "Id", "Nombre", item.SucursalId);
             return View(item);
         }
 
         // GET: Items/Edit/5
-        public async Task<IActionResult> Edit(string id)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
             {
@@ -117,7 +125,8 @@ namespace PSInventory.Web.Controllers
                 Display = $"{a.Marca} {a.Modelo}" 
             }), "Id", "Display", item.ArticuloId);
             
-            ViewBag.Compras = new SelectList(await _context.Compras.OrderByDescending(c => c.FechaCompra).ToListAsync(), "Id", "Proveedor", item.CompraId);
+            var lotes = await _context.Lotes.Include(l => l.Compra).Include(l => l.Articulo).OrderByDescending(l => l.Compra.FechaCompra).ToListAsync();
+            ViewBag.Lotes = new SelectList(lotes.Select(l => new { Id = l.Id, Display = $"Lote {l.Id} - {l.Compra.Proveedor} ({l.Articulo.Modelo})" }), "Id", "Display", item.LoteId);
             ViewBag.Sucursales = new SelectList(await _context.Sucursales.OrderBy(s => s.Nombre).ToListAsync(), "Id", "Nombre", item.SucursalId);
             return View(item);
         }
@@ -125,9 +134,9 @@ namespace PSInventory.Web.Controllers
         // POST: Items/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, [Bind("Serial,ArticuloId,CompraId,SucursalId,Costo,Estado,MesesGarantia,FechaGarantiaInicio,Observaciones")] Item item)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Serial,ArticuloId,LoteId,SucursalId,Estado,Cantidad,MesesGarantia,FechaGarantiaInicio,Observaciones")] Item item)
         {
-            if (id != item.Serial)
+            if (id != item.Id)
             {
                 return NotFound();
             }
@@ -148,7 +157,7 @@ namespace PSInventory.Web.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ItemExists(item.Serial))
+                    if (!ItemExists(item.Id))
                     {
                         return NotFound();
                     }
@@ -166,7 +175,8 @@ namespace PSInventory.Web.Controllers
                 Display = $"{a.Marca} {a.Modelo}" 
             }), "Id", "Display", item.ArticuloId);
             
-            ViewBag.Compras = new SelectList(await _context.Compras.OrderByDescending(c => c.FechaCompra).ToListAsync(), "Id", "Proveedor", item.CompraId);
+            var lotes = await _context.Lotes.Include(l => l.Compra).Include(l => l.Articulo).OrderByDescending(l => l.Compra.FechaCompra).ToListAsync();
+            ViewBag.Lotes = new SelectList(lotes.Select(l => new { Id = l.Id, Display = $"Lote {l.Id} - {l.Compra.Proveedor} ({l.Articulo.Modelo})" }), "Id", "Display", item.LoteId);
             ViewBag.Sucursales = new SelectList(await _context.Sucursales.OrderBy(s => s.Nombre).ToListAsync(), "Id", "Nombre", item.SucursalId);
             return View(item);
         }
@@ -174,11 +184,11 @@ namespace PSInventory.Web.Controllers
         // POST: Items/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
             var item = await _context.Items
                 .Where(i => !i.Eliminado)
-                .FirstOrDefaultAsync(i => i.Serial == id);
+                .FirstOrDefaultAsync(i => i.Id == id);
             if (item == null)
             {
                 return Json(new { success = false, message = "Item no encontrado" });
@@ -195,18 +205,15 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Items/Asignar/5
-        public async Task<IActionResult> Asignar(string id)
+        public async Task<IActionResult> Asignar(int id)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound();
-            }
 
             var item = await _context.Items
                 .Include(i => i.Articulo)
                 .ThenInclude(a => a.Categoria)
-                .Include(i => i.Compra)
-                .FirstOrDefaultAsync(m => m.Serial == id);
+                .Include(i => i.Lote)
+                .ThenInclude(l => l.Compra)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (item == null)
             {
@@ -227,15 +234,15 @@ namespace PSInventory.Web.Controllers
         // POST: Items/Asignar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Asignar(string id, string sucursalId, string responsableEmpleado, string observaciones)
+        public async Task<IActionResult> Asignar(int id, string sucursalId, string responsableEmpleado, string observaciones, int cantidadAsignar = 1)
         {
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(sucursalId) || string.IsNullOrEmpty(responsableEmpleado))
+            if (string.IsNullOrEmpty(sucursalId) || string.IsNullOrEmpty(responsableEmpleado) || cantidadAsignar <= 0)
             {
-                TempData["Error"] = "Debe proporcionar Sucursal y Responsable";
+                TempData["Error"] = "Debe proporcionar Sucursal, Responsable y una cantidad válida";
                 return RedirectToAction(nameof(Asignar), new { id });
             }
 
-            var item = await _context.Items.FindAsync(id);
+            var item = await _context.Items.Include(i => i.Articulo).FirstOrDefaultAsync(i => i.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -246,48 +253,93 @@ namespace PSInventory.Web.Controllers
                 TempData["Error"] = "El item ya no está disponible para asignación";
                 return RedirectToAction(nameof(Index));
             }
-
-            // Actualizar item
-            item.SucursalId = sucursalId;
-            item.Estado = "Asignado";
-            item.ResponsableEmpleado = responsableEmpleado;
-            item.FechaAsignacion = DateTime.Now;
-
-            // Crear registro de movimiento
-            var movimiento = new MovimientoItem
+            
+            if (cantidadAsignar > item.Cantidad)
             {
-                ItemSerial = item.Serial,
-                SucursalOrigenId = null, // Desde almacén (sin origen)
-                SucursalDestinoId = sucursalId,
-                FechaMovimiento = DateTime.Now,
-                UsuarioResponsable = User.Identity?.Name ?? "Sistema",
-                Motivo = "Asignación Inicial",
-                Observaciones = observaciones,
-                ResponsableRecepcion = responsableEmpleado,
-                FechaRecepcion = DateTime.Now
-            };
+                TempData["Error"] = "La cantidad a asignar no puede ser mayor que la cantidad disponible";
+                return RedirectToAction(nameof(Asignar), new { id });
+            }
 
-            _context.MovimientosItem.Add(movimiento);
-            _context.Update(item);
-            await _context.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                Item itemAsignado;
+                
+                // Si asignamos menos de lo que hay y el artículo no requiere serial (es por lote)
+                if (cantidadAsignar < item.Cantidad && !item.Articulo.RequiereSerial)
+                {
+                    // 1. Reducir la cantidad del item original en el almacén
+                    item.Cantidad -= cantidadAsignar;
+                    _context.Update(item);
+                    
+                    // 2. Crear un nuevo registro de Item para la sucursal
+                    itemAsignado = new Item
+                    {
+                        ArticuloId = item.ArticuloId,
+                        LoteId = item.LoteId,
+                        SucursalId = sucursalId,
+                        Estado = "Asignado",
+                        Cantidad = cantidadAsignar,
+                        ResponsableEmpleado = responsableEmpleado,
+                        FechaAsignacion = DateTime.Now,
+                        Serial = null,
+                        FechaGarantiaInicio = item.FechaGarantiaInicio,
+                        MesesGarantia = item.MesesGarantia,
+                        FechaGarantiaVencimiento = item.FechaGarantiaVencimiento
+                    };
+                    _context.Items.Add(itemAsignado);
+                    await _context.SaveChangesAsync(); // Guardar para obtener el nuevo ID
+                }
+                else
+                {
+                    // Mover el registro completo
+                    item.SucursalId = sucursalId;
+                    item.Estado = "Asignado";
+                    item.ResponsableEmpleado = responsableEmpleado;
+                    item.FechaAsignacion = DateTime.Now;
+                    itemAsignado = item;
+                    _context.Update(item);
+                }
 
-            TempData["Success"] = $"Item {item.Serial} asignado exitosamente a {_context.Sucursales.Find(sucursalId)?.Nombre}";
-            return RedirectToAction(nameof(Index));
+                // Crear registro de movimiento
+                var movimiento = new MovimientoItem
+                {
+                    ItemId = itemAsignado.Id,
+                    Cantidad = cantidadAsignar,
+                    SucursalOrigenId = null, // Desde almacén (sin origen)
+                    SucursalDestinoId = sucursalId,
+                    FechaMovimiento = DateTime.Now,
+                    UsuarioResponsable = User.Identity?.Name ?? "Sistema",
+                    Motivo = "Asignación Inicial",
+                    Observaciones = observaciones,
+                    ResponsableRecepcion = responsableEmpleado,
+                    FechaRecepcion = DateTime.Now
+                };
+
+                _context.MovimientosItem.Add(movimiento);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["Success"] = $"Item(s) asignado(s) exitosamente a {_context.Sucursales.Find(sucursalId)?.Nombre}";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                TempData["Error"] = "Ocurrió un error al procesar la asignación.";
+                return RedirectToAction(nameof(Asignar), new { id });
+            }
         }
 
         // GET: Items/Transferir/5
-        public async Task<IActionResult> Transferir(string id)
+        public async Task<IActionResult> Transferir(int id)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound();
-            }
 
             var item = await _context.Items
                 .Include(i => i.Articulo)
                 .ThenInclude(a => a.Categoria)
                 .Include(i => i.Sucursal)
-                .FirstOrDefaultAsync(m => m.Serial == id);
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (item == null)
             {
@@ -317,15 +369,15 @@ namespace PSInventory.Web.Controllers
         // POST: Items/Transferir/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Transferir(string id, string sucursalDestinoId, string responsableRecepcion, string motivo, string observaciones)
+        public async Task<IActionResult> Transferir(int id, string sucursalDestinoId, string responsableRecepcion, string motivo, string observaciones, int cantidadTransferir = 1)
         {
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(sucursalDestinoId) || string.IsNullOrEmpty(motivo))
+            if (string.IsNullOrEmpty(sucursalDestinoId) || string.IsNullOrEmpty(motivo) || cantidadTransferir <= 0)
             {
-                TempData["Error"] = "Debe proporcionar Sucursal Destino y Motivo de Transferencia";
+                TempData["Error"] = "Debe proporcionar Sucursal Destino, Motivo y Cantidad válida";
                 return RedirectToAction(nameof(Transferir), new { id });
             }
 
-            var item = await _context.Items.FindAsync(id);
+            var item = await _context.Items.Include(i => i.Articulo).FirstOrDefaultAsync(i => i.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -342,44 +394,187 @@ namespace PSInventory.Web.Controllers
                 TempData["Error"] = "La sucursal destino debe ser diferente a la actual";
                 return RedirectToAction(nameof(Transferir), new { id });
             }
+            
+            if (cantidadTransferir > item.Cantidad)
+            {
+                TempData["Error"] = "La cantidad a transferir no puede ser mayor a la cantidad actual en la sucursal";
+                return RedirectToAction(nameof(Transferir), new { id });
+            }
 
             var sucursalOrigenId = item.SucursalId;
             var sucursalOrigenNombre = _context.Sucursales.Find(sucursalOrigenId)?.Nombre;
             var sucursalDestinoNombre = _context.Sucursales.Find(sucursalDestinoId)?.Nombre;
 
-            // Actualizar item
-            item.SucursalId = sucursalDestinoId;
-            item.FechaUltimaTransferencia = DateTime.Now;
-            if (!string.IsNullOrEmpty(responsableRecepcion))
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                item.ResponsableEmpleado = responsableRecepcion;
+                Item itemTransferido;
+
+                // Transferencia parcial
+                if (cantidadTransferir < item.Cantidad && !item.Articulo.RequiereSerial)
+                {
+                    // 1. Reducir cantidad en sucursal origen
+                    item.Cantidad -= cantidadTransferir;
+                    _context.Update(item);
+                    
+                    // 2. Crear nuevo registro para la sucursal destino
+                    itemTransferido = new Item
+                    {
+                        ArticuloId = item.ArticuloId,
+                        LoteId = item.LoteId,
+                        SucursalId = sucursalDestinoId,
+                        Estado = "Asignado",
+                        Cantidad = cantidadTransferir,
+                        ResponsableEmpleado = !string.IsNullOrEmpty(responsableRecepcion) ? responsableRecepcion : item.ResponsableEmpleado,
+                        FechaUltimaTransferencia = DateTime.Now,
+                        Serial = null,
+                        FechaGarantiaInicio = item.FechaGarantiaInicio,
+                        MesesGarantia = item.MesesGarantia,
+                        FechaGarantiaVencimiento = item.FechaGarantiaVencimiento
+                    };
+                    _context.Items.Add(itemTransferido);
+                    await _context.SaveChangesAsync(); // Obtener el nuevo Id
+                }
+                else
+                {
+                    // Transferencia total
+                    item.SucursalId = sucursalDestinoId;
+                    item.FechaUltimaTransferencia = DateTime.Now;
+                    if (!string.IsNullOrEmpty(responsableRecepcion))
+                    {
+                        item.ResponsableEmpleado = responsableRecepcion;
+                    }
+                    itemTransferido = item;
+                    _context.Update(item);
+                }
+
+                // Crear registro de movimiento
+                var movimiento = new MovimientoItem
+                {
+                    ItemId = itemTransferido.Id,
+                    Cantidad = cantidadTransferir,
+                    SucursalOrigenId = sucursalOrigenId,
+                    SucursalDestinoId = sucursalDestinoId,
+                    FechaMovimiento = DateTime.Now,
+                    UsuarioResponsable = User.Identity?.Name ?? "Sistema",
+                    Motivo = motivo,
+                    Observaciones = observaciones,
+                    ResponsableRecepcion = responsableRecepcion,
+                    FechaRecepcion = !string.IsNullOrEmpty(responsableRecepcion) ? DateTime.Now : null
+                };
+
+                _context.MovimientosItem.Add(movimiento);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["Success"] = $"Item(s) transferido(s) exitosamente de {sucursalOrigenNombre} a {sucursalDestinoNombre}";
+                return RedirectToAction(nameof(Index));
             }
-
-            // Crear registro de movimiento
-            var movimiento = new MovimientoItem
+            catch (Exception)
             {
-                ItemSerial = item.Serial,
-                SucursalOrigenId = sucursalOrigenId,
-                SucursalDestinoId = sucursalDestinoId,
-                FechaMovimiento = DateTime.Now,
-                UsuarioResponsable = User.Identity?.Name ?? "Sistema",
-                Motivo = motivo,
-                Observaciones = observaciones,
-                ResponsableRecepcion = responsableRecepcion,
-                FechaRecepcion = !string.IsNullOrEmpty(responsableRecepcion) ? DateTime.Now : null
-            };
-
-            _context.MovimientosItem.Add(movimiento);
-            _context.Update(item);
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = $"Item {item.Serial} transferido exitosamente de {sucursalOrigenNombre} a {sucursalDestinoNombre}";
-            return RedirectToAction(nameof(Index));
+                await transaction.RollbackAsync();
+                TempData["Error"] = "Error al procesar la transferencia.";
+                return RedirectToAction(nameof(Transferir), new { id });
+            }
         }
 
-        private bool ItemExists(string serial)
+        // POST: Items/AsignarDesde  (non-serial: auto-pick from lote)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AsignarDesde(int loteId, string sucursalId, string responsableEmpleado, int cantidad, string? observaciones)
         {
-            return _context.Items.Any(e => e.Serial == serial && !e.Eliminado);
+            if (string.IsNullOrEmpty(sucursalId) || string.IsNullOrEmpty(responsableEmpleado) || cantidad <= 0)
+            {
+                TempData["Error"] = "Debe proporcionar Sucursal, Responsable y una cantidad válida.";
+                return RedirectToAction("Details", "Lotes", new { id = loteId });
+            }
+
+            var item = await _context.Items
+                .Include(i => i.Articulo)
+                .Where(i => i.LoteId == loteId && !i.Eliminado && i.Estado == "Disponible" && i.SucursalId == null)
+                .FirstOrDefaultAsync();
+
+            if (item == null)
+            {
+                TempData["Error"] = "No hay stock disponible en este lote.";
+                return RedirectToAction("Details", "Lotes", new { id = loteId });
+            }
+
+            if (cantidad > item.Cantidad)
+            {
+                TempData["Error"] = $"Solo hay {item.Cantidad} unidades disponibles en este lote.";
+                return RedirectToAction("Details", "Lotes", new { id = loteId });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                Item itemAsignado;
+
+                if (cantidad < item.Cantidad)
+                {
+                    item.Cantidad -= cantidad;
+                    _context.Update(item);
+
+                    itemAsignado = new Item
+                    {
+                        ArticuloId  = item.ArticuloId,
+                        LoteId      = item.LoteId,
+                        SucursalId  = sucursalId,
+                        Estado      = "Asignado",
+                        Cantidad    = cantidad,
+                        ResponsableEmpleado  = responsableEmpleado,
+                        FechaAsignacion      = DateTime.Now,
+                        Serial               = null,
+                        FechaGarantiaInicio  = item.FechaGarantiaInicio,
+                        MesesGarantia        = item.MesesGarantia,
+                        FechaGarantiaVencimiento = item.FechaGarantiaVencimiento
+                    };
+                    _context.Items.Add(itemAsignado);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    item.SucursalId         = sucursalId;
+                    item.Estado             = "Asignado";
+                    item.ResponsableEmpleado = responsableEmpleado;
+                    item.FechaAsignacion    = DateTime.Now;
+                    itemAsignado = item;
+                    _context.Update(item);
+                }
+
+                _context.MovimientosItem.Add(new MovimientoItem
+                {
+                    ItemId              = itemAsignado.Id,
+                    Cantidad            = cantidad,
+                    SucursalOrigenId    = null,
+                    SucursalDestinoId   = sucursalId,
+                    FechaMovimiento     = DateTime.Now,
+                    UsuarioResponsable  = User.Identity?.Name ?? "Sistema",
+                    Motivo              = "Asignación Inicial",
+                    Observaciones       = observaciones,
+                    ResponsableRecepcion = responsableEmpleado,
+                    FechaRecepcion      = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var sucursalNombre = (await _context.Sucursales.FindAsync(sucursalId))?.Nombre;
+                TempData["Success"] = $"{cantidad} unidad(es) asignada(s) a {sucursalNombre} exitosamente.";
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                TempData["Error"] = "Ocurrió un error al procesar la asignación.";
+            }
+
+            return RedirectToAction("Details", "Lotes", new { id = loteId });
+        }
+
+        private bool ItemExists(int id)
+        {
+            return _context.Items.Any(e => e.Id == id && !e.Eliminado);
         }
     }
 }

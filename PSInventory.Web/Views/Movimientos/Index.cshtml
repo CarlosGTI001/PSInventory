@@ -191,9 +191,12 @@ else
                                     <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">@movimiento.FechaMovimiento.ToString("HH:mm")</span>
                                 </div>
                             </td>
-                            <td>
-                                <span class="badge badge-primary">@movimiento.ItemSerial</span>
-                            </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
+                                <strong>@(movimiento.Item?.Serial ?? $"ID: {movimiento.ItemId}")</strong>
+                            </div>
+                        </td>
                             <td>
                                 <div style="display: flex; flex-direction: column;">
                                     <strong>@movimiento.Item?.Articulo?.Marca @movimiento.Item?.Articulo?.Modelo</strong>

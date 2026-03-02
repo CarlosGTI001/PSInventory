@@ -28,6 +28,7 @@ namespace PSData.Datos
 
         public DbSet<Articulo> Articulos { get; set; }
         public DbSet<Compra> Compras { get; set; }
+        public DbSet<Lote> Lotes { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<Sucursal> Sucursales { get; set; }
         public DbSet<Region> Regiones { get; set; }
@@ -44,8 +45,8 @@ namespace PSData.Datos
                 .HasDatabaseName("IX_Item_ArticuloId");
 
             modelBuilder.Entity<Item>()
-                .HasIndex(i => i.CompraId)
-                .HasDatabaseName("IX_Item_CompraId");
+                .HasIndex(i => i.LoteId)
+                .HasDatabaseName("IX_Item_LoteId");
 
             modelBuilder.Entity<Item>()
                 .HasIndex(i => i.SucursalId)
@@ -72,8 +73,8 @@ namespace PSData.Datos
                 .HasDatabaseName("IX_Categoria_Nombre");
 
             modelBuilder.Entity<MovimientoItem>()
-                .HasIndex(m => m.ItemSerial)
-                .HasDatabaseName("IX_MovimientoItem_ItemSerial");
+                .HasIndex(m => m.ItemId)
+                .HasDatabaseName("IX_MovimientoItem_ItemId");
 
             modelBuilder.Entity<MovimientoItem>()
                 .HasIndex(m => m.FechaMovimiento)
@@ -98,6 +99,31 @@ namespace PSData.Datos
                 .HasOne(m => m.SucursalDestino)
                 .WithMany(s => s.MovimientosDestino)
                 .HasForeignKey(m => m.SucursalDestinoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Prevenir error de múltiples rutas de cascada en SQL Server (Articulo -> Lote -> Item)
+            modelBuilder.Entity<Item>()
+                .HasOne(i => i.Lote)
+                .WithMany(l => l.Items)
+                .HasForeignKey(i => i.LoteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Item>()
+                .HasOne(i => i.Articulo)
+                .WithMany(a => a.Items)
+                .HasForeignKey(i => i.ArticuloId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Lote>()
+                .HasOne(l => l.Articulo)
+                .WithMany(a => a.Lotes)
+                .HasForeignKey(l => l.ArticuloId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Lote>()
+                .HasOne(l => l.Compra)
+                .WithMany(c => c.Lotes)
+                .HasForeignKey(l => l.CompraId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);

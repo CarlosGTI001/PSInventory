@@ -46,7 +46,7 @@ namespace PSInventory
                         foreach (var item in itemsDisponibles)
                         {
                             var articulo = db.Articulos.Find(item.ArticuloId);
-                            string display = $"{item.Serial} - {articulo?.Marca} {articulo?.Modelo}";
+                            string display = $"{(item.Serial ?? $"[Lote {item.LoteId}]")} - {articulo?.Marca} {articulo?.Modelo}";
                             cmbItem.Items.Add(new ComboBoxItem { Text = display, Value = item });
                         }
 
@@ -85,7 +85,7 @@ namespace PSInventory
                     using (var db = new PSDatos())
                     {
                         var itemSeleccionado = ((ComboBoxItem)cmbItem.SelectedItem).Value as Item;
-                        var item = db.Items.Find(itemSeleccionado.Serial);
+                        var item = db.Items.Find(itemSeleccionado.Id);
 
                         if (item != null)
                         {
@@ -100,7 +100,8 @@ namespace PSInventory
                             // Registrar movimiento
                             db.MovimientosItem.Add(new MovimientoItem
                             {
-                                ItemSerial = item.Serial,
+                                ItemId = item.Id,
+                                Cantidad = item.Cantidad, // Assign the whole stack for now in WinForms
                                 SucursalOrigenId = null,  // Desde almacén
                                 SucursalDestinoId = item.SucursalId,
                                 FechaMovimiento = DateTime.Now,
@@ -185,8 +186,7 @@ namespace PSInventory
                     var categoria = db.Categorias.Find(articulo?.CategoriaId);
                     
                     lblInfoItem.Text = $"Categoría: {categoria?.Nombre ?? "N/A"}\n" +
-                                      $"Costo: {item.Costo:C2}\n" +
-                                      $"Estado actual: {item.Estado}";
+                                                                              $"Costo: {(item.Lote != null ? item.Lote.CostoUnitario : 0):C2}\n" +                                      $"Estado actual: {item.Estado}";
                 }
             }
         }

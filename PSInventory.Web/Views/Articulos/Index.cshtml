@@ -115,7 +115,7 @@
             <tbody>
                 @foreach (var item in Model)
                 {
-                    <tr>
+                    <tr style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", new { id = item.Id })'">
                         <td>
                             <strong>@item.Marca</strong>
                         </td>

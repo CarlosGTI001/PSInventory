@@ -1,0 +1,468 @@
+@model PSData.Modelos.Lote
+
+@using System.Linq
+
+@{
+    ViewData["Title"] = $"Gestionar Lote #{Model.Id}";
+    var itemsActivos          = Model.Items?.Where(i => !i.Eliminado).ToList() ?? new();
+    var totalItemsRegistrados = itemsActivos.Sum(i => i.Cantidad);
+    var maxCantidad           = Model.Cantidad;
+    var porcentaje            = maxCantidad > 0 ? (totalItemsRegistrados * 100.0 / maxCantidad) : 0;
+    var estaCompleto          = totalItemsRegistrados >= maxCantidad;
+    var articulosRequiereSerial = Model.Articulo?.RequiereSerial ?? true;
+    var stockDisponible       = itemsActivos.Where(i => i.Estado == "Disponible" && i.SucursalId == null).Sum(i => i.Cantidad);
+    var stockAsignado         = itemsActivos.Where(i => i.Estado == "Asignado").Sum(i => i.Cantidad);
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-headline-medium">Gestionar Lote #@Model.Id</h1>
+        <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant);">
+            Artículo: @Model.Articulo?.Marca @Model.Articulo?.Modelo | Compra: @Model.Compra?.Proveedor (@Model.Compra?.FechaCompra.ToString("dd/MM/yyyy"))
+        </p>
+    </div>
+    <md-outlined-button onclick="window.location.href='@Url.Action("Details", "Articulos", new { id = Model.ArticuloId })'">
+        <md-icon slot="icon">arrow_back</md-icon>
+        Volver al Artículo
+    </md-outlined-button>
+    @if (!articulosRequiereSerial && stockDisponible > 0)
+    {
+        <md-filled-tonal-button onclick="document.getElementById('modalDespacho').show()">
+            <md-icon slot="icon">send</md-icon>
+            Despachar a Sucursal
+        </md-filled-tonal-button>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 16px;">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-error" style="margin-bottom: 16px;">
+        <md-icon>error</md-icon>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<div class="detail-container" style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- Panel Izquierdo: Escáner, Progreso y Despacho -->
+    <div>
+        <div class="card" style="margin-bottom: 24px;">
+            <h2 class="md-typescale-title-large" style="margin-bottom: 16px;">Progreso del Lote</h2>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span class="md-typescale-body-medium">Items Registrados:</span>
+                <strong class="md-typescale-title-medium" id="progress-text">@totalItemsRegistrados / @maxCantidad</strong>
+            </div>
+            
+            <div style="width: 100%; background-color: var(--md-sys-color-surface-variant); border-radius: 8px; height: 12px; overflow: hidden; margin-bottom: 16px;">
+                <div id="progress-bar" style="width: @porcentaje%; background-color: @(estaCompleto ? "var(--md-sys-color-success)" : "var(--md-sys-color-primary)"); height: 100%; transition: width 0.3s ease, background-color 0.3s ease;"></div>
+            </div>
+
+            <!-- Mini stats de estado -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+                <div style="padding: 10px; border-radius: 8px; background: rgba(76,175,80,0.1); text-align:center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-success);">@stockDisponible</div>
+                    <div style="font-size: 11px; color: var(--md-sys-color-on-surface-variant);">Disponible</div>
+                </div>
+                <div style="padding: 10px; border-radius: 8px; background: rgba(4,115,148,0.1); text-align:center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--md-sys-color-primary);">@stockAsignado</div>
+                    <div style="font-size: 11px; color: var(--md-sys-color-on-surface-variant);">Asignado</div>
+                </div>
+            </div>
+
+            @if (articulosRequiereSerial)
+            {
+                <h3 class="md-typescale-title-medium" style="margin-bottom: 16px;">
+                    <md-icon style="vertical-align: middle; margin-right: 8px;">qr_code_scanner</md-icon>
+                    Ingreso por Escáner
+                </h3>
+                <p class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 16px;">
+                    Posiciona el cursor en el campo de abajo y escanea el código de barras del producto.
+                </p>
+
+                <div class="form-field">
+                    <md-filled-text-field 
+                        id="scannerInput"
+                        label="Escanear Serial" 
+                        type="text"
+                        @(estaCompleto ? "disabled" : "")
+                        autofocus>
+                        <md-icon slot="leading-icon">qr_code</md-icon>
+                    </md-filled-text-field>
+                </div>
+            }
+            else
+            {
+                <h3 class="md-typescale-title-medium" style="margin-bottom: 16px;">
+                    <md-icon style="vertical-align: middle; margin-right: 8px;">add_shopping_cart</md-icon>
+                    Ingreso por Cantidad
+                </h3>
+                <p class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 16px;">
+                    Ingresa la cantidad de unidades recibidas.
+                </p>
+
+                <div class="form-field">
+                    <md-filled-text-field 
+                        id="cantidadInput"
+                        label="Cantidad a Registrar" 
+                        type="number"
+                        min="1"
+                        @(estaCompleto ? "disabled" : "")
+                        autofocus>
+                        <md-icon slot="leading-icon">format_list_numbered</md-icon>
+                    </md-filled-text-field>
+                </div>
+            }
+            
+            <div id="scanFeedback" style="margin-top: 12px; min-height: 24px; font-weight: 500; font-size: 14px;"></div>
+        </div>
+
+        @* --- Modal de Despacho (Sin Serial) --- *@
+        @if (!articulosRequiereSerial && stockDisponible == 0 && estaCompleto)
+        {
+            <div class="card" style="text-align: center; padding: 20px;">
+                <md-icon style="font-size: 36px; color: var(--md-sys-color-success);">check_circle</md-icon>
+                <p class="md-typescale-body-medium" style="margin: 8px 0 0; color: var(--md-sys-color-on-surface-variant);">
+                    Todo el stock de este lote ha sido despachado.
+                </p>
+            </div>
+        }
+    </div>
+
+    <!-- Panel Derecho: Lista de Items -->
+    <div class="card">
+        <h2 class="md-typescale-title-large" style="margin-bottom: 24px;">Items en este Lote</h2>
+        
+        <div class="data-table-container">
+            <table class="data-table" id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>Serial / ID</th>
+                        @if (!articulosRequiereSerial)
+                        {
+                            <th style="text-align:center;">Cantidad</th>
+                        }
+                        <th>Estado</th>
+                        <th>Sucursal</th>
+                        <th>Fecha Registro</th>
+                        @if (articulosRequiereSerial)
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (totalItemsRegistrados == 0)
+                    {
+                        <tr id="emptyRow">
+                            <td colspan="@(articulosRequiereSerial ? 5 : 4)" style="text-align: center; padding: 24px; color: var(--md-sys-color-outline);">
+                                No hay items escaneados aún en este lote.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in itemsActivos.OrderByDescending(i => i.Id))
+                        {
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
+                                        <strong>@(item.Serial ?? $"ID: {item.Id}")</strong>
+                                    </div>
+                                </td>
+                                @if (!articulosRequiereSerial)
+                                {
+                                    <td style="text-align:center;"><strong>@item.Cantidad</strong></td>
+                                }
+                                <td>
+                                    @if (item.Estado == "Disponible")
+                                    {
+                                        <span class="badge badge-success">@item.Estado</span>
+                                    }
+                                    else if (item.Estado == "Asignado")
+                                    {
+                                        <span class="badge" style="background:rgba(4,115,148,0.12); color:var(--md-sys-color-primary);">@item.Estado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge">@item.Estado</span>
+                                    }
+                                </td>
+                                <td style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
+                                    @(item.Sucursal?.Nombre ?? "—")
+                                </td>
+                                <td>@item.FechaAsignacion?.ToString("dd/MM/yyyy HH:mm")</td>
+                                @if (articulosRequiereSerial)
+                                {
+                                    <td class="actions-cell">
+                                        @if (item.Estado == "Disponible" && string.IsNullOrEmpty(item.SucursalId))
+                                        {
+                                            <a href="@Url.Action("Asignar", "Items", new { id = item.Id })" title="Asignar a sucursal">
+                                                <md-icon-button>
+                                                    <md-icon>send</md-icon>
+                                                </md-icon-button>
+                                            </a>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (!articulosRequiereSerial && stockDisponible > 0)
+{
+<md-dialog id="modalDespacho">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary); font-size:26px;">send</md-icon>
+        <div>
+            <div style="font-size:16px; font-weight:700;">Despachar a Sucursal</div>
+            <div style="font-size:12px; font-weight:400; color:var(--md-sys-color-on-surface-variant);">
+                Disponible: <strong>@stockDisponible</strong> unidades
+            </div>
+        </div>
+    </div>
+    <div slot="content" style="min-width:320px;">
+        <form id="formDespacho" asp-controller="Items" asp-action="AsignarDesde" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="loteId" value="@Model.Id" />
+
+            <div class="form-field" style="margin-bottom:12px;">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select name="sucursalId" id="mdSucursalId" class="md3-select" required>
+                        <option value="">Seleccione sucursal</option>
+                        @foreach (var s in ViewBag.Sucursales)
+                        {
+                            <option value="@s.Value">@s.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sucursal Destino *</label>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+                    <md-text-button type="button" onclick="openSearchDialog('mdSucursalId','Buscar Sucursal','Escribe el nombre...')">
+                        <md-icon slot="icon">search</md-icon>
+                        Buscar
+                    </md-text-button>
+                </div>
+            </div>
+
+            <div class="form-field" style="margin-bottom:12px;">
+                <md-filled-text-field label="Responsable *" name="responsableEmpleado" required
+                    supporting-text="Empleado que recibe">
+                    <md-icon slot="leading-icon">person</md-icon>
+                </md-filled-text-field>
+            </div>
+
+            <div class="form-field" style="margin-bottom:12px;">
+                <md-filled-text-field label="Cantidad *" name="cantidad" type="number"
+                    min="1" max="@stockDisponible" value="@stockDisponible" required
+                    supporting-text="Máx. @stockDisponible">
+                    <md-icon slot="leading-icon">inventory_2</md-icon>
+                </md-filled-text-field>
+            </div>
+
+            <div class="form-field">
+                <md-filled-text-field label="Observaciones" name="observaciones" supporting-text="Opcional">
+                    <md-icon slot="leading-icon">note</md-icon>
+                </md-filled-text-field>
+            </div>
+        </form>
+    </div>
+    <div slot="actions">
+        <md-outlined-button onclick="document.getElementById('modalDespacho').close()">
+            Cancelar
+        </md-outlined-button>
+        <md-filled-button onclick="document.getElementById('formDespacho').submit()">
+            <md-icon slot="icon">send</md-icon>
+            Despachar
+        </md-filled-button>
+    </div>
+</md-dialog>
+}
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        const loteId = @Model.Id;
+        const maxCantidad = @maxCantidad;
+        let totalItemsRegistrados = @totalItemsRegistrados;
+        const articulosRequiereSerial = @(articulosRequiereSerial.ToString().ToLower());
+        
+        const scannerInput = document.getElementById('scannerInput');
+        const cantidadInput = document.getElementById('cantidadInput');
+        const feedbackDiv = document.getElementById('scanFeedback');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const itemsTableBody = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+        const emptyRow = document.getElementById('emptyRow');
+        
+        const activeInput = articulosRequiereSerial ? scannerInput : cantidadInput;
+
+        if (activeInput) {
+            document.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && totalItemsRegistrados < maxCantidad) {
+                    activeInput.focus();
+                }
+            });
+
+            activeInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    let serial = null;
+                    let cantidad = 0;
+
+                    if (articulosRequiereSerial) {
+                        serial = this.value.trim();
+                        if (serial === '') {
+                            showFeedback('El serial no puede estar vacío.', 'error');
+                            return;
+                        }
+                        cantidad = 1;
+                    } else {
+                        cantidad = parseInt(this.value.trim());
+                        if (isNaN(cantidad) || cantidad <= 0) {
+                            showFeedback('La cantidad debe ser un número válido mayor a cero.', 'error');
+                            return;
+                        }
+                    }
+                    
+                    if (totalItemsRegistrados + cantidad > maxCantidad) {
+                        showFeedback('Se excede la cantidad máxima del lote.', 'error');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    showFeedback('Procesando...', 'info');
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                    let body = `loteId=${loteId}&cantidad=${cantidad}`;
+                    if (serial) {
+                        body += `&serial=${encodeURIComponent(serial)}`;
+                    }
+
+                    fetch('@Url.Action("AddItem", "Lotes")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': token
+                        },
+                        body: body
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback(data.message, 'success');
+                            
+                            totalItemsRegistrados = parseInt(data.progress.split('/')[0].trim());
+                            progressText.innerText = data.progress;
+                            
+                            const currentPorcentaje = (totalItemsRegistrados * 100.0) / maxCantidad;
+                            progressBar.style.width = currentPorcentaje + '%';
+                            
+                            if (totalItemsRegistrados >= maxCantidad) {
+                                progressBar.style.backgroundColor = 'var(--md-sys-color-success)';
+                            }
+
+                            if (emptyRow) emptyRow.remove();
+
+                            if (!articulosRequiereSerial && data.item.cantidad > 1) {
+                                const existingRow = itemsTableBody.querySelector(`tr[data-item-id="${data.item.serial.replace('ID: ', '')}"]`);
+                                if (existingRow) {
+                                    existingRow.querySelector('.item-cantidad').innerText = data.item.cantidad;
+                                } else {
+                                    appendItemRow(data.item, articulosRequiereSerial);
+                                }
+                            } else {
+                                appendItemRow(data.item, articulosRequiereSerial);
+                            }
+
+                            if (totalItemsRegistrados < maxCantidad) {
+                                this.disabled = false;
+                                this.value = '';
+                                this.focus();
+                            } else {
+                                showFeedback('¡Lote completado exitosamente!', 'success');
+                                this.disabled = true;
+                            }
+                        } else {
+                            showFeedback(data.message, 'error');
+                            this.disabled = false;
+                            this.value = '';
+                            this.focus();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showFeedback('Error de conexión al servidor.', 'error');
+                        this.disabled = false;
+                        this.value = '';
+                        this.focus();
+                    });
+                }
+            });
+        }
+
+        function appendItemRow(itemData, requiereSerial) {
+            const newRow = itemsTableBody.insertRow(0);
+            newRow.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            newRow.setAttribute('data-item-id', itemData.serial.replace('ID: ', ''));
+            
+            let rowContent = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
+                        <strong>${itemData.serial}</strong>
+                    </div>
+                </td>`;
+            
+            if (!requiereSerial) {
+                rowContent += `<td style="text-align:center;" class="item-cantidad"><strong>${itemData.cantidad}</strong></td>`;
+            }
+            
+            rowContent += `
+                <td><span class="badge badge-success">${itemData.estado}</span></td>
+                <td style="font-size:13px; color:var(--md-sys-color-on-surface-variant);">—</td>
+                <td>${itemData.fecha}</td>`;
+
+            if (requiereSerial) {
+                rowContent += `<td class="actions-cell">
+                    <a href="/Items/Asignar/${itemData.id}" title="Asignar a sucursal">
+                        <md-icon-button><md-icon>send</md-icon></md-icon-button>
+                    </a></td>`;
+            }
+
+            newRow.innerHTML = rowContent;
+            setTimeout(() => { newRow.style.backgroundColor = ''; }, 2000);
+        }
+
+        function showFeedback(message, type) {
+            feedbackDiv.innerText = message;
+            if (type === 'success') {
+                feedbackDiv.style.color = 'var(--md-sys-color-success)';
+            } else if (type === 'error') {
+                feedbackDiv.style.color = 'var(--md-sys-color-error)';
+            } else {
+                feedbackDiv.style.color = 'var(--md-sys-color-on-surface-variant)';
+            }
+            if (type !== 'error') {
+                setTimeout(() => {
+                    if (feedbackDiv.innerText === message) feedbackDiv.innerText = '';
+                }, 3000);
+            }
+        }
+    </script>
+}

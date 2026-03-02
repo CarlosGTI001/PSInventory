@@ -11,9 +11,13 @@ namespace PSData.Modelos
     public class Item
     {
         [Key]
-        [Required]
+        public int Id { get; set; }
+
         [StringLength(100)]
-        public string Serial { get; set; }
+        public string? Serial { get; set; } // Opcional para items sin serial
+
+        [Required]
+        public int Cantidad { get; set; } = 1; // Por defecto 1 para items con serial
 
         [Required]
         public int ArticuloId { get; set; }
@@ -29,12 +33,9 @@ namespace PSData.Modelos
         public string Estado { get; set; }  // "Disponible", "En Uso", "En Reparación", "Dañado", "Dado de Baja"
 
         [Required]
-        public decimal Costo { get; set; }
-
-        [Required]
-        public int CompraId { get; set; }
-        [ForeignKey("CompraId")]
-        public virtual Compra Compra { get; set; }
+        public int LoteId { get; set; }
+        [ForeignKey("LoteId")]
+        public virtual Lote Lote { get; set; }
 
         [StringLength(200)]
         public string Ubicacion { get; set; }

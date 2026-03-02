@@ -1,7 +1,8 @@
-@model PSData.Modelos.Compra
+@model PSInventory.Web.Models.ViewModels.CompraViewModel
 
 @{
     ViewData["Title"] = "Editar Compra";
+    string fileLabelDefaultText = string.IsNullOrEmpty(Model?.RutaFactura) ? "Adjuntar factura escaneada" : "Cambiar factura";
 }
 
 <!-- Breadcrumb -->
@@ -19,15 +20,16 @@
     <div>
         <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Compra</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
-            Modifica los datos de la compra de <strong>@Model.Proveedor</strong>
+            Modifica los datos de la compra de <strong>@Model.Proveedor</strong> y sus lotes
         </p>
     </div>
 </div>
 
 <form asp-action="Edit" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
     <input type="hidden" asp-for="Id" />
     
-    <!-- Sección 1: Información General -->
+    <!-- Sección 1: Información General de la Compra -->
     <div class="card" style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
@@ -43,7 +45,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Fecha de Compra *" 
-                    name="FechaCompra" 
+                    asp-for="FechaCompra" 
                     type="date"
                     required
                     value="@Model.FechaCompra.ToString("yyyy-MM-dd")"
@@ -56,7 +58,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Proveedor *" 
-                    name="Proveedor" 
+                    asp-for="Proveedor" 
                     required
                     value="@Model.Proveedor"
                     supporting-text="Nombre o razón social">
@@ -69,23 +71,20 @@
         <div class="form-row">
             <div class="form-field">
                 <md-filled-text-field 
-                    label="Costo Total *" 
-                    name="CostoTotal" 
-                    type="number"
-                    step="0.01"
-                    required
-                    value="@Model.CostoTotal"
-                    supporting-text="Monto total en pesos">
-                    <md-icon slot="leading-icon">attach_money</md-icon>
+                    label="Número de Factura" 
+                    asp-for="NumeroFactura" 
+                    value="@Model.NumeroFactura"
+                    supporting-text="Número de factura del proveedor">
+                    <md-icon slot="leading-icon">tag</md-icon>
                 </md-filled-text-field>
-                <span asp-validation-for="CostoTotal" class="field-error"></span>
+                <span asp-validation-for="NumeroFactura" class="field-error"></span>
             </div>
-
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">check_circle</md-icon>
-                    <select asp-for="Estado" name="Estado" class="md3-select" required>
-                        <option value="Pendiente" selected="@(Model.Estado == "Pendiente")">Pendiente</option>
+                    <select asp-for="Estado" class="md3-select" required>
+                        <option value="Solicitud" selected="@(Model.Estado == "Solicitud")">Solicitud</option>
+                        <option value="Aprobada" selected="@(Model.Estado == "Aprobada")">Aprobada</option>
                         <option value="Completada" selected="@(Model.Estado == "Completada")">Completada</option>
                         <option value="Cancelada" selected="@(Model.Estado == "Cancelada")">Cancelada</option>
                     </select>
@@ -97,32 +96,51 @@
         </div>
     </div>
 
-    <!-- Sección 2: Documentación -->
+    <!-- Sección 2: Lotes de la Compra -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-tertiary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(91, 201, 229, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-tertiary); font-size: 28px;">inventory_2</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Lotes de la Compra</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Artículos y cantidades incluidos en esta compra</p>
+            </div>
+        </div>
+
+        <div id="lotesContainer">
+            @if (Model.Lotes == null || !Model.Lotes.Any())
+            {
+                <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 16px;">
+                    No se han agregado lotes aún.
+                </p>
+            }
+            @for (int i = 0; i < Model.Lotes.Count; i++)
+            {
+                <partial name="_LoteFormPartial" model="Model.Lotes[i]" view-data='new ViewDataDictionary(ViewData) { { "index", i } }' />
+            }
+        </div>
+
+        <md-filled-tonal-button id="addLoteBtn" type="button" style="margin-top: 16px;">
+            <md-icon slot="icon">add</md-icon>
+            Agregar Lote
+        </md-filled-tonal-button>
+        
+        <span asp-validation-for="Lotes" class="field-error"></span>
+    </div>
+
+    <!-- Sección 3: Documentación (Factura) -->
     <div class="card" style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-secondary);">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">receipt</md-icon>
             </div>
             <div>
                 <h2 class="md-typescale-title-large" style="margin: 0;">Documentación</h2>
-                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Información de facturación (opcional)</p>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Adjuntar factura (opcional)</p>
             </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-field">
-                <md-filled-text-field 
-                    label="Número de Factura" 
-                    name="NumeroFactura" 
-                    value="@Model?.NumeroFactura"
-                    supporting-text="Número de factura del proveedor">
-                    <md-icon slot="leading-icon">tag</md-icon>
-                </md-filled-text-field>
-                <span asp-validation-for="NumeroFactura" class="field-error"></span>
-            </div>
-        </div>
-
-        <!-- Campo para adjuntar factura -->
         @if (!string.IsNullOrEmpty(Model?.RutaFactura))
         {
             <div class="form-row" style="margin-top: 16px;">
@@ -162,7 +180,7 @@
 
         <div class="form-row" style="margin-top: 16px;">
             <div class="form-field" style="width: 100%;">
-                <label style="display: flex; align-items: center; gap: 12px; padding: 20px; background: var(--md-sys-color-surface-container-high); border-radius: 12px; border: 2px dashed var(--md-sys-color-outline); cursor: pointer; transition: all 0.3s ease;">
+                <label id="facturaFileLabel" style="display: flex; align-items: center; gap: 12px; padding: 20px; background: var(--md-sys-color-surface-container-high); border-radius: 12px; border: 2px dashed var(--md-sys-color-outline); cursor: pointer; transition: all 0.3s ease;" data-default-text="@fileLabelDefaultText">
                     <input type="file" 
                            name="facturaFile" 
                            id="facturaFile" 
@@ -186,7 +204,7 @@
         </div>
     </div>
 
-    <!-- Sección 3: Observaciones -->
+    <!-- Sección 4: Observaciones -->
     <div class="card" style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-tertiary);">
             <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(91, 201, 229, 0.15); display: flex; align-items: center; justify-content: center;">
@@ -202,7 +220,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Observaciones" 
-                    name="Observaciones" 
+                    asp-for="Observaciones"
                     type="textarea"
                     rows="4"
                     value="@Model.Observaciones"
@@ -231,29 +249,133 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     
     <script>
+        let loteIndex = @(Model.Lotes?.Count ?? 0);
+        // Correctly define articulosOptions as a JavaScript variable
+        const articulosOptions = @Html.Raw(Json.Serialize(string.Join("", (ViewBag.Articulos as List<SelectListItem>)?.Select(a => $"<option value=\"{a.Value}\">{a.Text}</option>") ?? Enumerable.Empty<string>())));
+
         function updateFileLabel(input) {
-            const label = document.getElementById('fileLabel');
+            const label = document.getElementById('facturaFileLabel');
+            const defaultText = label.getAttribute('data-default-text'); // Get from data attribute
+
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 const fileName = file.name;
                 const fileSize = (file.size / 1024).toFixed(2); // KB
                 label.innerHTML = `<md-icon style="font-size: 20px; color: var(--md-sys-color-primary);">check_circle</md-icon> ${fileName} (${fileSize} KB)`;
                 
-                // Cambiar estilo del contenedor
                 input.closest('label').style.borderColor = 'var(--md-sys-color-primary)';
                 input.closest('label').style.background = 'rgba(4, 115, 148, 0.08)';
             } else {
-                label.textContent = @(string.IsNullOrEmpty(Model?.RutaFactura) ? "'Adjuntar factura escaneada'" : "'Cambiar factura'");
+                label.innerHTML = `<div id="fileLabel" class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface); margin-bottom: 4px;">${defaultText}</div>
+                                   <div class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">
+                                       PDF, JPG, JPEG o PNG (Opcional)
+                                   </div>`;
                 input.closest('label').style.borderColor = 'var(--md-sys-color-outline)';
                 input.closest('label').style.background = 'var(--md-sys-color-surface-container-high)';
             }
         }
         
-        // Click en el label activa el input
-        document.querySelector('label[for="facturaFile"]')?.addEventListener('click', function(e) {
+        document.getElementById('facturaFileLabel')?.addEventListener('click', function(e) {
             if (e.target.tagName !== 'INPUT') {
                 document.getElementById('facturaFile').click();
             }
         });
+
+        document.getElementById('addLoteBtn').addEventListener('click', function () {
+            addLoteRow();
+        });
+
+        function addLoteRow(lote = null) {
+            const container = document.getElementById('lotesContainer');
+            const newLoteHtml = `
+                <div class="card" style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--md-sys-color-outline-variant);" data-lote-index="${loteIndex}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 class="md-typescale-title-medium">Lote #${loteIndex + 1}</h4>
+                        <md-icon-button type="button" class="remove-lote-btn">
+                            <md-icon>delete</md-icon>
+                        </md-icon-button>
+                    </div>
+                    ${lote && lote.id ? `<input type="hidden" name="Lotes[${loteIndex}].Id" value="${lote.id}" />` : ''}
+                    <div class="form-row">
+                        <div class="form-field">
+                            <div class="md3-select-field has-leading-icon">
+                                <md-icon class="md3-select-leading-icon">devices</md-icon>
+                                <select name="Lotes[${loteIndex}].ArticuloId" class="md3-select" required>
+                                    <option value="">Seleccione un artículo</option>
+                                    ${articulosOptions}
+                                </select>
+                                <label class="md3-select-label">Artículo *</label>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <md-filled-text-field 
+                                label="Cantidad *" 
+                                name="Lotes[${loteIndex}].Cantidad" 
+                                type="number"
+                                min="1"
+                                value="${lote ? lote.cantidad : 1}"
+                                required>
+                                <md-icon slot="leading-icon">format_list_numbered</md-icon>
+                            </md-filled-text-field>
+                        </div>
+                        <div class="form-field">
+                            <md-filled-text-field 
+                                label="Costo Unitario *" 
+                                name="Lotes[${loteIndex}].CostoUnitario" 
+                                type="number"
+                                step="0.01"
+                                value="${lote ? lote.costoUnitario : '0.00'}"
+                                required>
+                                <md-icon slot="leading-icon">attach_money</md-icon>
+                            </md-filled-text-field>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = newLoteHtml.trim();
+            container.appendChild(newDiv.firstChild);
+
+            // Set selected value if editing
+            if (lote && lote.articuloId) {
+                newDiv.querySelector(`select[name="Lotes[${loteIndex}].ArticuloId"]`).value = lote.articuloId;
+            }
+
+            // Add event listener for remove button
+            newDiv.querySelector('.remove-lote-btn').addEventListener('click', function() {
+                this.closest('[data-lote-index]').remove();
+                reindexLotes();
+            });
+
+            loteIndex++;
+            reindexLotes(); // Reindex after adding
+        }
+        
+        function reindexLotes() {
+            const lotes = document.querySelectorAll('#lotesContainer > .card');
+            lotes.forEach((loteDiv, index) => {
+                loteDiv.setAttribute('data-lote-index', index);
+                loteDiv.querySelector('.md-typescale-title-medium').textContent = `Lote #${index + 1}`;
+                loteDiv.querySelectorAll('[name^="Lotes["]').forEach(input => {
+                    const originalName = input.getAttribute('name');
+                    input.setAttribute('name', originalName.replace(/Lotes\[\d+\]/, `Lotes[${index}]`));
+                });
+            });
+            loteIndex = lotes.length;
+        }
+
+        // Initial loading of existing lots for edit view
+        @if (Model.Lotes != null && Model.Lotes.Any())
+        {
+            foreach (var lote in Model.Lotes)
+            {
+                <text>addLoteRow({ 
+                    id: @lote.Id,
+                    articuloId: @lote.ArticuloId,
+                    cantidad: @lote.Cantidad,
+                    costoUnitario: @lote.CostoUnitario
+                });</text>
+            }
+        }
     </script>
 }

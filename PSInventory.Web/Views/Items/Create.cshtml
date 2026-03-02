@@ -51,20 +51,6 @@
                 </md-filled-text-field>
                 <span asp-validation-for="Serial" class="field-error"></span>
             </div>
-            
-            <div class="form-field">
-                <md-filled-text-field 
-                    label="Costo *" 
-                    name="Costo" 
-                    type="number"
-                    step="0.01"
-                    required
-                    value="@Model?.Costo"
-                    supporting-text="Precio de adquisición del item">
-                    <md-icon slot="leading-icon">attach_money</md-icon>
-                </md-filled-text-field>
-                <span asp-validation-for="Costo" class="field-error"></span>
-            </div>
         </div>
         
         <div class="form-row">
@@ -87,17 +73,17 @@
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">shopping_cart</md-icon>
-                    <select asp-for="CompraId" name="CompraId" class="md3-select" required>
-                        <option value="">Seleccione una compra</option>
-                        @foreach (var compra in ViewBag.Compras)
+                    <select asp-for="LoteId" name="LoteId" class="md3-select" required>
+                        <option value="">Seleccione un Lote</option>
+                        @foreach (var lote in ViewBag.Lotes)
                         {
-                            <option value="@compra.Value">@compra.Text</option>
+                            <option value="@lote.Value">@lote.Text</option>
                         }
                     </select>
-                    <label class="md3-select-label">Orden de Compra *</label>
+                    <label class="md3-select-label">Lote (Compra) *</label>
                 </div>
-                <p class="md3-select-supporting">Compra asociada a este item</p>
-                <span asp-validation-for="CompraId" class="field-error"></span>
+                <p class="md3-select-supporting">Lote asociado a este item</p>
+                <span asp-validation-for="LoteId" class="field-error"></span>
             </div>
         </div>
     </div>

@@ -1,0 +1,265 @@
+@model PSData.Modelos.Articulo
+
+@{
+    ViewData["Title"] = $"{Model.Marca} {Model.Modelo}";
+
+    var todosItems = Model.Lotes?.SelectMany(l => l.Items?.Where(i => !i.Eliminado) ?? Enumerable.Empty<PSData.Modelos.Item>()) ?? Enumerable.Empty<PSData.Modelos.Item>();
+    var stockDisponible = todosItems.Where(i => i.Estado == "Disponible").Sum(i => i.Cantidad);
+    var stockEnUso      = todosItems.Where(i => i.Estado == "En Uso").Sum(i => i.Cantidad);
+    var stockOtros      = todosItems.Where(i => i.Estado != "Disponible" && i.Estado != "En Uso").Sum(i => i.Cantidad);
+    var stockTotal      = todosItems.Sum(i => i.Cantidad);
+    var totalLotes      = Model.Lotes?.Count() ?? 0;
+    var bajoDeMinimoStock = stockDisponible < Model.StockMinimo;
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Catálogo</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Artículos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">@Model.Marca @Model.Modelo</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 4px 0;">@Model.Marca @Model.Modelo</h1>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+            <span class="badge badge-primary">@Model.Categoria?.Nombre</span>
+            @if (Model.RequiereSerial)
+            {
+                <span class="badge" style="background: rgba(4,115,148,0.12); color: var(--md-sys-color-primary);">
+                    <md-icon style="font-size:14px;vertical-align:middle;">qr_code</md-icon> Con Serial
+                </span>
+            }
+            else
+            {
+                <span class="badge" style="background: rgba(255,92,0,0.12); color: var(--md-sys-color-secondary);">
+                    <md-icon style="font-size:14px;vertical-align:middle;">format_list_numbered</md-icon> Sin Serial
+                </span>
+            }
+            @if (bajoDeMinimoStock)
+            {
+                <span class="badge" style="background: rgba(211,47,47,0.12); color: var(--md-sys-color-error);">
+                    <md-icon style="font-size:14px;vertical-align:middle;">warning</md-icon> Stock bajo
+                </span>
+            }
+        </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("Edit", new { id = Model.Id })'">
+            <md-icon slot="icon">edit</md-icon>
+            Editar
+        </md-outlined-button>
+        <md-outlined-button onclick="window.location.href='@Url.Action("Index")'">
+            <md-icon slot="icon">arrow_back</md-icon>
+            Volver
+        </md-outlined-button>
+        <md-filled-button onclick="window.location.href='@Url.Action("AddLote", "Lotes", new { articuloId = Model.Id })'">
+            <md-icon slot="icon">add_shopping_cart</md-icon>
+            Registrar Compra
+        </md-filled-button>
+    </div>
+</div>
+
+<!-- Stats de Stock -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: @(bajoDeMinimoStock ? "var(--md-sys-color-error)" : "var(--md-sys-color-success)");">@stockDisponible</div>
+                <div class="stat-card-label">Disponible</div>
+            </div>
+            <div class="stat-card-icon" style="background: @(bajoDeMinimoStock ? "rgba(211,47,47,0.12)" : "rgba(76,175,80,0.15)");">
+                <md-icon style="color: @(bajoDeMinimoStock ? "var(--md-sys-color-error)" : "var(--md-sys-color-success)");">check_circle</md-icon>
+            </div>
+        </div>
+        @if (Model.StockMinimo > 0)
+        {
+            <div style="margin-top: 8px; font-size: 12px; color: var(--md-sys-color-on-surface-variant);">
+                Mínimo: @Model.StockMinimo
+                @if (bajoDeMinimoStock)
+                {
+                    <span style="color: var(--md-sys-color-error); font-weight: 600;"> ⚠ Bajo</span>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-primary);">@stockEnUso</div>
+                <div class="stat-card-label">En Uso</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(4,115,148,0.12);">
+                <md-icon style="color: var(--md-sys-color-primary);">person_pin</md-icon>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@stockTotal</div>
+                <div class="stat-card-label">Total en Sistema</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>inventory_2</md-icon>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@totalLotes</div>
+                <div class="stat-card-label">Lotes Registrados</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255,92,0,0.12);">
+                <md-icon style="color: var(--md-sys-color-secondary);">layers</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info + Lotes en dos columnas -->
+<div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start;">
+
+    <!-- Info del Artículo -->
+    <div class="card">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+            <md-icon style="color: var(--md-sys-color-primary);">info</md-icon>
+            <h2 class="md-typescale-title-medium" style="margin: 0;">Información</h2>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px;">Marca</div>
+                <div style="font-size: 15px; font-weight: 500;">@Model.Marca</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px;">Modelo</div>
+                <div style="font-size: 15px; font-weight: 500;">@Model.Modelo</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px;">Categoría</div>
+                <div style="font-size: 15px;">@Model.Categoria?.Nombre</div>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Descripcion))
+            {
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px;">Descripción</div>
+                    <div style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">@Model.Descripcion</div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Especificaciones))
+            {
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px;">Especificaciones</div>
+                    <div style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">@Model.Especificaciones</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Lotes -->
+    <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <md-icon style="color: var(--md-sys-color-tertiary);">layers</md-icon>
+                <div>
+                    <h2 class="md-typescale-title-medium" style="margin: 0;">Lotes de Compra</h2>
+                    <p style="font-size: 12px; margin: 2px 0 0; color: var(--md-sys-color-on-surface-variant);">Historial de ingresos de este artículo</p>
+                </div>
+            </div>
+            @if (totalLotes > 0)
+            {
+                <span class="badge">@totalLotes lote@(totalLotes != 1 ? "s" : "")</span>
+            }
+        </div>
+
+        @if (Model.Lotes != null && Model.Lotes.Any())
+        {
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Proveedor / Fecha</th>
+                            <th>Factura</th>
+                            <th style="text-align:center;">Cant. Lote</th>
+                            <th style="text-align:center;">Registrados</th>
+                            <th style="text-align:center;">Disponibles</th>
+                            <th style="text-align:center;">Estado</th>
+                            <th class="actions-column"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lote in Model.Lotes)
+                        {
+                            var loteItems     = lote.Items?.Where(i => !i.Eliminado) ?? Enumerable.Empty<PSData.Modelos.Item>();
+                            var registrados   = loteItems.Sum(i => i.Cantidad);
+                            var disponiblesL  = loteItems.Where(i => i.Estado == "Disponible").Sum(i => i.Cantidad);
+                            var completo      = registrados >= lote.Cantidad;
+                            var pct           = lote.Cantidad > 0 ? (int)(registrados * 100.0 / lote.Cantidad) : 0;
+
+                            <tr style="cursor:pointer;" onclick="window.location.href='@Url.Action("Details", "Lotes", new { id = lote.Id })'">
+                                <td>
+                                    <div style="font-weight:500;">@lote.Compra?.Proveedor</div>
+                                    <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@lote.Compra?.FechaCompra.ToString("dd/MM/yyyy")</div>
+                                </td>
+                                <td style="font-size:13px; color:var(--md-sys-color-on-surface-variant);">
+                                    @(string.IsNullOrEmpty(lote.Compra?.NumeroFactura) ? "—" : lote.Compra.NumeroFactura)
+                                </td>
+                                <td style="text-align:center;">
+                                    <strong>@lote.Cantidad</strong>
+                                </td>
+                                <td style="text-align:center;">
+                                    <div>@registrados / @lote.Cantidad</div>
+                                    <div style="width:60px; height:4px; background:var(--md-sys-color-surface-variant); border-radius:2px; margin: 4px auto 0;">
+                                        <div style="width:@pct%; height:100%; background:@(completo ? "var(--md-sys-color-success)" : "var(--md-sys-color-primary)"); border-radius:2px;"></div>
+                                    </div>
+                                </td>
+                                <td style="text-align:center;">
+                                    <strong style="color:@(disponiblesL > 0 ? "var(--md-sys-color-success)" : "var(--md-sys-color-on-surface-variant)");">@disponiblesL</strong>
+                                </td>
+                                <td style="text-align:center;">
+                                    @if (completo)
+                                    {
+                                        <span class="badge badge-success" style="font-size:11px;">Completo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="font-size:11px; background:rgba(255,152,0,0.15); color:#e65100;">Pendiente</span>
+                                    }
+                                </td>
+                                <td class="actions-cell" onclick="event.stopPropagation()">
+                                    <a href="@Url.Action("Details", "Lotes", new { id = lote.Id })" title="Ver e ingresar items">
+                                        <md-icon-button>
+                                            <md-icon>open_in_new</md-icon>
+                                        </md-icon-button>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <md-icon style="font-size:48px; color:var(--md-sys-color-outline);">layers</md-icon>
+                <h3 class="md-typescale-title-medium">Sin lotes registrados</h3>
+                <p class="md-typescale-body-medium">Registra la primera compra para comenzar a ingresar stock.</p>
+                <md-filled-button onclick="window.location.href='@Url.Action("AddLote", "Lotes", new { articuloId = Model.Id })'">
+                    <md-icon slot="icon">add_shopping_cart</md-icon>
+                    Registrar Compra
+                </md-filled-button>
+            </div>
+        }
+    </div>
+</div>
+

@@ -13,7 +13,7 @@ namespace PSInventory
     public partial class Items : MaterialForm
     {
         LoadingHelper loadingHelper;
-        private string itemSerialEditar = null;
+        private int? itemIdEditar = null;
 
         public Items()
         {
@@ -23,10 +23,10 @@ namespace PSInventory
             CargarDatosAsync();
         }
 
-        public Items(string serial) : this()
+        public Items(int id) : this()
         {
-            itemSerialEditar = serial;
-            CargarDatosItemAsync(serial);
+            itemIdEditar = id;
+            CargarDatosItemAsync(id);
         }
 
         private void InicializarEstados()
@@ -54,13 +54,14 @@ namespace PSInventory
                         })
                         .ToList();
 
-                    // Cargar Compras
-                    var compras = db.Compras.AsNoTracking()
-                        .Where(c => c.Estado != "Recibida")  // Solo compras pendientes
-                        .OrderByDescending(c => c.FechaCompra)
-                        .Select(c => new { 
-                            c.Id, 
-                            Nombre = c.Proveedor + " - " + c.FechaCompra.ToString("dd/MM/yyyy") 
+                    // Cargar Lotes
+                    var lotes = db.Lotes.AsNoTracking()
+                        .Include(l => l.Compra)
+                        .Where(l => l.Compra.Estado != "Recibida")
+                        .OrderByDescending(l => l.Compra.FechaCompra)
+                        .Select(l => new { 
+                            Id = l.Id, 
+                            Nombre = $"Lote {l.Id} - " + l.Compra.Proveedor + " - " + l.Compra.FechaCompra.ToString("dd/MM/yyyy") 
                         })
                         .ToList();
 
@@ -77,7 +78,7 @@ namespace PSInventory
                         cmbArticulo.DisplayMember = "Nombre";
                         cmbArticulo.ValueMember = "Id";
 
-                        cmbCompra.DataSource = compras;
+                        cmbCompra.DataSource = lotes;
                         cmbCompra.DisplayMember = "Nombre";
                         cmbCompra.ValueMember = "Id";
 
@@ -91,7 +92,7 @@ namespace PSInventory
             });
         }
 
-        private async void CargarDatosItemAsync(string serial)
+        private async void CargarDatosItemAsync(int id)
         {
             loadingHelper.Show("Cargando item...");
             try
@@ -101,7 +102,7 @@ namespace PSInventory
                     using (var db = new PSDatos())
                     {
                         var item = db.Items.AsNoTracking()
-                            .FirstOrDefault(i => i.Serial == serial);
+                            .FirstOrDefault(i => i.Id == id);
 
                         if (item != null)
                         {
@@ -110,10 +111,8 @@ namespace PSInventory
                                 txtSerial.Text = item.Serial;
                                 txtSerial.Enabled = false;
                                 cmbArticulo.SelectedValue = item.ArticuloId;
-                                cmbCompra.SelectedValue = item.CompraId;
-                                cmbSucursal.SelectedValue = item.SucursalId ?? "";
-                                cmbEstado.SelectedItem = item.Estado;
-                                numCosto.Value = item.Costo;
+                                cmbCompra.SelectedValue = item.LoteId;
+                                // numCosto.Value is removed or ignored since cost is per lote
                                 txtUbicacion.Text = item.Ubicacion;
                                 txtResponsable.Text = item.ResponsableEmpleado;
                                 txtObservaciones.Text = item.Observaciones;
@@ -142,24 +141,21 @@ namespace PSInventory
             if (!ValidarCampos())
                 return;
 
-            loadingHelper.Show(itemSerialEditar != null ? "Actualizando item..." : "Guardando item...");
+            loadingHelper.Show(itemIdEditar != null ? "Actualizando item..." : "Guardando item...");
             try
             {
                 bool exito = await Task.Run(() =>
                 {
                     using (var db = new PSDatos())
                     {
-                        if (itemSerialEditar != null)
+                        if (itemIdEditar != null)
                         {
-                            var item = db.Items.Find(itemSerialEditar);
+                            var item = db.Items.Find(itemIdEditar);
                             if (item != null)
                             {
                                 item.ArticuloId = (int)cmbArticulo.SelectedValue;
-                                item.CompraId = (int)cmbCompra.SelectedValue;
-                                item.SucursalId = string.IsNullOrEmpty(cmbSucursal.SelectedValue?.ToString()) 
-                                    ? null : cmbSucursal.SelectedValue.ToString();
-                                item.Estado = cmbEstado.SelectedItem.ToString();
-                                item.Costo = numCosto.Value;
+                                item.LoteId = (int)cmbCompra.SelectedValue;
+                                // item.Costo is removed
                                 item.Ubicacion = txtUbicacion.Text.Trim();
                                 item.ResponsableEmpleado = txtResponsable.Text.Trim();
                                 item.Observaciones = txtObservaciones.Text.Trim();
@@ -173,29 +169,33 @@ namespace PSInventory
                         }
                         else
                         {
-                            bool existe = db.Items.AsNoTracking()
-                                .Any(i => i.Serial == txtSerial.Text.Trim());
+                            string serialInput = txtSerial.Text.Trim().ToUpper();
+                            string? finalSerial = string.IsNullOrEmpty(serialInput) ? null : serialInput;
 
-                            if (existe)
+                            if (finalSerial != null)
                             {
-                                this.Invoke(new Action(() =>
+                                bool existe = db.Items.AsNoTracking()
+                                    .Any(i => i.Serial == finalSerial);
+
+                                if (existe)
                                 {
-                                    MaterialMessageBox.Show("Ya existe un item con ese número de serie", 
-                                        "Serial Duplicado", MessageBoxButtons.OK, false, 
-                                        FlexibleMaterialForm.ButtonsPosition.Center);
-                                }));
-                                return false;
+                                    this.Invoke(new Action(() =>
+                                    {
+                                        MaterialMessageBox.Show("Ya existe un item con ese número de serie", 
+                                            "Serial Duplicado", MessageBoxButtons.OK, false, 
+                                            FlexibleMaterialForm.ButtonsPosition.Center);
+                                    }));
+                                    return false;
+                                }
                             }
 
                             var nuevoItem = new Item
                             {
-                                Serial = txtSerial.Text.Trim().ToUpper(),
+                                Serial = finalSerial,
+                                Cantidad = 1, // To do: add UI for Cantidad
                                 ArticuloId = (int)cmbArticulo.SelectedValue,
-                                CompraId = (int)cmbCompra.SelectedValue,
-                                SucursalId = string.IsNullOrEmpty(cmbSucursal.SelectedValue?.ToString()) 
-                                    ? null : cmbSucursal.SelectedValue.ToString(),
-                                Estado = cmbEstado.SelectedItem.ToString(),
-                                Costo = numCosto.Value,
+                                LoteId = (int)cmbCompra.SelectedValue,
+                                // Costo removed
                                 Ubicacion = txtUbicacion.Text.Trim(),
                                 ResponsableEmpleado = txtResponsable.Text.Trim(),
                                 Observaciones = txtObservaciones.Text.Trim(),
@@ -227,14 +227,6 @@ namespace PSInventory
 
         private bool ValidarCampos()
         {
-            if (string.IsNullOrWhiteSpace(txtSerial.Text))
-            {
-                MaterialMessageBox.Show("Debe ingresar el número de serie", "Validación", 
-                    MessageBoxButtons.OK, false, FlexibleMaterialForm.ButtonsPosition.Center);
-                txtSerial.Focus();
-                return false;
-            }
-
             if (cmbArticulo.SelectedValue == null)
             {
                 MaterialMessageBox.Show("Debe seleccionar un artículo", "Validación", 
@@ -251,13 +243,7 @@ namespace PSInventory
                 return false;
             }
 
-            if (numCosto.Value <= 0)
-            {
-                MaterialMessageBox.Show("El costo debe ser mayor a 0", "Validación", 
-                    MessageBoxButtons.OK, false, FlexibleMaterialForm.ButtonsPosition.Center);
-                numCosto.Focus();
-                return false;
-            }
+            // numCosto validation removed
 
             return true;
         }

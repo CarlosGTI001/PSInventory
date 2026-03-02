@@ -254,7 +254,7 @@ namespace PSInventory
                             foreach (var articulo in articulos)
                             {
                                 var categoria = categorias.FirstOrDefault(c => c.Id == articulo.CategoriaId);
-                                var stockActual = items.Count(i => i.ArticuloId == articulo.Id && i.Estado == "Disponible");
+                                var stockActual = items.Where(i => i.ArticuloId == articulo.Id && i.Estado == "Disponible").Sum(i => i.Cantidad);
                                 
                                 var item = new ListViewItem(articulo.Id.ToString());
                                 item.SubItems.Add($"{articulo.Marca} {articulo.Modelo}");
@@ -320,34 +320,19 @@ namespace PSInventory
                         if (listViewItems != null)
                         {
                             listViewItems.Items.Clear();
-                            foreach (var itemData in items)
-                            {
-                                var articulo = articulos.FirstOrDefault(a => a.Id == itemData.ArticuloId);
-                                var sucursal = !string.IsNullOrEmpty(itemData.SucursalId) ? 
-                                    sucursales.FirstOrDefault(s => s.Id == itemData.SucursalId) : null;
-                                
-                                var item = new ListViewItem(itemData.Serial);
-                                item.SubItems.Add(articulo != null ? $"{articulo.Marca} {articulo.Modelo}" : "N/A");
-                                item.SubItems.Add(itemData.Estado ?? "N/A");
-                                item.SubItems.Add(sucursal?.Nombre ?? "Almacén Central");
-                                
-                                var garantiaTexto = itemData.FechaGarantiaVencimiento.HasValue ? 
-                                    (itemData.FechaGarantiaVencimiento.Value > DateTime.Now ? 
-                                        $"Hasta {itemData.FechaGarantiaVencimiento.Value:dd/MM/yyyy}" : "Vencida") 
-                                    : "N/A";
-                                item.SubItems.Add(garantiaTexto);
-                                
-                                // Color según estado
-                                if (itemData.Estado == "Disponible")
-                                    item.ForeColor = Color.Green;
-                                else if (itemData.Estado == "En Reparación")
-                                    item.ForeColor = Color.Orange;
-                                else if (itemData.Estado == "Dañado" || itemData.Estado == "Dado de Baja")
-                                    item.ForeColor = Color.Red;
-                                    
-                                item.Tag = itemData.Serial;
-                                listViewItems.Items.Add(item);
-                            }
+                    foreach (var itemData in items)
+                    {
+                        var item = new ListViewItem(itemData.Serial ?? $"[Lote {itemData.LoteId}]");
+                        item.SubItems.Add($"{itemData.Articulo.Marca} {itemData.Articulo.Modelo}");
+                        item.SubItems.Add(itemData.Articulo.Categoria?.Nombre ?? "");
+                        item.SubItems.Add(itemData.Estado);
+                        item.SubItems.Add(itemData.Cantidad.ToString());
+                        item.SubItems.Add(itemData.Sucursal?.Nombre ?? "Almacén Central");
+                        item.SubItems.Add(itemData.Lote?.CostoUnitario.ToString("C") ?? "$0.00");
+                        
+                        item.Tag = itemData.Id;
+                        listViewItems.Items.Add(item);
+                    }
                         }
                     });
                 }
@@ -610,13 +595,13 @@ namespace PSInventory
         
         private void btnEditarItem_Click(object sender, EventArgs e)
         {
-            if (listViewItems?.SelectedItems.Count > 0)
+            if (listViewItems.SelectedItems.Count > 0)
             {
-                string numSerie = (string)listViewItems.SelectedItems[0].Tag;
-                Items form = new Items(numSerie);
-                if (form.ShowDialog(this) == DialogResult.OK)
-                {
-                    Task.Run(() => CargarItemsAsync());
+                int id = (int)listViewItems.SelectedItems[0].Tag;
+                var frmItems = new Items(id);
+                if (frmItems.ShowDialog() == DialogResult.OK)
+                { 
+                    CargarItemsAsync();
                 }
             }
         }
@@ -775,31 +760,23 @@ namespace PSInventory
         
         private void btnEliminarItem_Click(object sender, EventArgs e)
         {
-            if (listViewItems?.SelectedItems.Count > 0)
+            if (listViewItems.SelectedItems.Count > 0)
             {
-                string serial = (string)listViewItems.SelectedItems[0].Tag;
-                
-                // Verificar si tiene movimientos asociados
-                using (var context = new PSDatos())
-                {
-                    int movimientos = context.MovimientosItem.Count(m => m.ItemSerial == serial);
-                    if (movimientos > 0)
-                    {
-                        MessageBox.Show($"No se puede eliminar. Este item tiene {movimientos} movimientos registrados.", 
-                            "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                }
-                
-                var resultado = MessageBox.Show("¿Está seguro de eliminar este item?", "Confirmar", 
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (resultado == DialogResult.Yes)
-                {
-                    try
+                int id = (int)listViewItems.SelectedItems[0].Tag;
+                DialogResult result = MaterialMessageBox.Show("¿Está seguro de eliminar este item?", "Confirmar Eliminación", MessageBoxButtons.YesNo);
+                if (result == DialogResult.Yes)
+                {                    try
                     {
                         using (var context = new PSDatos())
                         {
-                            var item = context.Items.Find(serial);
+                            int movimientos = context.MovimientosItem.Count(m => m.ItemId == id);
+                            if (movimientos > 0)
+                            {
+                                MaterialMessageBox.Show("No se puede eliminar este item porque tiene historial de movimientos.", "Error");
+                                return;
+                            }
+
+                            var item = context.Items.Find(id);
                             if (item != null)
                             {
                                 context.Items.Remove(item);

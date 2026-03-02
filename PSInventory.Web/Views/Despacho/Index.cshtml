@@ -1,0 +1,724 @@
+@{
+    ViewData["Title"] = "Enviar Artículos";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Operaciones</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Enviar Artículos</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Enviar Artículos</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Busca artículos disponibles y despáchalos a una sucursal en un solo envío
+        </p>
+    </div>
+    <div id="badge-carrito" style="display:none; align-items:center; gap:8px; padding:10px 16px; border-radius:24px; background:rgba(4,115,148,0.1); color:var(--md-sys-color-primary);">
+        <md-icon>shopping_cart</md-icon>
+        <span id="badge-count" class="md-typescale-title-medium">0</span>
+        <span class="md-typescale-body-medium">en lista</span>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start;">
+
+    <!-- Columna izquierda: Buscador + resultados -->
+    <div>
+        <!-- Buscador -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <md-icon style="color: var(--md-sys-color-primary);">search</md-icon>
+                <h3 class="md-typescale-title-medium" style="margin:0;">Buscar Artículo</h3>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field
+                    id="searchInput"
+                    label="Marca, modelo, categoría..."
+                    type="search"
+                    supporting-text="Escribe al menos 2 caracteres para buscar">
+                    <md-icon slot="leading-icon">inventory</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+
+        <!-- Resultados de búsqueda -->
+        <div id="searchResults" style="display:none;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--md-sys-color-on-surface-variant);">
+                <md-icon style="font-size:18px;">filter_list</md-icon>
+                <span class="md-typescale-label-large" id="resultCount"></span>
+            </div>
+            <div id="resultCards"></div>
+        </div>
+
+        <div id="searchEmpty" style="display:none;" class="empty-state">
+            <md-icon style="font-size:48px; color:var(--md-sys-color-outline);">search_off</md-icon>
+            <h3 class="md-typescale-title-medium">Sin resultados</h3>
+            <p class="md-typescale-body-medium">No hay artículos disponibles que coincidan con la búsqueda.</p>
+        </div>
+    </div>
+
+    <!-- Columna derecha: Lista de envío + formulario -->
+    <div>
+        <div class="card" style="position: sticky; top: 80px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+                <md-icon style="color: var(--md-sys-color-primary);">local_shipping</md-icon>
+                <div>
+                    <h3 class="md-typescale-title-medium" style="margin:0;">Lista de Envío</h3>
+                    <p style="font-size:12px; margin:2px 0 0; color:var(--md-sys-color-on-surface-variant);">Items a despachar</p>
+                </div>
+            </div>
+
+            <!-- Items en la lista -->
+            <div id="cartEmpty" style="text-align:center; padding: 20px; color: var(--md-sys-color-on-surface-variant);">
+                <md-icon style="font-size:36px; opacity:0.4;">add_shopping_cart</md-icon>
+                <p class="md-typescale-body-medium" style="margin: 8px 0 0;">Agrega artículos desde el buscador</p>
+            </div>
+
+            <div id="cartItems" style="display:none; max-height: 280px; overflow-y: auto; margin-bottom: 16px;">
+                <table style="width:100%; border-collapse:collapse;" id="cartTable">
+                    <tbody id="cartBody"></tbody>
+                </table>
+            </div>
+
+            <div id="cartTotal" style="display:none; padding: 8px 0; margin-bottom: 16px; border-top: 1px solid var(--md-sys-color-outline-variant); border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="md-typescale-label-large" style="color:var(--md-sys-color-on-surface-variant);">Total unidades:</span>
+                    <strong class="md-typescale-title-medium" id="totalUnidades" style="color:var(--md-sys-color-primary);">0</strong>
+                </div>
+            </div>
+
+            <!-- Formulario de destino -->
+            <div id="dispatchForm" style="display:none;">
+
+                <!-- PASO 1: Departamento -->
+                <div style="margin-bottom: 4px;">
+                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
+                        Paso 1 — Departamento
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <div class="md3-select-field has-leading-icon" style="flex:1;">
+                            <md-icon class="md3-select-leading-icon">business_center</md-icon>
+                            <select id="selectDepartamento" class="md3-select">
+                                <option value="">Todos los departamentos</option>
+                                @foreach (var d in ViewBag.Departamentos)
+                                {
+                                    <option value="@d.Value">@d.Text</option>
+                                }
+                            </select>
+                            <label class="md3-select-label">Departamento</label>
+                        </div>
+                        <md-icon-button type="button" onclick="openSearchDialog('selectDepartamento','Buscar Departamento','Escribe el nombre...')" title="Buscar">
+                            <md-icon>search</md-icon>
+                        </md-icon-button>
+                    </div>
+                    <div id="deptoSeleccionado" style="display:none; margin-top:4px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
+                        <md-icon style="font-size:14px;">check_circle</md-icon>
+                        <span id="deptoNombre"></span>
+                    </div>
+                </div>
+
+                <div style="border-left: 3px solid var(--md-sys-color-outline-variant); margin: 10px 0 10px 12px; padding-left: 12px;">
+
+                    <!-- PASO 2: Región -->
+                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
+                        Paso 2 — Región *
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <div class="md3-select-field has-leading-icon" style="flex:1;">
+                            <md-icon class="md3-select-leading-icon">public</md-icon>
+                            <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)" required>
+                                <option value="">Seleccione región</option>
+                                @foreach (var r in ViewBag.Regiones)
+                                {
+                                    <option value="@r.Value">@r.Text</option>
+                                }
+                            </select>
+                            <label class="md3-select-label">Región *</label>
+                        </div>
+                        <md-icon-button type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
+                            <md-icon>search</md-icon>
+                        </md-icon-button>
+                    </div>
+
+                    <!-- PASO 3: Sucursal (cargada por AJAX según región) -->
+                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
+                        Paso 3 — Sucursal *
+                    </p>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                        <div class="md3-select-field has-leading-icon" style="flex:1;">
+                            <md-icon class="md3-select-leading-icon">store</md-icon>
+                            <select id="sucursalDestino" class="md3-select" required disabled>
+                                <option value="">Seleccione primero una región</option>
+                            </select>
+                            <label class="md3-select-label">Sucursal Destino *</label>
+                        </div>
+                        <md-icon-button id="btnBuscarSucursal" type="button" disabled
+                            onclick="openSearchDialog('sucursalDestino','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
+                            <md-icon>search</md-icon>
+                        </md-icon-button>
+                    </div>
+                    <div id="sucursalSeleccionada" style="display:none; margin-top:-8px; margin-bottom:8px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
+                        <md-icon style="font-size:14px;">check_circle</md-icon>
+                        <span id="sucursalNombre"></span>
+                    </div>
+
+                </div>
+
+                <!-- Responsable y observaciones -->
+                <div class="form-field" style="margin-bottom: 12px;">
+                    <md-filled-text-field
+                        id="responsable"
+                        label="Responsable *"
+                        supporting-text="Empleado que recibe">
+                        <md-icon slot="leading-icon">person</md-icon>
+                    </md-filled-text-field>
+                </div>
+
+                <div class="form-field" style="margin-bottom: 16px;">
+                    <md-filled-text-field
+                        id="observaciones"
+                        label="Observaciones"
+                        supporting-text="Opcional">
+                        <md-icon slot="leading-icon">note</md-icon>
+                    </md-filled-text-field>
+                </div>
+
+                <md-filled-button id="btnEnviar" style="width:100%;" onclick="enviarDespacho()">
+                    <md-icon slot="icon">local_shipping</md-icon>
+                    Confirmar Envío
+                </md-filled-button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Envío -->
+<md-dialog id="modalConfirm">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary); font-size:28px;">local_shipping</md-icon>
+        <div>
+            <div style="font-size:18px; font-weight:700;">¿Confirmar envío?</div>
+            <div style="font-size:12px; font-weight:400; color:var(--md-sys-color-on-surface-variant);">Revisa los detalles antes de continuar</div>
+        </div>
+    </div>
+    <div slot="content" style="min-width:340px; max-width:520px;">
+
+        <!-- Destino -->
+        <div style="border-radius:12px; background:var(--md-sys-color-surface-variant); padding:14px 16px; margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--md-sys-color-on-surface-variant); margin-bottom:10px;">Destino</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 16px;">
+                <div id="cfmDepto" style="display:none;">
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Departamento</div>
+                    <div style="font-size:13px; font-weight:600;" id="cfmDeptoVal"></div>
+                </div>
+                <div>
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Región</div>
+                    <div style="font-size:13px; font-weight:600;" id="cfmRegionVal"></div>
+                </div>
+                <div>
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Sucursal</div>
+                    <div style="font-size:13px; font-weight:600;" id="cfmSucursalVal"></div>
+                </div>
+                <div>
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Responsable</div>
+                    <div style="font-size:13px; font-weight:600;" id="cfmResponsableVal"></div>
+                </div>
+            </div>
+            <div id="cfmObsRow" style="display:none; margin-top:8px;">
+                <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Observaciones</div>
+                <div style="font-size:13px; font-style:italic;" id="cfmObsVal"></div>
+            </div>
+        </div>
+
+        <!-- Artículos -->
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--md-sys-color-on-surface-variant); margin-bottom:8px;">Artículos a enviar</div>
+        <div style="border:1px solid var(--md-sys-color-outline-variant); border-radius:10px; overflow:hidden; margin-bottom:12px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="background:var(--md-sys-color-surface-variant);">
+                        <th style="padding:8px 12px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Artículo</th>
+                        <th style="padding:8px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Serial</th>
+                        <th style="padding:8px 12px; text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">Cant.</th>
+                    </tr>
+                </thead>
+                <tbody id="cfmItemsBody"></tbody>
+            </table>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:6px; align-items:center;">
+            <span style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">Total unidades:</span>
+            <span style="font-weight:700; font-size:16px; color:var(--md-sys-color-primary);" id="cfmTotal"></span>
+        </div>
+    </div>
+    <div slot="actions">
+        <md-outlined-button onclick="cerrarModalConfirm()">
+            <md-icon slot="icon">edit</md-icon>
+            Corregir
+        </md-outlined-button>
+        <md-filled-button id="btnConfirmarEnvio" onclick="ejecutarEnvio()">
+            <md-icon slot="icon">check_circle</md-icon>
+            Sí, enviar
+        </md-filled-button>
+    </div>
+</md-dialog>
+<md-dialog id="modalSerial">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary); font-size:26px;">qr_code_scanner</md-icon>
+        <div>
+            <div id="modalSerialTitulo" style="font-size:16px; font-weight:700;"></div>
+            <div id="modalSerialDisp" style="font-size:12px; font-weight:400; color:var(--md-sys-color-on-surface-variant);"></div>
+        </div>
+    </div>
+    <div slot="content" style="min-width:300px;">
+        <div class="form-field" style="margin-bottom:12px;">
+            <md-filled-text-field id="modalSerialInput" label="Número de Serial *" style="width:100%;"
+                onkeydown="if(event.key==='Enter') confirmarSerial()">
+                <md-icon slot="leading-icon">tag</md-icon>
+            </md-filled-text-field>
+        </div>
+        <div id="modalSerialError" style="display:none; font-size:12px; color:var(--md-sys-color-error); padding:6px 10px; border-radius:8px; background:rgba(176,0,32,0.08);"></div>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="cerrarModalSerial()">Cancelar</md-text-button>
+        <md-filled-button id="btnConfirmarSerial" onclick="confirmarSerial()">
+            <md-icon slot="icon">check</md-icon>
+            Confirmar
+        </md-filled-button>
+    </div>
+</md-dialog>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+    // ─── Estado del carrito ───────────────────────────────────────────────────
+    const cart = [];  // [{ itemId, articuloNombre, serial, lote, cantidad, maxCantidad, requiereSerial }]
+
+    // ─── Búsqueda con debounce ────────────────────────────────────────────────
+    const searchInput = document.getElementById('searchInput');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchEmpty').style.display = 'none';
+            return;
+        }
+        debounceTimer = setTimeout(() => buscarStock(q), 350);
+    });
+
+    async function buscarStock(q) {
+        const resp = await fetch(`/Despacho/BuscarStock?q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
+        window._lastSearchData = data;
+        renderResults(data);
+    }
+
+    function renderResults(data) {
+        const resultsDiv  = document.getElementById('searchResults');
+        const emptyDiv    = document.getElementById('searchEmpty');
+        const resultCards = document.getElementById('resultCards');
+        const resultCount = document.getElementById('resultCount');
+
+        if (!data || data.length === 0) {
+            resultsDiv.style.display  = 'none';
+            emptyDiv.style.display    = 'flex';
+            return;
+        }
+
+        emptyDiv.style.display   = 'none';
+        resultsDiv.style.display = 'block';
+        resultCount.textContent  = `${data.length} artículo(s) con stock disponible`;
+        resultCards.innerHTML    = '';
+
+        data.forEach(art => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.cssText = 'margin-bottom: 12px; padding: 16px;';
+
+            const badgeSerial = art.requiereSerial
+                ? `<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(4,115,148,0.12); color:var(--md-sys-color-primary); font-weight:600;">Con Serial</span>`
+                : `<span style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(0,128,0,0.1); color:#2e7d32; font-weight:600;">Sin Serial</span>`;
+
+            const dispBadge = `<span style="font-size:13px; color:var(--md-sys-color-on-surface-variant);">
+                <strong style="color:var(--md-sys-color-primary); font-size:16px;">${art.disponible}</strong>
+                ${art.requiereSerial ? ' unidad(es) disponible(s)' : ' unidad(es) en stock'}
+            </span>`;
+
+            let accionHtml = '';
+            if (art.requiereSerial) {
+                accionHtml = `
+                    <md-filled-tonal-button onclick="abrirModalSerial(${art.articuloId}, '${esc(art.nombre)}', ${art.disponible})"
+                        style="margin-top:12px; width:100%;">
+                        <md-icon slot="icon">qr_code_scanner</md-icon>
+                        Agregar por Serial
+                    </md-filled-tonal-button>`;
+            } else {
+                const inCart = cart.find(c => c.articuloId === art.articuloId);
+                const qtyVal = inCart ? inCart.cantidad : 1;
+                accionHtml = `
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:12px;">
+                        <input id="qty_art_${art.articuloId}" type="number" min="1" max="${art.disponible}" value="${qtyVal}"
+                            style="width:64px; padding:6px 8px; border-radius:8px; border:1px solid var(--md-sys-color-outline); font-size:14px; text-align:center;" />
+                        <md-filled-button style="flex:1;" onclick="agregarSinSerial(${art.articuloId}, '${esc(art.nombre)}', '${esc(art.categoria)}', ${art.disponible}, this)">
+                            <md-icon slot="icon">${inCart ? 'edit' : 'add_shopping_cart'}</md-icon>
+                            ${inCart ? 'Actualizar' : 'Agregar'}
+                        </md-filled-button>
+                        ${inCart ? `<md-icon-button onclick="quitarItem(null, ${art.articuloId})"><md-icon>close</md-icon></md-icon-button>` : ''}
+                    </div>`;
+            }
+
+            card.innerHTML = `
+                <div style="display:flex; align-items:flex-start; gap:10px; margin-bottom:8px;">
+                    <div style="padding:8px; border-radius:8px; background:rgba(4,115,148,0.1); flex-shrink:0;">
+                        <md-icon style="color:var(--md-sys-color-primary);">${art.requiereSerial ? 'qr_code_scanner' : 'inventory_2'}</md-icon>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:15px; margin-bottom:4px;">${art.nombre}</div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">${art.categoria}</span>
+                            ${badgeSerial}
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 8px 12px; border-radius:8px; background:var(--md-sys-color-surface-variant); margin-bottom:4px;">
+                    ${dispBadge}
+                </div>
+                ${accionHtml}`;
+
+            resultCards.appendChild(card);
+        });
+    }
+
+    // ─── Modal Serial ─────────────────────────────────────────────────────────
+    let _serialArtId = null, _serialNombre = '';
+
+    function abrirModalSerial(articuloId, nombre, disponible) {
+        _serialArtId  = articuloId;
+        _serialNombre = nombre;
+        document.getElementById('modalSerialTitulo').textContent = nombre;
+        document.getElementById('modalSerialDisp').textContent   = `${disponible} unidad(es) disponible(s)`;
+        document.getElementById('modalSerialInput').value  = '';
+        document.getElementById('modalSerialError').style.display = 'none';
+        document.getElementById('modalSerial').show();
+        setTimeout(() => document.getElementById('modalSerialInput').focus(), 100);
+    }
+
+    async function confirmarSerial() {
+        const serial = document.getElementById('modalSerialInput').value.trim();
+        const errorDiv = document.getElementById('modalSerialError');
+        if (!serial) { errorDiv.textContent = 'Ingresa el serial.'; errorDiv.style.display='block'; return; }
+        if (cart.some(c => c.serial === serial)) { errorDiv.textContent = 'Este serial ya está en la lista.'; errorDiv.style.display='block'; return; }
+
+        const btn = document.getElementById('btnConfirmarSerial');
+        btn.disabled = true;
+        btn.textContent = 'Buscando...';
+
+        const resp = await fetch(`/Despacho/BuscarSerial?articuloId=${_serialArtId}&serial=${encodeURIComponent(serial)}`);
+        const data = await resp.json();
+
+        btn.disabled = false;
+        btn.textContent = 'Confirmar';
+
+        if (!data.found) {
+            errorDiv.textContent = data.mensaje || 'Serial no encontrado o no disponible.';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        cart.push({ itemId: data.itemId, articuloId: null, articuloNombre: _serialNombre, serial: data.serial, cantidad: 1, maxCantidad: 1, requiereSerial: true });
+        cerrarModalSerial();
+        renderCart();
+    }
+
+    function cerrarModalSerial() {
+        document.getElementById('modalSerial').close();
+    }
+
+    // ─── Agregar sin serial ───────────────────────────────────────────────────
+    function agregarSinSerial(articuloId, nombre, categoria, max, btn) {
+        const qty = parseInt(document.getElementById(`qty_art_${articuloId}`).value) || 1;
+        if (qty < 1 || qty > max) { alert(`Cantidad debe ser entre 1 y ${max}.`); return; }
+        const existing = cart.find(c => c.articuloId === articuloId);
+        if (existing) {
+            existing.cantidad = Math.min(qty, max);
+        } else {
+            cart.push({ itemId: null, articuloId, articuloNombre: nombre, serial: null, cantidad: qty, maxCantidad: max, requiereSerial: false });
+        }
+        renderCart();
+        // Actualizar botón a "Actualizar"
+        if (btn) { btn.innerHTML = '<md-icon slot="icon">edit</md-icon> Actualizar'; }
+    }
+
+    function quitarItem(itemId, articuloId) {
+        if (itemId) {
+            const idx = cart.findIndex(c => c.itemId === itemId);
+            if (idx >= 0) cart.splice(idx, 1);
+        } else {
+            const idx = cart.findIndex(c => c.articuloId === articuloId);
+            if (idx >= 0) cart.splice(idx, 1);
+        }
+        renderCart();
+        // Re-render search results to update button state
+        const lastData = window._lastSearchData;
+        if (lastData) renderResults(lastData);
+    }
+
+    // ─── Renderizar carrito ───────────────────────────────────────────────────
+    function renderCart() {
+        const cartEmpty   = document.getElementById('cartEmpty');
+        const cartItems   = document.getElementById('cartItems');
+        const cartTotal   = document.getElementById('cartTotal');
+        const dispatchForm= document.getElementById('dispatchForm');
+        const badgeCarrito= document.getElementById('badge-carrito');
+        const badgeCount  = document.getElementById('badge-count');
+        const totalUds    = document.getElementById('totalUnidades');
+        const tbody       = document.getElementById('cartBody');
+
+        if (cart.length === 0) {
+            cartEmpty.style.display    = 'block';
+            cartItems.style.display    = 'none';
+            cartTotal.style.display    = 'none';
+            dispatchForm.style.display = 'none';
+            badgeCarrito.style.display = 'none';
+            return;
+        }
+
+        cartEmpty.style.display    = 'none';
+        cartItems.style.display    = 'block';
+        cartTotal.style.display    = 'block';
+        dispatchForm.style.display = 'block';
+        badgeCarrito.style.display = 'flex';
+
+        const total = cart.reduce((s, c) => s + c.cantidad, 0);
+        badgeCount.textContent = cart.length;
+        totalUds.textContent   = total;
+
+        tbody.innerHTML = cart.map(c => `
+            <tr style="border-bottom:1px solid var(--md-sys-color-outline-variant);">
+                <td style="padding:8px 4px;">
+                    <div style="font-size:13px; font-weight:500; line-height:1.3;">${c.articuloNombre}</div>
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">
+                        ${c.serial ? `<md-icon style="font-size:11px;vertical-align:middle;">qr_code</md-icon> ${c.serial}` : ''}
+                    </div>
+                </td>
+                <td style="padding:8px 4px; text-align:center; white-space:nowrap;">
+                    ${c.requiereSerial
+                        ? `<span style="font-size:12px; font-weight:600; padding:2px 8px; border-radius:12px; background:rgba(4,115,148,0.1); color:var(--md-sys-color-primary);">1</span>`
+                        : `<input type="number" min="1" max="${c.maxCantidad}" value="${c.cantidad}"
+                               onchange="cambiarCantidad(${c.articuloId}, this.value)"
+                               style="width:52px; padding:3px 5px; border-radius:6px; border:1px solid var(--md-sys-color-outline); font-size:13px; text-align:center;" />`
+                    }
+                </td>
+                <td style="padding:8px 4px; text-align:right;">
+                    <md-icon-button onclick="quitarItem(${c.itemId ?? 'null'}, ${c.articuloId ?? 'null'})" style="--md-icon-button-icon-size:18px;">
+                        <md-icon>close</md-icon>
+                    </md-icon-button>
+                </td>
+            </tr>`).join('');
+    }
+
+    function cambiarCantidad(articuloId, val) {
+        const item = cart.find(c => c.articuloId === articuloId);
+        if (!item) return;
+        const n = Math.max(1, Math.min(parseInt(val) || 1, item.maxCantidad));
+        item.cantidad = n;
+        document.getElementById('totalUnidades').textContent = cart.reduce((s, c) => s + c.cantidad, 0);
+    }
+
+    // ─── Enviar despacho ─────────────────────────────────────────────────────
+    // Paso 1: validar y mostrar modal de confirmación
+    function enviarDespacho() {
+        const sucursalSel = document.getElementById('sucursalDestino');
+        const regionSel   = document.getElementById('selectRegion');
+        const deptoSel    = document.getElementById('selectDepartamento');
+        const responsable = document.getElementById('responsable').value.trim();
+        const obs         = document.getElementById('observaciones').value.trim();
+
+        if (!regionSel.value)    { alert('Selecciona una región.');                   return; }
+        if (!sucursalSel.value)  { alert('Selecciona una sucursal destino.');          return; }
+        if (!responsable)        { alert('Ingresa el nombre del responsable.');        return; }
+        if (cart.length === 0)   { alert('La lista de envío está vacía.');             return; }
+
+        // Rellenar modal de confirmación
+        const deptoNombre    = deptoSel.value ? deptoSel.options[deptoSel.selectedIndex].text : null;
+        const regionNombre   = regionSel.options[regionSel.selectedIndex].text;
+        const sucursalNombre = sucursalSel.options[sucursalSel.selectedIndex].text;
+
+        const cfmDepto = document.getElementById('cfmDepto');
+        if (deptoNombre) {
+            cfmDepto.style.display = 'block';
+            document.getElementById('cfmDeptoVal').textContent = deptoNombre;
+        } else {
+            cfmDepto.style.display = 'none';
+        }
+        document.getElementById('cfmRegionVal').textContent      = regionNombre;
+        document.getElementById('cfmSucursalVal').textContent     = sucursalNombre;
+        document.getElementById('cfmResponsableVal').textContent  = responsable;
+
+        const obsRow = document.getElementById('cfmObsRow');
+        if (obs) { obsRow.style.display = 'block'; document.getElementById('cfmObsVal').textContent = obs; }
+        else     { obsRow.style.display = 'none'; }
+
+        // Tabla de artículos
+        const total = cart.reduce((s, c) => s + c.cantidad, 0);
+        document.getElementById('cfmTotal').textContent = total;
+        document.getElementById('cfmItemsBody').innerHTML = cart.map((c, i) => `
+            <tr style="border-top:1px solid var(--md-sys-color-outline-variant); ${i % 2 === 1 ? 'background:var(--md-sys-color-surface-variant);' : ''}">
+                <td style="padding:9px 12px; font-weight:500;">${c.articuloNombre}</td>
+                <td style="padding:9px 12px; text-align:center; font-size:12px; color:var(--md-sys-color-on-surface-variant);">
+                    ${c.serial ? `<span style="font-family:monospace; background:rgba(4,115,148,0.08); padding:2px 6px; border-radius:4px;">${c.serial}</span>` : '—'}
+                </td>
+                <td style="padding:9px 12px; text-align:center; font-weight:700; color:var(--md-sys-color-primary);">${c.cantidad}</td>
+            </tr>`).join('');
+
+        document.getElementById('modalConfirm').show();
+    }
+
+    function cerrarModalConfirm() {
+        document.getElementById('modalConfirm').close();
+    }
+
+    // Paso 2: ejecutar el POST real
+    async function ejecutarEnvio() {
+        const sucursalId  = document.getElementById('sucursalDestino').value;
+        const deptoId     = document.getElementById('selectDepartamento').value;
+        const responsable = document.getElementById('responsable').value.trim();
+        const obs         = document.getElementById('observaciones').value.trim();
+
+        cerrarModalConfirm();
+
+        const btn = document.getElementById('btnEnviar');
+        btn.disabled = true;
+        btn.innerHTML = '<md-icon slot="icon">hourglass_top</md-icon> Procesando...';
+
+        const payload = {
+            departamentoId:      deptoId ? parseInt(deptoId) : null,
+            sucursalDestinoId:   sucursalId,
+            responsableEmpleado: responsable,
+            observaciones:       obs || null,
+            items: cart.map(c => ({
+                itemId:     c.itemId     ?? null,
+                articuloId: c.articuloId ?? null,
+                cantidad:   c.cantidad
+            }))
+        };
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        try {
+            const resp = await fetch('/Despacho/Enviar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(payload)
+            });
+            const result = await resp.json();
+
+            if (result.success) {
+                cart.length = 0;
+                renderCart();
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchInput').value = '';
+                showSnackbar(result.message, 'success');
+            } else {
+                showSnackbar(result.message, 'error');
+            }
+        } catch (e) {
+            showSnackbar('Error de conexión al servidor.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<md-icon slot="icon">local_shipping</md-icon> Confirmar Envío';
+        }
+    }
+
+    // ─── Cascada Región → Sucursal ────────────────────────────────────────────
+    async function onRegionChange(select) {
+        const regionId = select.value;
+        const selectSucursal  = document.getElementById('sucursalDestino');
+        const btnBuscar       = document.getElementById('btnBuscarSucursal');
+        const sucursalInfo    = document.getElementById('sucursalSeleccionada');
+
+        selectSucursal.innerHTML = '<option value="">Cargando...</option>';
+        selectSucursal.disabled  = true;
+        btnBuscar.disabled       = true;
+        if (sucursalInfo) sucursalInfo.style.display = 'none';
+
+        if (!regionId) {
+            selectSucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
+            return;
+        }
+
+        const resp = await fetch(`/Despacho/SucursalesPorRegion?regionId=${regionId}`);
+        const data = await resp.json();
+
+        selectSucursal.innerHTML = '<option value="">Seleccione sucursal destino</option>';
+        data.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value       = s.value;
+            opt.textContent = s.text;
+            selectSucursal.appendChild(opt);
+        });
+
+        if (data.length === 0) {
+            selectSucursal.innerHTML = '<option value="">Sin sucursales en esta región</option>';
+        } else {
+            selectSucursal.disabled = false;
+            btnBuscar.disabled      = false;
+        }
+
+        // Actualizar label visual del select (MD3 fix)
+        const label = selectSucursal.closest('.md3-select-field')?.querySelector('.md3-select-label');
+        if (label) label.style.opacity = '1';
+    }
+
+    // Mostrar confirmación visual al seleccionar departamento
+    document.addEventListener('DOMContentLoaded', () => {
+        const selDepto = document.getElementById('selectDepartamento');
+        const selRegion = document.getElementById('selectRegion');
+        const selSucursal = document.getElementById('sucursalDestino');
+
+        if (selDepto) {
+            selDepto.addEventListener('change', () => {
+                const info = document.getElementById('deptoSeleccionado');
+                const nombre = document.getElementById('deptoNombre');
+                if (selDepto.value) {
+                    nombre.textContent = selDepto.options[selDepto.selectedIndex].text;
+                    info.style.display = 'flex';
+                } else {
+                    info.style.display = 'none';
+                }
+            });
+        }
+
+        if (selSucursal) {
+            selSucursal.addEventListener('change', () => {
+                const info = document.getElementById('sucursalSeleccionada');
+                const nombre = document.getElementById('sucursalNombre');
+                if (info && nombre) {
+                    if (selSucursal.value) {
+                        nombre.textContent = selSucursal.options[selSucursal.selectedIndex].text;
+                        info.style.display = 'flex';
+                    } else {
+                        info.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // search-dialog.js ya dispara event 'change' nativo en el select al seleccionar
+    });
+
+    function esc(str) {
+        return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+</script>
+}

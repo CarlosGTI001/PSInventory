@@ -42,7 +42,8 @@ namespace PSInventory.Web.Controllers
                 var query = _context.Items
                     .Include(i => i.Articulo)
                     .ThenInclude(a => a.Categoria)
-                    .Include(i => i.Compra)
+                    .Include(i => i.Lote)
+                    .ThenInclude(l => l.Compra)
                     .Include(i => i.Sucursal)
                     .AsQueryable();
 
@@ -102,14 +103,13 @@ namespace PSInventory.Web.Controllers
                     i.Articulo.Categoria.Nombre,
                     i.Sucursal?.Nombre ?? "Sin Sucursal",
                     i.Estado,
-                    i.Costo.ToString("C")
+                    (i.Lote?.CostoUnitario ?? 0).ToString("C")
                 }).ToList();
 
                 // Preparar totales
                 var totales = new Dictionary<string, string>
                 {
-                    { "Total Items", items.Count.ToString() },
-                    { "Costo Total", items.Sum(i => i.Costo).ToString("C") }
+                    { "Costo Total", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") }
                 };
 
                 // Crear documento PDF
@@ -181,7 +181,8 @@ namespace PSInventory.Web.Controllers
                     .Where(i => i.SucursalId == sucursalId)
                     .Include(i => i.Articulo)
                     .ThenInclude(a => a.Categoria)
-                    .Include(i => i.Compra)
+                    .Include(i => i.Lote)
+                    .ThenInclude(l => l.Compra)
                     .Include(i => i.Sucursal)
                     .OrderBy(i => i.Serial)
                     .ToListAsync();
@@ -235,7 +236,7 @@ namespace PSInventory.Web.Controllers
                                 i.Articulo.Categoria.Nombre,
                                 i.Estado,
                                 i.ResponsableEmpleado ?? "No asignado",
-                                i.Costo.ToString("C")
+                                (i.Lote?.CostoUnitario ?? 0).ToString("C")
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -247,7 +248,7 @@ namespace PSInventory.Web.Controllers
                             var totales = new Dictionary<string, string>
                             {
                                 { "Total Items en Sucursal", items.Count.ToString() },
-                                { "Costo Total", items.Sum(i => i.Costo).ToString("C") }
+                                { "Costo Total", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") }
                             };
 
                             column.Item().Element(c => 
@@ -516,7 +517,8 @@ namespace PSInventory.Web.Controllers
 
                 // Query base
                 var query = _context.Compras
-                    .Include(c => c.Items)
+                    .Include(c => c.Lotes)
+                    .ThenInclude(l => l.Items)
                     .ThenInclude(i => i.Articulo)
                     .AsQueryable();
 
@@ -584,7 +586,7 @@ namespace PSInventory.Web.Controllers
                                 c.FechaCompra.ToString("dd/MM/yyyy"),
                                 c.Proveedor,
                                 c.NumeroFactura ?? "N/A",
-                                c.Items?.Count.ToString() ?? "0",
+                                c.Lotes?.Sum(l => l.Items?.Count ?? 0).ToString() ?? "0",
                                 c.CostoTotal.ToString("C"),
                                 c.Estado
                             }).ToList();
@@ -632,6 +634,7 @@ namespace PSInventory.Web.Controllers
                 var items = await _context.Items
                     .Include(i => i.Articulo)
                     .ThenInclude(a => a.Categoria)
+                    .Include(i => i.Lote)
                     .Include(i => i.Sucursal)
                     .ToListAsync();
 
@@ -695,7 +698,7 @@ namespace PSInventory.Web.Controllers
                             {
                                 g.Key,
                                 g.Count().ToString(),
-                                g.Sum(i => i.Costo).ToString("C")
+                                g.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C")
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -716,7 +719,7 @@ namespace PSInventory.Web.Controllers
                             {
                                 g.Key,
                                 g.Count().ToString(),
-                                g.Sum(i => i.Costo).ToString("C")
+                                g.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C")
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -728,8 +731,8 @@ namespace PSInventory.Web.Controllers
                             var totales = new Dictionary<string, string>
                             {
                                 { "Total Items", items.Count.ToString() },
-                                { "Valor Total Inventario", items.Sum(i => i.Costo).ToString("C") },
-                                { "Costo Promedio por Item", (items.Average(i => i.Costo)).ToString("C") }
+                                { "Valor Total Inventario", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") },
+                                { "Costo Promedio por Item", (items.Average(i => (decimal?)(i.Lote?.CostoUnitario) ?? 0)).ToString("C") }
                             };
 
                             column.Item().Element(c => 

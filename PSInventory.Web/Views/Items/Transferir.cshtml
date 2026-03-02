@@ -19,13 +19,13 @@
     <div>
         <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Transferir Item entre Sucursales</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
-            Transferir el item <strong>@Model.Serial</strong> a otra sucursal
+            Transferir el item <strong>@(Model.Serial ?? $"[Lote {Model.LoteId}]")</strong> a otra sucursal
         </p>
     </div>
 </div>
 
 <form asp-action="Transferir" method="post">
-    <input type="hidden" name="id" value="@Model.Serial" />
+    <input type="hidden" name="id" value="@Model.Id" />
     
     <!-- Sección 1: Información del Item -->
     <div class="card" style="margin-bottom: 24px;">
@@ -43,7 +43,7 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Serial" 
-                    value="@Model.Serial"
+                    value="@(Model.Serial ?? $"[Lote {Model.LoteId}]")"
                     disabled
                     supporting-text="Identificador único">
                     <md-icon slot="leading-icon">qr_code</md-icon>
@@ -97,21 +97,6 @@
 
         <div class="form-row">
             <div class="form-field">
-                <div class="md3-select-field has-leading-icon">
-                    <md-icon class="md3-select-leading-icon">store</md-icon>
-                    <select name="sucursalDestinoId" class="md3-select" required>
-                        <option value="">Seleccione sucursal destino</option>
-                        @foreach (var sucursal in ViewBag.Sucursales)
-                        {
-                            <option value="@sucursal.Value">@sucursal.Text</option>
-                        }
-                    </select>
-                    <label class="md3-select-label">Sucursal Destino *</label>
-                </div>
-                <p class="md3-select-supporting">Sucursal donde se transferirá el item</p>
-            </div>
-            
-            <div class="form-field">
                 <md-filled-text-field 
                     label="Responsable en Destino" 
                     name="responsableRecepcion" 
@@ -119,9 +104,7 @@
                     <md-icon slot="leading-icon">person_add</md-icon>
                 </md-filled-text-field>
             </div>
-        </div>
-
-        <div class="form-row">
+            
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">description</md-icon>
@@ -140,6 +123,25 @@
                 <p class="md3-select-supporting">Razón de la transferencia</p>
             </div>
         </div>
+
+        @if (!Model.Articulo.RequiereSerial && Model.Cantidad > 1)
+        {
+            <div class="form-row">
+                <div class="form-field">
+                    <md-filled-text-field 
+                        label="Cantidad a Transferir *" 
+                        name="cantidadTransferir" 
+                        type="number"
+                        min="1"
+                        max="@Model.Cantidad"
+                        value="@Model.Cantidad"
+                        required
+                        supporting-text="Máximo transferible: @Model.Cantidad">
+                        <md-icon slot="leading-icon">inventory_2</md-icon>
+                    </md-filled-text-field>
+                </div>
+            </div>
+        }
 
         <div class="form-row">
             <div class="form-field" style="width: 100%;">

@@ -58,6 +58,7 @@ namespace PSInventory.Web.Controllers
 
             q = q.Trim().ToLower();
 
+            // Obtener artículos que coincidan con la búsqueda
             var articulos = await _context.Articulos
                 .Where(a => !a.Eliminado &&
                     (a.Marca.ToLower().Contains(q) ||
@@ -65,22 +66,47 @@ namespace PSInventory.Web.Controllers
                      a.Categoria.Nombre.ToLower().Contains(q) ||
                      (a.Descripcion != null && a.Descripcion.ToLower().Contains(q))))
                 .Include(a => a.Categoria)
-                .Include(a => a.Items.Where(i => !i.Eliminado && i.Estado == "Disponible" && i.SucursalId == null))
                 .OrderBy(a => a.Marca).ThenBy(a => a.Modelo)
                 .Take(15)
                 .ToListAsync();
 
-            var resultado = articulos
-                .Where(a => a.Items.Any())
-                .Select(a => new
+            if (!articulos.Any())
+                return Json(new List<object>());
+
+            var articuloIds = articulos.Select(a => a.Id).ToList();
+
+            // Consulta directa de stock disponible agrupado por artículo
+            // (sin filtered-include para evitar conteos incorrectos por change-tracking)
+            var stockPorArticulo = await _context.Items
+                .Where(i => articuloIds.Contains(i.ArticuloId) &&
+                            !i.Eliminado &&
+                            i.Estado == "Disponible" &&
+                            i.SucursalId == null &&
+                            i.Cantidad > 0)
+                .GroupBy(i => i.ArticuloId)
+                .Select(g => new
                 {
-                    articuloId     = a.Id,
-                    nombre         = $"{a.Marca} {a.Modelo}",
-                    categoria      = a.Categoria?.Nombre,
-                    requiereSerial = a.RequiereSerial,
-                    disponible     = a.RequiereSerial
-                        ? a.Items.Count
-                        : a.Items.Sum(i => i.Cantidad)
+                    ArticuloId   = g.Key,
+                    TotalUnidades = g.Sum(i => i.Cantidad),  // para sin serial
+                    TotalItems    = g.Count()                 // para con serial
+                })
+                .ToDictionaryAsync(x => x.ArticuloId);
+
+            var resultado = articulos
+                .Where(a => stockPorArticulo.ContainsKey(a.Id))
+                .Select(a =>
+                {
+                    var stock = stockPorArticulo[a.Id];
+                    return new
+                    {
+                        articuloId     = a.Id,
+                        nombre         = $"{a.Marca} {a.Modelo}",
+                        categoria      = a.Categoria?.Nombre,
+                        requiereSerial = a.RequiereSerial,
+                        disponible     = a.RequiereSerial
+                            ? stock.TotalItems     // Con serial: contar items individuales
+                            : stock.TotalUnidades  // Sin serial: sumar cantidades
+                    };
                 });
 
             return Json(resultado);
@@ -171,7 +197,8 @@ namespace PSInventory.Web.Controllers
                             .Where(i => i.ArticuloId == entry.ArticuloId.Value &&
                                         !i.Eliminado &&
                                         i.Estado == "Disponible" &&
-                                        i.SucursalId == null)
+                                        i.SucursalId == null &&
+                                        i.Cantidad > 0)           // excluir items con cantidad = 0
                             .OrderBy(i => i.LoteId).ThenBy(i => i.Id)
                             .ToListAsync();
 

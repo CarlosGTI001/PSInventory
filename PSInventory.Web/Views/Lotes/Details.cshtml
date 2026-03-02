@@ -224,21 +224,21 @@
 @if (!articulosRequiereSerial && stockDisponible > 0)
 {
 <md-dialog id="modalDespacho">
-    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
-        <md-icon style="color:var(--md-sys-color-primary); font-size:26px;">send</md-icon>
+    <div slot="headline">
+        <md-icon style="color:var(--md-sys-color-primary);">send</md-icon>
         <div>
-            <div style="font-size:16px; font-weight:700;">Despachar a Sucursal</div>
+            <div>Despachar a Sucursal</div>
             <div style="font-size:12px; font-weight:400; color:var(--md-sys-color-on-surface-variant);">
                 Disponible: <strong>@stockDisponible</strong> unidades
             </div>
         </div>
     </div>
-    <div slot="content" style="min-width:320px;">
+    <div slot="content" style="min-width:340px;">
         <form id="formDespacho" asp-controller="Items" asp-action="AsignarDesde" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="loteId" value="@Model.Id" />
 
-            <div class="form-field" style="margin-bottom:12px;">
+            <div class="form-field" style="margin-bottom:16px;">
                 <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">store</md-icon>
                     <select name="sucursalId" id="mdSucursalId" class="md3-select" required>
@@ -258,23 +258,23 @@
                 </div>
             </div>
 
-            <div class="form-field" style="margin-bottom:12px;">
+            <div class="form-field" style="margin-bottom:16px;">
                 <md-filled-text-field label="Responsable *" name="responsableEmpleado" required
-                    supporting-text="Empleado que recibe">
+                    supporting-text="Empleado que recibe" style="width:100%;">
                     <md-icon slot="leading-icon">person</md-icon>
                 </md-filled-text-field>
             </div>
 
-            <div class="form-field" style="margin-bottom:12px;">
+            <div class="form-field" style="margin-bottom:16px;">
                 <md-filled-text-field label="Cantidad *" name="cantidad" type="number"
                     min="1" max="@stockDisponible" value="@stockDisponible" required
-                    supporting-text="Máx. @stockDisponible">
+                    supporting-text="Máx. @stockDisponible" style="width:100%;">
                     <md-icon slot="leading-icon">inventory_2</md-icon>
                 </md-filled-text-field>
             </div>
 
             <div class="form-field">
-                <md-filled-text-field label="Observaciones" name="observaciones" supporting-text="Opcional">
+                <md-filled-text-field label="Observaciones" name="observaciones" supporting-text="Opcional" style="width:100%;">
                     <md-icon slot="leading-icon">note</md-icon>
                 </md-filled-text-field>
             </div>

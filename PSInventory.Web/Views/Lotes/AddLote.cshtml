@@ -28,7 +28,7 @@
     </div>
 </div>
 
-<form asp-action="AddLote" method="post" enctype="multipart/form-data">
+<form asp-action="AddLote" method="post" enctype="multipart/form-data" id="formCompra">
     @Html.AntiForgeryToken()
     
     <!-- Sección 1: Detalles de la Compra -->
@@ -192,45 +192,308 @@
             <md-icon slot="icon">cancel</md-icon>
             Cancelar
         </md-text-button>
-        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+        <md-filled-button type="button" id="btnIniciarRegistro" style="height: 48px; min-width: 160px;" onclick="iniciarRegistro()">
             <md-icon slot="icon">save</md-icon>
             Guardar Lote de Compra
         </md-filled-button>
     </div>
 </form>
 
+<!-- ══════════════════════════════════════════════
+     MODAL 1: Ingreso de Seriales
+══════════════════════════════════════════════ -->
+<md-dialog id="modalSeriales" style="min-width:520px; max-width:600px;">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary);">qr_code_scanner</md-icon>
+        Ingresar Seriales
+    </div>
+    <div slot="content">
+        <p class="md-typescale-body-medium" style="margin:0 0 16px; color:var(--md-sys-color-on-surface-variant);">
+            Artículo: <strong id="msArticulo"></strong>
+        </p>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px; padding:10px 16px; border-radius:12px; background:rgba(4,115,148,0.08);">
+            <md-icon style="color:var(--md-sys-color-primary);">inventory</md-icon>
+            <span class="md-typescale-body-medium">Ingresados: <strong id="msContador">0</strong> / <strong id="msTotal">0</strong></span>
+            <div style="flex:1; height:6px; border-radius:3px; background:var(--md-sys-color-surface-variant); margin-left:8px; overflow:hidden;">
+                <div id="msProgreso" style="height:100%; width:0%; background:var(--md-sys-color-primary); transition:width .3s;"></div>
+            </div>
+        </div>
+
+        <!-- Input serial -->
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <md-filled-text-field id="msInput" label="Serial" placeholder="Escanea o escribe el serial"
+                style="flex:1;" oninput="limpiarErrorSerial()" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarSerial();}">
+                <md-icon slot="leading-icon">barcode_reader</md-icon>
+            </md-filled-text-field>
+            <md-filled-button onclick="agregarSerial()" style="height:56px;">
+                <md-icon slot="icon">add</md-icon>
+                Añadir
+            </md-filled-button>
+        </div>
+        <p id="msError" style="color:var(--md-sys-color-error); font-size:13px; margin:0 0 12px; display:none;"></p>
+
+        <!-- Lista de seriales -->
+        <div id="msLista" style="max-height:220px; overflow-y:auto; border:1px solid var(--md-sys-color-outline-variant); border-radius:8px; background:var(--md-sys-color-surface-container-low);">
+            <p id="msListaVacia" class="md-typescale-body-small" style="text-align:center; padding:20px; color:var(--md-sys-color-on-surface-variant); margin:0;">
+                Aún no has agregado seriales
+            </p>
+        </div>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="document.getElementById('modalSeriales').close()">Cancelar</md-text-button>
+        <md-filled-button id="msContinuar" disabled onclick="mostrarConfirmacion()">
+            <md-icon slot="icon">arrow_forward</md-icon>
+            Continuar
+        </md-filled-button>
+    </div>
+</md-dialog>
+
+<!-- ══════════════════════════════════════════════
+     MODAL 2: Confirmación
+══════════════════════════════════════════════ -->
+<md-dialog id="modalConfirmacion" style="min-width:540px; max-width:660px;">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary);">fact_check</md-icon>
+        Confirmar Registro
+    </div>
+    <div slot="content">
+        <p class="md-typescale-body-medium" style="margin:0 0 16px; color:var(--md-sys-color-on-surface-variant);">
+            Revisa la información antes de guardar. Esta acción no se puede deshacer.
+        </p>
+
+        <!-- Resumen compra -->
+        <div style="padding:14px 16px; border-radius:10px; background:rgba(4,115,148,0.07); margin-bottom:16px;">
+            <p class="md-typescale-label-large" style="margin:0 0 10px; color:var(--md-sys-color-primary);">Compra</p>
+            <div id="mcResumenCompra" style="display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; font-size:13px;"></div>
+        </div>
+
+        <!-- Resumen lote -->
+        <div style="padding:14px 16px; border-radius:10px; background:rgba(91,201,229,0.08); margin-bottom:16px;">
+            <p class="md-typescale-label-large" style="margin:0 0 10px; color:var(--md-sys-color-tertiary);">Lote</p>
+            <div id="mcResumenLote" style="display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; font-size:13px;"></div>
+        </div>
+
+        <!-- Tabla seriales (solo si aplica) -->
+        <div id="mcSerialesSection" style="display:none;">
+            <p class="md-typescale-label-large" style="margin:0 0 10px; color:var(--md-sys-color-on-surface);">Seriales a registrar</p>
+            <div style="max-height:180px; overflow-y:auto; border:1px solid var(--md-sys-color-outline-variant); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                    <thead>
+                        <tr style="background:var(--md-sys-color-surface-variant);">
+                            <th style="padding:8px 12px; text-align:left;">#</th>
+                            <th style="padding:8px 12px; text-align:left;">Serial</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mcSerialesBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="volverASeriales()">
+            <md-icon slot="icon">arrow_back</md-icon>
+            Volver
+        </md-text-button>
+        <md-filled-button onclick="confirmarYRegistrar()">
+            <md-icon slot="icon">check_circle</md-icon>
+            Confirmar y Registrar
+        </md-filled-button>
+    </div>
+</md-dialog>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     
     <script>
+        const requiereSerial = @(selectedArticulo?.RequiereSerial == true ? "true" : "false");
+        const articuloNombre = '@(selectedArticulo?.Marca + " " + selectedArticulo?.Modelo)';
+        const seriales = []; // lista en memoria
+
+        // ── File upload label ──────────────────────────────────────
         const defaultFileLabelText = document.getElementById('facturaFileLabel').getAttribute('data-default-text');
 
         function updateFileLabel(input) {
-            const label = document.getElementById('facturaFileLabel'); // Use the ID
-            // const defaultFileLabelText = label.getAttribute('data-default-text'); // No need to re-read, already global
-
+            const label = document.getElementById('facturaFileLabel');
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                const fileName = file.name;
-                const fileSize = (file.size / 1024).toFixed(2); // KB
-                label.innerHTML = `<md-icon style="font-size: 20px; color: var(--md-sys-color-primary);">check_circle</md-icon> ${fileName} (${fileSize} KB)`;
-                
+                label.innerHTML = `<md-icon style="font-size:20px; color:var(--md-sys-color-primary);">check_circle</md-icon> ${file.name} (${(file.size/1024).toFixed(2)} KB)`;
                 input.closest('label').style.borderColor = 'var(--md-sys-color-primary)';
-                input.closest('label').style.background = 'rgba(4, 115, 148, 0.08)';
+                input.closest('label').style.background  = 'rgba(4,115,148,0.08)';
             } else {
-                label.innerHTML = `<div id="fileLabel" class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface); margin-bottom: 4px;">${defaultFileLabelText}</div>
-                                   <div class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">
-                                       PDF, JPG, JPEG o PNG (Opcional)
-                                   </div>`;
+                label.innerHTML = `<div id="fileLabel" class="md-typescale-body-large" style="color:var(--md-sys-color-on-surface); margin-bottom:4px;">${defaultFileLabelText}</div>
+                    <div class="md-typescale-body-small" style="color:var(--md-sys-color-on-surface-variant);">PDF, JPG, JPEG o PNG (Opcional)</div>`;
                 input.closest('label').style.borderColor = 'var(--md-sys-color-outline)';
-                input.closest('label').style.background = 'var(--md-sys-color-surface-container-high)';
+                input.closest('label').style.background  = 'var(--md-sys-color-surface-container-high)';
             }
         }
-        
+
         document.getElementById('facturaFileLabel')?.addEventListener('click', function(e) {
-            if (e.target.tagName !== 'INPUT') {
-                document.getElementById('facturaFile').click();
-            }
+            if (e.target.tagName !== 'INPUT') document.getElementById('facturaFile').click();
         });
+
+        // ── Paso 1: botón principal ────────────────────────────────
+        function iniciarRegistro() {
+            // Validar formulario nativo
+            const form = document.getElementById('formCompra');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            if (requiereSerial) {
+                const cantidad = parseInt(document.querySelector('[name="Lotes[0].Cantidad"]').value) || 0;
+                document.getElementById('msArticulo').textContent = articuloNombre;
+                document.getElementById('msTotal').textContent    = cantidad;
+                actualizarListaSeriales();
+                document.getElementById('modalSeriales').show();
+            } else {
+                mostrarConfirmacion();
+            }
+        }
+
+        // ── Modal Seriales ─────────────────────────────────────────
+        function agregarSerial() {
+            const input   = document.getElementById('msInput');
+            const valor   = input.value.trim().toUpperCase();
+            const total   = parseInt(document.getElementById('msTotal').textContent);
+            const errDiv  = document.getElementById('msError');
+
+            if (!valor) return;
+            if (seriales.includes(valor)) {
+                mostrarErrorSerial('Este serial ya fue agregado.'); return;
+            }
+            if (seriales.length >= total) {
+                mostrarErrorSerial(`Ya alcanzaste el máximo de ${total} seriales.`); return;
+            }
+            seriales.push(valor);
+            input.value = '';
+            input.focus();
+            errDiv.style.display = 'none';
+            actualizarListaSeriales();
+        }
+
+        function quitarSerial(idx) {
+            seriales.splice(idx, 1);
+            actualizarListaSeriales();
+        }
+
+        function actualizarListaSeriales() {
+            const total    = parseInt(document.getElementById('msTotal').textContent) || 0;
+            const cont     = document.getElementById('msContador');
+            const progBar  = document.getElementById('msProgreso');
+            const listaDiv = document.getElementById('msLista');
+            const vacio    = document.getElementById('msListaVacia');
+            const btnCont  = document.getElementById('msContinuar');
+
+            cont.textContent    = seriales.length;
+            progBar.style.width = total > 0 ? `${seriales.length * 100 / total}%` : '0%';
+            btnCont.disabled    = seriales.length !== total || total === 0;
+
+            if (seriales.length === 0) {
+                vacio.style.display = 'block';
+                // quitar filas previas
+                listaDiv.querySelectorAll('table').forEach(t => t.remove());
+            } else {
+                vacio.style.display = 'none';
+                let tbl = listaDiv.querySelector('table');
+                if (!tbl) {
+                    tbl = document.createElement('table');
+                    tbl.style.cssText = 'width:100%; border-collapse:collapse; font-size:13px;';
+                    tbl.innerHTML = '<thead><tr style="background:var(--md-sys-color-surface-variant);"><th style="padding:8px 12px; text-align:left;">#</th><th style="padding:8px 12px; text-align:left;">Serial</th><th style="padding:8px 4px;"></th></tr></thead><tbody id="msRows"></tbody>';
+                    listaDiv.appendChild(tbl);
+                }
+                const tbody = document.getElementById('msRows');
+                tbody.innerHTML = seriales.map((s, i) => `
+                    <tr style="border-top:1px solid var(--md-sys-color-outline-variant);">
+                        <td style="padding:7px 12px; color:var(--md-sys-color-on-surface-variant);">${i+1}</td>
+                        <td style="padding:7px 12px; font-weight:500;">${s}</td>
+                        <td style="padding:4px 8px; text-align:right;">
+                            <md-icon-button onclick="quitarSerial(${i})" title="Quitar">
+                                <md-icon style="font-size:18px; color:var(--md-sys-color-error);">delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>`).join('');
+            }
+        }
+
+        function mostrarErrorSerial(msg) {
+            const e = document.getElementById('msError');
+            e.textContent    = msg;
+            e.style.display  = 'block';
+        }
+        function limpiarErrorSerial() {
+            document.getElementById('msError').style.display = 'none';
+        }
+
+        // ── Modal Confirmación ─────────────────────────────────────
+        function mostrarConfirmacion() {
+            document.getElementById('modalSeriales').close();
+
+            const fv = (name) => document.querySelector(`[name="${name}"]`)?.value ?? '—';
+
+            // Resumen compra
+            const resumenCompra = [
+                ['Proveedor',    fv('Proveedor')],
+                ['Fecha',        fv('FechaCompra')],
+                ['Nº Factura',   fv('NumeroFactura') || '—'],
+                ['Estado',       fv('Estado')],
+            ];
+            document.getElementById('mcResumenCompra').innerHTML =
+                resumenCompra.map(([k,v]) =>
+                    `<span style="color:var(--md-sys-color-on-surface-variant);">${k}:</span><span style="font-weight:500;">${v}</span>`
+                ).join('');
+
+            // Resumen lote
+            const cant  = fv('Lotes[0].Cantidad');
+            const costo = parseFloat(fv('Lotes[0].CostoUnitario')) || 0;
+            const resumenLote = [
+                ['Artículo',        articuloNombre],
+                ['Cantidad',        cant],
+                ['Costo Unitario',  `$${costo.toFixed(2)}`],
+                ['Costo Total',     `$${(costo * parseInt(cant||0)).toFixed(2)}`],
+            ];
+            document.getElementById('mcResumenLote').innerHTML =
+                resumenLote.map(([k,v]) =>
+                    `<span style="color:var(--md-sys-color-on-surface-variant);">${k}:</span><span style="font-weight:500;">${v}</span>`
+                ).join('');
+
+            // Seriales
+            const secSeriales = document.getElementById('mcSerialesSection');
+            if (requiereSerial && seriales.length > 0) {
+                secSeriales.style.display = 'block';
+                document.getElementById('mcSerialesBody').innerHTML =
+                    seriales.map((s,i) =>
+                        `<tr style="border-top:1px solid var(--md-sys-color-outline-variant);">
+                            <td style="padding:6px 12px; color:var(--md-sys-color-on-surface-variant);">${i+1}</td>
+                            <td style="padding:6px 12px; font-weight:500;">${s}</td>
+                        </tr>`
+                    ).join('');
+            } else {
+                secSeriales.style.display = 'none';
+            }
+
+            document.getElementById('modalConfirmacion').show();
+        }
+
+        function volverASeriales() {
+            document.getElementById('modalConfirmacion').close();
+            if (requiereSerial) document.getElementById('modalSeriales').show();
+        }
+
+        function confirmarYRegistrar() {
+            document.getElementById('modalConfirmacion').close();
+
+            const form = document.getElementById('formCompra');
+
+            // Inyectar seriales como hidden inputs
+            form.querySelectorAll('.serial-hidden').forEach(el => el.remove());
+            seriales.forEach((s, i) => {
+                const inp = document.createElement('input');
+                inp.type      = 'hidden';
+                inp.name      = `Lotes[0].Seriales[${i}]`;
+                inp.value     = s;
+                inp.className = 'serial-hidden';
+                form.appendChild(inp);
+            });
+
+            form.submit();
+        }
     </script>
 }

@@ -3,11 +3,11 @@
 }
 
 <!-- Breadcrumb -->
-<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
-    <md-icon style="font-size: 18px;">home</md-icon>
+<div class="breadcrumb">
+    <md-icon>home</md-icon>
     <span>Operaciones</span>
-    <md-icon style="font-size: 18px;">chevron_right</md-icon>
-    <span style="color: var(--md-sys-color-primary);">Enviar Artículos</span>
+    <md-icon>chevron_right</md-icon>
+    <span class="breadcrumb-current">Enviar Artículos</span>
 </div>
 
 <!-- Page Header -->
@@ -96,12 +96,10 @@
             <div id="dispatchForm" style="display:none;">
 
                 <!-- PASO 1: Departamento -->
-                <div style="margin-bottom: 4px;">
-                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
-                        Paso 1 — Departamento
-                    </p>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <div class="md3-select-field has-leading-icon" style="flex:1;">
+                <div style="margin-bottom: 12px;">
+                    <p class="step-label">Paso 1 — Departamento</p>
+                    <div class="select-with-search">
+                        <div class="md3-select-field has-leading-icon">
                             <md-icon class="md3-select-leading-icon">business_center</md-icon>
                             <select id="selectDepartamento" class="md3-select">
                                 <option value="">Todos los departamentos</option>
@@ -116,74 +114,76 @@
                             <md-icon>search</md-icon>
                         </md-icon-button>
                     </div>
-                    <div id="deptoSeleccionado" style="display:none; margin-top:4px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
+                    <div id="deptoSeleccionado" style="display:none; margin-top:6px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
                         <md-icon style="font-size:14px;">check_circle</md-icon>
                         <span id="deptoNombre"></span>
                     </div>
                 </div>
 
-                <div style="border-left: 3px solid var(--md-sys-color-outline-variant); margin: 10px 0 10px 12px; padding-left: 12px;">
+                <div class="step-connector">
 
                     <!-- PASO 2: Región -->
-                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
-                        Paso 2 — Región *
-                    </p>
-                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-                        <div class="md3-select-field has-leading-icon" style="flex:1;">
-                            <md-icon class="md3-select-leading-icon">public</md-icon>
-                            <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)" required>
-                                <option value="">Seleccione región</option>
-                                @foreach (var r in ViewBag.Regiones)
-                                {
-                                    <option value="@r.Value">@r.Text</option>
-                                }
-                            </select>
-                            <label class="md3-select-label">Región *</label>
+                    <div>
+                        <p class="step-label">Paso 2 — Región *</p>
+                        <div class="select-with-search">
+                            <div class="md3-select-field has-leading-icon">
+                                <md-icon class="md3-select-leading-icon">public</md-icon>
+                                <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)" required>
+                                    <option value="">Seleccione región</option>
+                                    @foreach (var r in ViewBag.Regiones)
+                                    {
+                                        <option value="@r.Value">@r.Text</option>
+                                    }
+                                </select>
+                                <label class="md3-select-label">Región *</label>
+                            </div>
+                            <md-icon-button type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
+                                <md-icon>search</md-icon>
+                            </md-icon-button>
                         </div>
-                        <md-icon-button type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
-                            <md-icon>search</md-icon>
-                        </md-icon-button>
                     </div>
 
                     <!-- PASO 3: Sucursal (cargada por AJAX según región) -->
-                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--md-sys-color-on-surface-variant); margin: 0 0 6px 0;">
-                        Paso 3 — Sucursal *
-                    </p>
-                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
-                        <div class="md3-select-field has-leading-icon" style="flex:1;">
-                            <md-icon class="md3-select-leading-icon">store</md-icon>
-                            <select id="sucursalDestino" class="md3-select" required disabled>
-                                <option value="">Seleccione primero una región</option>
-                            </select>
-                            <label class="md3-select-label">Sucursal Destino *</label>
+                    <div>
+                        <p class="step-label">Paso 3 — Sucursal *</p>
+                        <div class="select-with-search">
+                            <div class="md3-select-field has-leading-icon">
+                                <md-icon class="md3-select-leading-icon">store</md-icon>
+                                <select id="sucursalDestino" class="md3-select" required disabled>
+                                    <option value="">Seleccione primero una región</option>
+                                </select>
+                                <label class="md3-select-label">Sucursal Destino *</label>
+                            </div>
+                            <md-icon-button id="btnBuscarSucursal" type="button" disabled
+                                onclick="openSearchDialog('sucursalDestino','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
+                                <md-icon>search</md-icon>
+                            </md-icon-button>
                         </div>
-                        <md-icon-button id="btnBuscarSucursal" type="button" disabled
-                            onclick="openSearchDialog('sucursalDestino','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
-                            <md-icon>search</md-icon>
-                        </md-icon-button>
-                    </div>
-                    <div id="sucursalSeleccionada" style="display:none; margin-top:-8px; margin-bottom:8px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
-                        <md-icon style="font-size:14px;">check_circle</md-icon>
-                        <span id="sucursalNombre"></span>
+                        <div id="sucursalSeleccionada" style="display:none; margin-top:6px; font-size:12px; color:var(--md-sys-color-primary); display:flex; align-items:center; gap:4px;">
+                            <md-icon style="font-size:14px;">check_circle</md-icon>
+                            <span id="sucursalNombre"></span>
+                        </div>
                     </div>
 
                 </div>
 
                 <!-- Responsable y observaciones -->
-                <div class="form-field" style="margin-bottom: 12px;">
+                <div class="form-field" style="margin-bottom: 16px;">
                     <md-filled-text-field
                         id="responsable"
                         label="Responsable *"
-                        supporting-text="Empleado que recibe">
+                        supporting-text="Empleado que recibe"
+                        style="width:100%;">
                         <md-icon slot="leading-icon">person</md-icon>
                     </md-filled-text-field>
                 </div>
 
-                <div class="form-field" style="margin-bottom: 16px;">
+                <div class="form-field" style="margin-bottom: 20px;">
                     <md-filled-text-field
                         id="observaciones"
                         label="Observaciones"
-                        supporting-text="Opcional">
+                        supporting-text="Opcional"
+                        style="width:100%;">
                         <md-icon slot="leading-icon">note</md-icon>
                     </md-filled-text-field>
                 </div>

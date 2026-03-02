@@ -27,23 +27,25 @@ namespace PSInventory.Web.Controllers
 
             ViewData["UserName"] = userName;
 
-            // Estadísticas para el dashboard
-            ViewBag.TotalItems = _context.Items.Count();
-            ViewBag.ItemsDisponibles = _context.Items.Count(i => i.Estado == "Disponible");
-            ViewBag.ItemsAsignados = _context.Items.Count(i => i.Estado == "Asignado");
-            ViewBag.TotalSucursales = _context.Sucursales.Count(s => s.Activo);
-            ViewBag.TotalArticulos = _context.Articulos.Count();
+            // Estadísticas para el dashboard (usando Sum(Cantidad) para soportar items sin serial)
+            ViewBag.TotalItems        = _context.Items.Where(i => !i.Eliminado).Sum(i => (int?)i.Cantidad) ?? 0;
+            ViewBag.ItemsDisponibles  = _context.Items.Where(i => !i.Eliminado && i.Estado == "Disponible").Sum(i => (int?)i.Cantidad) ?? 0;
+            ViewBag.ItemsAsignados    = _context.Items.Where(i => !i.Eliminado && i.Estado == "Asignado").Sum(i => (int?)i.Cantidad) ?? 0;
+            ViewBag.TotalSucursales   = _context.Sucursales.Count(s => s.Activo);
+            ViewBag.TotalArticulos    = _context.Articulos.Count();
             ViewBag.ComprasPendientes = _context.Compras.Count(c => c.Estado == "Pendiente");
             
-            // Items con stock bajo
+            // Items con stock bajo (comparar suma de cantidades contra stock mínimo)
             var articulosStockBajo = _context.Articulos
                 .Where(a => a.StockMinimo > 0)
-                .AsEnumerable()
                 .Select(a => new
                 {
-                    Articulo = a,
-                    StockActual = _context.Items.Count(i => i.ArticuloId == a.Id && i.Estado == "Disponible")
+                    Articulo   = a,
+                    StockActual = _context.Items
+                        .Where(i => i.ArticuloId == a.Id && !i.Eliminado && i.Estado == "Disponible")
+                        .Sum(i => (int?)i.Cantidad) ?? 0
                 })
+                .AsEnumerable()
                 .Where(x => x.StockActual < x.Articulo.StockMinimo)
                 .ToList();
 
@@ -57,8 +59,9 @@ namespace PSInventory.Web.Controllers
         public IActionResult GetItemsPorEstado()
         {
             var data = _context.Items
+                .Where(i => !i.Eliminado)
                 .GroupBy(i => i.Estado)
-                .Select(g => new { estado = g.Key, cantidad = g.Count() })
+                .Select(g => new { estado = g.Key, cantidad = g.Sum(i => i.Cantidad) })
                 .ToList();
 
             var labels = data.Select(d => d.estado).ToList();
@@ -92,10 +95,11 @@ namespace PSInventory.Web.Controllers
         public IActionResult GetItemsPorCategoria()
         {
             var data = _context.Items
+                .Where(i => !i.Eliminado)
                 .Include(i => i.Articulo)
                 .ThenInclude(a => a.Categoria)
                 .GroupBy(i => i.Articulo.Categoria.Nombre)
-                .Select(g => new { categoria = g.Key, cantidad = g.Count() })
+                .Select(g => new { categoria = g.Key, cantidad = g.Sum(i => i.Cantidad) })
                 .OrderByDescending(x => x.cantidad)
                 .Take(5)
                 .ToList();
@@ -125,10 +129,10 @@ namespace PSInventory.Web.Controllers
         public IActionResult GetItemsPorSucursal()
         {
             var data = _context.Items
+                .Where(i => !i.Eliminado && i.SucursalId != null)
                 .Include(i => i.Sucursal)
-                .Where(i => i.SucursalId != null)
                 .GroupBy(i => i.Sucursal.Nombre)
-                .Select(g => new { sucursal = g.Key, cantidad = g.Count() })
+                .Select(g => new { sucursal = g.Key, cantidad = g.Sum(i => i.Cantidad) })
                 .OrderByDescending(x => x.cantidad)
                 .ToList();
 

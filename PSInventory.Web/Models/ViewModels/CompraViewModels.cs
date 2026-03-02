@@ -18,6 +18,9 @@ namespace PSInventory.Web.Models.ViewModels
         [Required(ErrorMessage = "El costo unitario es requerido.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "El costo unitario debe ser mayor a 0.")]
         public decimal CostoUnitario { get; set; }
+
+        // Seriales ingresados antes de confirmar (solo para artículos con serial)
+        public List<string> Seriales { get; set; } = new List<string>();
     }
 
     public class CompraViewModel

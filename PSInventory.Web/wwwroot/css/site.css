@@ -926,3 +926,149 @@ dialog {
 dialog::backdrop {
     background: rgba(0, 0, 0, 0.45);
 }
+
+/* ============================================
+   MD-DIALOG — Espaciado interno de slots
+   ============================================ */
+
+/* Headline: icono + título bien centrados */
+md-dialog [slot="headline"] {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+/* Content: padding generoso y separación de campo a campo */
+md-dialog [slot="content"] {
+    padding: 8px 0 4px;
+}
+
+md-dialog [slot="content"] .form-field,
+md-dialog [slot="content"] > div > .form-field {
+    margin-bottom: 16px;
+}
+
+/* Actions: botones bien separados y alineados */
+md-dialog [slot="actions"] {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 4px 0 0;
+}
+
+/* ============================================
+   FORM-FIELD — Espaciado vertical consistente
+   ============================================ */
+
+/* Margin bottom automático entre campos consecutivos */
+.form-field + .form-field {
+    margin-top: 16px;
+}
+
+/* md-filled-text-field siempre ancho completo en campos de formulario */
+.form-field md-filled-text-field,
+.form-field md-outlined-text-field {
+    width: 100%;
+}
+
+/* Espacio mínimo para el supporting-text */
+.form-field md-filled-text-field {
+    margin-bottom: 4px;
+}
+
+/* ============================================
+   CARD — Secciones internas con separación
+   ============================================ */
+
+/* Separador entre secciones dentro de una card */
+.card-section {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.card-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.card-section:first-child {
+    padding-top: 0;
+}
+
+/* Título de sección pequeño (step labels) */
+.step-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--md-sys-color-on-surface-variant);
+    margin: 0 0 8px 0;
+}
+
+/* Contenedor de paso con línea de conexión izquierda */
+.step-connector {
+    border-left: 3px solid var(--md-sys-color-outline-variant);
+    margin: 12px 0 12px 14px;
+    padding: 8px 0 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ============================================
+   PAGE HEADER — Breadcrumb y header estándar
+   ============================================ */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+.breadcrumb md-icon {
+    font-size: 18px;
+}
+.breadcrumb .breadcrumb-current {
+    color: var(--md-sys-color-primary);
+}
+
+/* ============================================
+   SEARCH / SELECT con botón de búsqueda
+   ============================================ */
+.select-with-search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.select-with-search .md3-select-field {
+    flex: 1;
+}
+
+/* ============================================
+   EMPTY STATE — Espaciado del estado vacío
+   ============================================ */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    gap: 12px;
+}
+.empty-state md-icon {
+    font-size: 56px;
+    color: var(--md-sys-color-outline);
+    opacity: 0.6;
+}
+.empty-state h3 {
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+}
+.empty-state p {
+    margin: 0;
+    color: var(--md-sys-color-outline);
+}

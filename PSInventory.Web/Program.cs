@@ -56,6 +56,11 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthorization();
 
+// Configurar ruta del logo para reportes PDF
+var env = app.Services.GetRequiredService<IWebHostEnvironment>();
+PSInventory.Web.Services.PdfReportService.LogoPath =
+    Path.Combine(env.WebRootPath, "images", "logo.png");
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");

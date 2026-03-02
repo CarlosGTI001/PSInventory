@@ -41,11 +41,11 @@
 
         <!-- Card Content -->
         <div style="padding: 24px;">
-            <form action="/Reportes/InventarioGeneral" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
                 <!-- Filters Row 1 -->
                 <div class="form-row">
                     <div style="flex: 1;">
-                        <md-filled-select label="Estado">
+                        <md-filled-select label="Estado" id="ig-estado">
                             <md-select-option value=""></md-select-option>
                             <md-select-option value="Disponible">Disponible</md-select-option>
                             <md-select-option value="Asignado">Asignado</md-select-option>
@@ -58,7 +58,7 @@
                 <!-- Filters Row 2 -->
                 <div class="form-row">
                     <div style="flex: 1;">
-                        <md-filled-select label="Categoría">
+                        <md-filled-select label="Categoría" id="ig-categoria">
                             <md-select-option value=""></md-select-option>
                             @foreach (var cat in categorias)
                             {
@@ -71,7 +71,7 @@
                 <!-- Filters Row 3 -->
                 <div class="form-row">
                     <div style="flex: 1;">
-                        <md-filled-select label="Sucursal">
+                        <md-filled-select label="Sucursal" id="ig-sucursal">
                             <md-select-option value=""></md-select-option>
                             @foreach (var suc in sucursales)
                             {
@@ -83,12 +83,12 @@
 
                 <!-- Submit Button -->
                 <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #047394;">
+                    <md-filled-button style="background-color: #047394;" onclick="generarInventarioGeneral()">
                         <md-icon slot="icon">picture_as_pdf</md-icon>
                         Generar PDF
                     </md-filled-button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -107,11 +107,12 @@
 
         <!-- Card Content -->
         <div style="padding: 24px;">
-            <form action="/Reportes/InventarioPorSucursal" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
                 <!-- Filters -->
                 <div class="form-row">
                     <div style="flex: 1;">
-                        <md-filled-select label="Sucursal *" required>
+                        <md-filled-select label="Sucursal *" required id="ips-sucursal">
+                            <md-select-option value=""></md-select-option>
                             @foreach (var suc in sucursales)
                             {
                                 <md-select-option value="@suc.Id">@suc.Nombre</md-select-option>
@@ -122,12 +123,12 @@
 
                 <!-- Submit Button -->
                 <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #ff5c00;">
+                    <md-filled-button style="background-color: #ff5c00;" onclick="generarInventarioPorSucursal()">
                         <md-icon slot="icon">picture_as_pdf</md-icon>
                         Generar PDF
                     </md-filled-button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -146,7 +147,7 @@
 
         <!-- Card Content -->
         <div style="padding: 24px;">
-            <form action="/Reportes/MovimientosItems" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
+            <form action="/Reportes/MovimientosItems" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;" id="formMovimientos">
                 <!-- Filters Row 1 -->
                 <div class="form-row">
                     <div style="flex: 1;">
@@ -160,7 +161,7 @@
                 <!-- Filters Row 2 -->
                 <div class="form-row">
                     <div style="flex: 1;">
-                        <md-filled-select label="Sucursal (Opcional)">
+                        <md-filled-select label="Sucursal (Opcional)" id="mov-sucursal">
                             <md-select-option value=""></md-select-option>
                             @foreach (var suc in sucursales)
                             {
@@ -172,7 +173,7 @@
 
                 <!-- Submit Button -->
                 <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #7c3aed;">
+                    <md-filled-button style="background-color: #7c3aed;" onclick="generarMovimientos(event)">
                         <md-icon slot="icon">picture_as_pdf</md-icon>
                         Generar PDF
                     </md-filled-button>
@@ -331,3 +332,42 @@
         }
     }
 </style>
+
+<script>
+    function getSelectValue(id) {
+        return document.getElementById(id)?.value ?? '';
+    }
+
+    function buildUrl(base, params) {
+        const query = Object.entries(params)
+            .filter(([, v]) => v)
+            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+            .join('&');
+        return query ? `${base}?${query}` : base;
+    }
+
+    function generarInventarioGeneral() {
+        const url = buildUrl('/Reportes/InventarioGeneral', {
+            estado:      getSelectValue('ig-estado'),
+            categoriaId: getSelectValue('ig-categoria'),
+            sucursalId:  getSelectValue('ig-sucursal')
+        });
+        window.open(url, '_blank');
+    }
+
+    function generarInventarioPorSucursal() {
+        const sucursalId = getSelectValue('ips-sucursal');
+        if (!sucursalId) { alert('Selecciona una sucursal.'); return; }
+        window.open(`/Reportes/InventarioPorSucursal?sucursalId=${encodeURIComponent(sucursalId)}`, '_blank');
+    }
+
+    function generarMovimientos(e) {
+        e.preventDefault();
+        const form = document.getElementById('formMovimientos');
+        const params = new URLSearchParams();
+        form.querySelectorAll('[name]').forEach(el => { if (el.value) params.set(el.name, el.value); });
+        const sucursal = getSelectValue('mov-sucursal');
+        if (sucursal) params.set('sucursalId', sucursal);
+        window.open(`/Reportes/MovimientosItems?${params.toString()}`, '_blank');
+    }
+</script>

@@ -20,6 +20,9 @@ namespace PSInventory.Web.Controllers
             _context = context;
         }
 
+        // Usuario logueado (sesión)
+        private string UsuarioActual => HttpContext.Session.GetString("UserName") ?? "Sistema";
+
         // GET: Reportes
         public async Task<IActionResult> Index()
         {
@@ -36,10 +39,11 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
                 
                 // Query base con includes necesarios
                 var query = _context.Items
+                    .Where(i => !i.Eliminado)
                     .Include(i => i.Articulo)
                     .ThenInclude(a => a.Categoria)
                     .Include(i => i.Lote)
@@ -90,17 +94,23 @@ namespace PSInventory.Web.Controllers
                     filtros.Add("Sucursal", sucursal?.Nombre ?? "No especificada");
                 }
 
+                // Título dinámico según filtros
+                var tituloReporte = !string.IsNullOrEmpty(sucursalId) && filtros.ContainsKey("Sucursal")
+                    ? $"Inventario General — {filtros["Sucursal"]}"
+                    : "Inventario General";
+
                 // Preparar datos para tabla
                 var headers = new List<string> 
                 { 
-                    "Serial", "Artículo", "Categoría", "Sucursal", "Estado", "Costo" 
+                    "Serial / ID", "Artículo", "Categoría", "Cantidad", "Sucursal", "Estado", "Costo" 
                 };
 
                 var filas = items.Select(i => new List<string>
                 {
-                    i.Serial,
+                    i.Serial ?? "N/A",
                     $"{i.Articulo.Marca} {i.Articulo.Modelo}",
                     i.Articulo.Categoria.Nombre,
+                    i.Cantidad.ToString(),
                     i.Sucursal?.Nombre ?? "Sin Sucursal",
                     i.Estado,
                     (i.Lote?.CostoUnitario ?? 0).ToString("C")
@@ -109,7 +119,8 @@ namespace PSInventory.Web.Controllers
                 // Preparar totales
                 var totales = new Dictionary<string, string>
                 {
-                    { "Costo Total", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") }
+                    { "Total Unidades", items.Sum(i => i.Cantidad).ToString() },
+                    { "Costo Total", items.Sum(i => (i.Lote?.CostoUnitario ?? 0) * i.Cantidad).ToString("C") }
                 };
 
                 // Crear documento PDF
@@ -123,7 +134,7 @@ namespace PSInventory.Web.Controllers
                         page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
                         // Header
-                        page.Header().Element(c => PdfReportService.GenerarHeader(c, "Inventario General", usuario));
+                        page.Header().Element(c => PdfReportService.GenerarHeader(c, tituloReporte, usuario));
 
                         // Contenido
                         page.Content().Column(column =>
@@ -163,7 +174,7 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
 
                 // Obtener sucursal
                 var sucursal = await _context.Sucursales.FindAsync(sucursalId);
@@ -226,14 +237,15 @@ namespace PSInventory.Web.Controllers
                             // Tabla
                             var headers = new List<string> 
                             { 
-                                "Serial", "Artículo", "Categoría", "Estado", "Responsable", "Costo" 
+                                "Serial / ID", "Artículo", "Categoría", "Cantidad", "Estado", "Responsable", "Costo" 
                             };
 
                             var filas = items.Select(i => new List<string>
                             {
-                                i.Serial,
+                                i.Serial ?? "N/A",
                                 $"{i.Articulo.Marca} {i.Articulo.Modelo}",
                                 i.Articulo.Categoria.Nombre,
+                                i.Cantidad.ToString(),
                                 i.Estado,
                                 i.ResponsableEmpleado ?? "No asignado",
                                 (i.Lote?.CostoUnitario ?? 0).ToString("C")
@@ -247,8 +259,8 @@ namespace PSInventory.Web.Controllers
                             // Totales
                             var totales = new Dictionary<string, string>
                             {
-                                { "Total Items en Sucursal", items.Count.ToString() },
-                                { "Costo Total", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") }
+                                { "Total Unidades en Sucursal", items.Sum(i => i.Cantidad).ToString() },
+                                { "Costo Total", items.Sum(i => (i.Lote?.CostoUnitario ?? 0) * i.Cantidad).ToString("C") }
                             };
 
                             column.Item().Element(c => 
@@ -276,7 +288,7 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
 
                 // Query base con includes
                 var query = _context.MovimientosItem
@@ -338,7 +350,7 @@ namespace PSInventory.Web.Controllers
                 var filas = movimientos.Select(m => new List<string>
                 {
                     m.FechaMovimiento.ToString("dd/MM/yyyy HH:mm"),
-                    m.Item.Serial,
+                    m.Item.Serial ?? "N/A",
                     $"{m.Item.Articulo.Marca} {m.Item.Articulo.Modelo}",
                     m.SucursalOrigen?.Nombre ?? "Almacén Central",
                     m.SucursalDestino?.Nombre ?? "Almacén Central",
@@ -404,7 +416,7 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
                 var fechaHoy = DateTime.Now;
                 var fechaLimite = fechaHoy.AddDays(dias);
 
@@ -468,7 +480,7 @@ namespace PSInventory.Web.Controllers
 
                                 return new List<string>
                                 {
-                                    i.Serial,
+                                    i.Serial ?? "N/A",
                                     $"{i.Articulo.Marca} {i.Articulo.Modelo}",
                                     i.FechaGarantiaInicio.HasValue ? i.FechaGarantiaInicio.Value.ToString("dd/MM/yyyy") : "N/A",
                                     i.MesesGarantia?.ToString() ?? "N/A",
@@ -513,7 +525,7 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
 
                 // Query base
                 var query = _context.Compras
@@ -586,7 +598,7 @@ namespace PSInventory.Web.Controllers
                                 c.FechaCompra.ToString("dd/MM/yyyy"),
                                 c.Proveedor,
                                 c.NumeroFactura ?? "N/A",
-                                c.Lotes?.Sum(l => l.Items?.Count ?? 0).ToString() ?? "0",
+                                c.Lotes?.Sum(l => l.Items?.Sum(i => i.Cantidad) ?? 0).ToString() ?? "0",
                                 c.CostoTotal.ToString("C"),
                                 c.Estado
                             }).ToList();
@@ -628,7 +640,7 @@ namespace PSInventory.Web.Controllers
         {
             try
             {
-                var usuario = User.Identity?.Name ?? "Sistema";
+                var usuario = UsuarioActual;
 
                 // Obtener datos agregados
                 var items = await _context.Items
@@ -668,16 +680,17 @@ namespace PSInventory.Web.Controllers
                             column.Item().Text("Items por Estado").FontSize(12).Bold().FontColor("#047394");
                             column.Item().PaddingTop(5).PaddingBottom(10);
 
-                            var itemsPorEstado = items.GroupBy(i => i.Estado)
-                                .OrderByDescending(g => g.Count())
+                            var itemsPorEstado = items.Where(i => !i.Eliminado).GroupBy(i => i.Estado)
+                                .OrderByDescending(g => g.Sum(i => i.Cantidad))
                                 .ToList();
 
-                            var headerEstado = new List<string> { "Estado", "Cantidad", "Porcentaje" };
+                            var totalUnidades = itemsPorEstado.Sum(g => g.Sum(i => i.Cantidad));
+                            var headerEstado = new List<string> { "Estado", "Unidades", "Porcentaje" };
                             var filasEstado = itemsPorEstado.Select(g => new List<string>
                             {
                                 g.Key,
-                                g.Count().ToString(),
-                                $"{(g.Count() * 100.0 / items.Count):F1}%"
+                                g.Sum(i => i.Cantidad).ToString(),
+                                $"{(g.Sum(i => i.Cantidad) * 100.0 / (totalUnidades > 0 ? totalUnidades : 1)):F1}%"
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -689,16 +702,16 @@ namespace PSInventory.Web.Controllers
                             column.Item().Text("Items por Categoría").FontSize(12).Bold().FontColor("#047394");
                             column.Item().PaddingTop(5).PaddingBottom(10);
 
-                            var itemsPorCategoria = items.GroupBy(i => i.Articulo.Categoria.Nombre)
-                                .OrderByDescending(g => g.Count())
+                            var itemsPorCategoria = items.Where(i => !i.Eliminado).GroupBy(i => i.Articulo.Categoria.Nombre)
+                                .OrderByDescending(g => g.Sum(i => i.Cantidad))
                                 .ToList();
 
-                            var headerCategoria = new List<string> { "Categoría", "Cantidad", "Costo Total" };
+                            var headerCategoria = new List<string> { "Categoría", "Unidades", "Costo Total" };
                             var filasCategoria = itemsPorCategoria.Select(g => new List<string>
                             {
                                 g.Key,
-                                g.Count().ToString(),
-                                g.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C")
+                                g.Sum(i => i.Cantidad).ToString(),
+                                g.Sum(i => (i.Lote?.CostoUnitario ?? 0) * i.Cantidad).ToString("C")
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -710,16 +723,16 @@ namespace PSInventory.Web.Controllers
                             column.Item().Text("Items por Sucursal").FontSize(12).Bold().FontColor("#047394");
                             column.Item().PaddingTop(5).PaddingBottom(10);
 
-                            var itemsPorSucursal = items.GroupBy(i => i.Sucursal?.Nombre ?? "Sin Sucursal")
-                                .OrderByDescending(g => g.Count())
+                            var itemsPorSucursal = items.Where(i => !i.Eliminado).GroupBy(i => i.Sucursal?.Nombre ?? "Sin Sucursal")
+                                .OrderByDescending(g => g.Sum(i => i.Cantidad))
                                 .ToList();
 
-                            var headerSucursal = new List<string> { "Sucursal", "Cantidad", "Costo Total" };
+                            var headerSucursal = new List<string> { "Sucursal", "Unidades", "Costo Total" };
                             var filasSucursal = itemsPorSucursal.Select(g => new List<string>
                             {
                                 g.Key,
-                                g.Count().ToString(),
-                                g.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C")
+                                g.Sum(i => i.Cantidad).ToString(),
+                                g.Sum(i => (i.Lote?.CostoUnitario ?? 0) * i.Cantidad).ToString("C")
                             }).ToList();
 
                             column.Item().Element(c => 
@@ -728,11 +741,12 @@ namespace PSInventory.Web.Controllers
                             column.Item().PaddingTop(15);
 
                             // Totales generales
+                            var itemsActivos = items.Where(i => !i.Eliminado).ToList();
                             var totales = new Dictionary<string, string>
                             {
-                                { "Total Items", items.Count.ToString() },
-                                { "Valor Total Inventario", items.Sum(i => i.Lote?.CostoUnitario ?? 0).ToString("C") },
-                                { "Costo Promedio por Item", (items.Average(i => (decimal?)(i.Lote?.CostoUnitario) ?? 0)).ToString("C") }
+                                { "Total Unidades", itemsActivos.Sum(i => i.Cantidad).ToString() },
+                                { "Unidades Disponibles", itemsActivos.Where(i => i.Estado == "Disponible").Sum(i => i.Cantidad).ToString() },
+                                { "Valor Total Inventario", itemsActivos.Sum(i => (i.Lote?.CostoUnitario ?? 0) * i.Cantidad).ToString("C") }
                             };
 
                             column.Item().Element(c => 

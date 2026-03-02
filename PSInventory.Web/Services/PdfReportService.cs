@@ -6,9 +6,12 @@ namespace PSInventory.Web.Services
 {
     public class PdfReportService
     {
-        private const string EmpresaNombre = "PRESIDENTE SPORTS S.A.";
+        private const string EmpresaNombre = "PRESIDENTE SPORTS";
         private const string ColorPrimario = "#047394";
         private const string ColorSecundario = "#ff5c00";
+
+        // Ruta al logo (se asigna al iniciar la aplicación desde IWebHostEnvironment)
+        public static string? LogoPath { get; set; }
 
         public static class ReportStyles
         {
@@ -46,14 +49,23 @@ namespace PSInventory.Web.Services
             {
                 col.Item().Row(row =>
                 {
-                    // Logo placeholder (izquierda)
+                    // Logo (izquierda)
                     row.ConstantItem(80).Column(column =>
                     {
-                        column.Item().AlignCenter().AlignMiddle().Height(50).Width(50)
-                            .Border(2).BorderColor(ColorPrimario)
-                            .Background(Colors.Grey.Lighten3)
-                            .AlignCenter().AlignMiddle()
-                            .Text("PS").FontSize(20).Bold().FontColor(ColorPrimario);
+                        if (!string.IsNullOrEmpty(LogoPath) && File.Exists(LogoPath))
+                        {
+                            column.Item().AlignCenter().AlignMiddle()
+                                .Height(50).Width(70)
+                                .Image(LogoPath).FitArea();
+                        }
+                        else
+                        {
+                            column.Item().AlignCenter().AlignMiddle().Height(50).Width(50)
+                                .Border(2).BorderColor(ColorPrimario)
+                                .Background(Colors.Grey.Lighten3)
+                                .AlignCenter().AlignMiddle()
+                                .Text("PS").FontSize(20).Bold().FontColor(ColorPrimario);
+                        }
                     });
 
                     // Información empresa (centro)

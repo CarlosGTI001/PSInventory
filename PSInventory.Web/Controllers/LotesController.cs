@@ -101,32 +101,40 @@ namespace PSInventory.Web.Controllers
                     // For serialized items, create individual Item records.
                     // For non-serialized, the single lote record is enough for now.
                     var articulo = await _context.Articulos.FindAsync(loteVm.ArticuloId);
-                    if (articulo != null && articulo.RequiereSerial)
+                    if (articulo != null && !articulo.RequiereSerial)
                     {
-                        for (int i = 0; i < loteVm.Cantidad; i++)
-                        {
-                            _context.Items.Add(new Item
-                            {
-                                ArticuloId = lote.ArticuloId,
-                                LoteId = lote.Id,
-                                Serial = null, // Will be scanned later
-                                Cantidad = 1,
-                                Estado = "Disponible",
-                                FechaAsignacion = DateTime.Now
-                            });
-                        }
-                    } else if (articulo != null && !articulo.RequiereSerial) {
-                         // For non-serialized items, create a single item record with the total quantity
+                        // Sin serial: un único registro con la cantidad total
                         _context.Items.Add(new Item
                         {
-                            ArticuloId = lote.ArticuloId,
-                            LoteId = lote.Id,
-                            Serial = null, // No serial for these
-                            Cantidad = lote.Cantidad, // Use lote quantity
-                            Estado = "Disponible",
+                            ArticuloId      = lote.ArticuloId,
+                            LoteId          = lote.Id,
+                            Serial          = null,
+                            Cantidad        = lote.Cantidad,
+                            Estado          = "Disponible",
                             FechaAsignacion = DateTime.Now
                         });
                     }
+                    else if (articulo != null && articulo.RequiereSerial && loteVm.Seriales?.Count > 0)
+                    {
+                        // Con serial: crear un item por cada serial recibido del formulario
+                        foreach (var serial in loteVm.Seriales.Where(s => !string.IsNullOrWhiteSpace(s)))
+                        {
+                            var serialNorm = serial.Trim().ToUpper();
+                            if (await _context.Items.AnyAsync(i => i.Serial == serialNorm && !i.Eliminado))
+                                continue; // omitir duplicados
+
+                            _context.Items.Add(new Item
+                            {
+                                ArticuloId      = lote.ArticuloId,
+                                LoteId          = lote.Id,
+                                Serial          = serialNorm,
+                                Cantidad        = 1,
+                                Estado          = "Disponible",
+                                FechaAsignacion = DateTime.Now
+                            });
+                        }
+                    }
+                    // Con serial sin seriales enviados: quedan pendientes para escanear en Lotes/Details
                 }
                 await _context.SaveChangesAsync();
 
@@ -253,7 +261,7 @@ namespace PSInventory.Web.Controllers
                 message = "Item(s) agregado(s) correctamente.",
                 item = new {
                     id = nuevoItem.Id,
-                    serial = nuevoItem.Serial ?? $"ID: {nuevoItem.Id}",
+                    serial = nuevoItem.Serial ?? "N/A",
                     estado = nuevoItem.Estado,
                     fecha = nuevoItem.FechaAsignacion?.ToString("dd/MM/yyyy HH:mm"),
                     cantidad = nuevoItem.Cantidad

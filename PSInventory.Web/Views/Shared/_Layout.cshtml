@@ -134,6 +134,11 @@
                     <md-icon>local_shipping</md-icon>
                     <span>Enviar Artículos</span>
                 </a>
+
+                <a href="/Solicitudes/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Solicitudes" ? "active" : "")">
+                    <md-icon>request_quote</md-icon>
+                    <span>Solicitudes</span>
+                </a>
                 
                 <a href="/Reportes/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reportes" ? "active" : "")">
                     <md-icon>picture_as_pdf</md-icon>

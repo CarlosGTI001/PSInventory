@@ -36,6 +36,8 @@ namespace PSData.Datos
         public DbSet<Categoria> Categorias { get; set; }
         public DbSet<MovimientoItem> MovimientosItem { get; set; }
         public DbSet<Departamento> Departamentos { get; set; }
+        public DbSet<SolicitudCompra> SolicitudesCompra { get; set; }
+        public DbSet<DetalleSolicitudCompra> DetallesSolicitudCompra { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -197,7 +197,7 @@ namespace PSInventory.Web.Controllers
             // Soft delete
             item.Eliminado = true;
             item.FechaEliminacion = DateTime.Now;
-            item.UsuarioEliminacion = User.Identity?.Name ?? "Sistema";
+            item.UsuarioEliminacion = HttpContext.Session.GetString("UserName") ?? "Sistema";
 
             _context.Update(item);
             await _context.SaveChangesAsync();
@@ -309,7 +309,7 @@ namespace PSInventory.Web.Controllers
                     SucursalOrigenId = null, // Desde almacén (sin origen)
                     SucursalDestinoId = sucursalId,
                     FechaMovimiento = DateTime.Now,
-                    UsuarioResponsable = User.Identity?.Name ?? "Sistema",
+                    UsuarioResponsable = HttpContext.Session.GetString("UserName") ?? "Sistema",
                     Motivo = "Asignación Inicial",
                     Observaciones = observaciones,
                     ResponsableRecepcion = responsableEmpleado,
@@ -456,7 +456,7 @@ namespace PSInventory.Web.Controllers
                     SucursalOrigenId = sucursalOrigenId,
                     SucursalDestinoId = sucursalDestinoId,
                     FechaMovimiento = DateTime.Now,
-                    UsuarioResponsable = User.Identity?.Name ?? "Sistema",
+                    UsuarioResponsable = HttpContext.Session.GetString("UserName") ?? "Sistema",
                     Motivo = motivo,
                     Observaciones = observaciones,
                     ResponsableRecepcion = responsableRecepcion,
@@ -550,7 +550,7 @@ namespace PSInventory.Web.Controllers
                     SucursalOrigenId    = null,
                     SucursalDestinoId   = sucursalId,
                     FechaMovimiento     = DateTime.Now,
-                    UsuarioResponsable  = User.Identity?.Name ?? "Sistema",
+                    UsuarioResponsable  = HttpContext.Session.GetString("UserName") ?? "Sistema",
                     Motivo              = "Asignación Inicial",
                     Observaciones       = observaciones,
                     ResponsableRecepcion = responsableEmpleado,

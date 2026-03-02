@@ -1,0 +1,255 @@
+@model PSData.Modelos.SolicitudCompra
+@{
+    ViewData["Title"] = $"Solicitud #{Model.Id}";
+    var puedeEditar = Model.Estado == "Pendiente";
+    var puedeEnviarRevision = Model.Estado == "Pendiente";
+    var puedeAprobar = Model.Estado == "En Revisión";
+    var puedeRechazar = Model.Estado is "Pendiente" or "En Revisión";
+    var puedeEliminar = Model.Estado == "Pendiente";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom:16px; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface-variant); font-size:14px;">
+    <md-icon style="font-size:18px;">home</md-icon>
+    <a href="@Url.Action("Index")" style="color:var(--md-sys-color-on-surface-variant); text-decoration:none;">Solicitudes</a>
+    <md-icon style="font-size:18px;">chevron_right</md-icon>
+    <span style="color:var(--md-sys-color-primary);">Solicitud #@Model.Id</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-headline-medium" style="margin:0 0 6px;">@Model.Titulo</h1>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            @{
+                var (bg, col) = Model.Estado switch {
+                    "Aprobada"    => ("rgba(76,175,80,0.12)",  "var(--md-sys-color-success)"),
+                    "Rechazada"   => ("rgba(211,47,47,0.12)", "var(--md-sys-color-error)"),
+                    "En Revisión" => ("rgba(255,152,0,0.15)", "#e65100"),
+                    _             => ("rgba(4,115,148,0.10)", "var(--md-sys-color-primary)")
+                };
+            }
+            <span class="badge" style="background:@bg; color:@col; font-size:13px;">@Model.Estado</span>
+            <span style="font-size:13px; color:var(--md-sys-color-on-surface-variant);">
+                Solicitado por <strong>@Model.Solicitante</strong> · @Model.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")
+            </span>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("Index")'">
+            <md-icon slot="icon">arrow_back</md-icon>
+            Volver
+        </md-outlined-button>
+        @if (puedeEliminar)
+        {
+            <md-outlined-button onclick="confirmarEliminar()" style="--md-outlined-button-label-text-color:var(--md-sys-color-error); --md-outlined-button-outline-color:var(--md-sys-color-error);">
+                <md-icon slot="icon">delete</md-icon>
+                Eliminar
+            </md-outlined-button>
+        }
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="margin-bottom:16px; padding:12px 16px; border-radius:8px; background:rgba(76,175,80,0.12); color:var(--md-sys-color-success); display:flex; align-items:center; gap:8px;">
+        <md-icon>check_circle</md-icon> @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="margin-bottom:16px; padding:12px 16px; border-radius:8px; background:rgba(211,47,47,0.12); color:var(--md-sys-color-error); display:flex; align-items:center; gap:8px;">
+        <md-icon>error</md-icon> @TempData["Error"]
+    </div>
+}
+
+<div style="display:grid; grid-template-columns:1fr 320px; gap:20px; align-items:start;">
+
+    <!-- Panel izquierdo: detalles -->
+    <div>
+        <!-- Artículos solicitados -->
+        <div class="card" style="margin-bottom:20px;">
+            <h2 class="md-typescale-title-large" style="margin-bottom:20px;">Artículos Solicitados</h2>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Artículo / Descripción</th>
+                            <th style="text-align:center;">Cantidad</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (d, n) in Model.Detalles.Select((d, n) => (d, n + 1)))
+                        {
+                            <tr>
+                                <td style="color:var(--md-sys-color-on-surface-variant);">@n</td>
+                                <td>
+                                    @if (d.Articulo != null)
+                                    {
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <span class="badge badge-primary" style="font-size:11px;">Registrado</span>
+                                            <strong>@d.Articulo.Marca @d.Articulo.Modelo</strong>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <span class="badge" style="background:rgba(255,152,0,0.15); color:#e65100; font-size:11px;">Libre</span>
+                                            @d.DescripcionLibre
+                                        </div>
+                                    }
+                                </td>
+                                <td style="text-align:center;"><strong>@d.Cantidad</strong></td>
+                                <td style="font-size:13px; color:var(--md-sys-color-on-surface-variant);">@(d.Observaciones ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Observaciones))
+        {
+            <div class="card" style="margin-bottom:20px;">
+                <h2 class="md-typescale-title-medium" style="margin-bottom:10px;">Observaciones</h2>
+                <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:0;">@Model.Observaciones</p>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.NotasRevision))
+        {
+            <div class="card" style="margin-bottom:20px; border-left:4px solid @col;">
+                <h2 class="md-typescale-title-medium" style="margin-bottom:10px;">Notas de Revisión</h2>
+                <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:0 0 8px;">@Model.NotasRevision</p>
+                <p style="font-size:12px; color:var(--md-sys-color-on-surface-variant); margin:0;">
+                    Revisado por <strong>@Model.UsuarioRevisor</strong> · @Model.FechaRevision?.ToString("dd/MM/yyyy HH:mm")
+                </p>
+            </div>
+        }
+    </div>
+
+    <!-- Panel derecho: acciones de estado -->
+    <div class="card" style="position:sticky; top:80px;">
+        <h2 class="md-typescale-title-medium" style="margin-bottom:16px;">Cambiar Estado</h2>
+
+        @if (puedeEnviarRevision)
+        {
+            <md-filled-tonal-button style="width:100%; margin-bottom:10px;" onclick="abrirCambioEstado('En Revisión')">
+                <md-icon slot="icon">rate_review</md-icon>
+                Enviar a Revisión
+            </md-filled-tonal-button>
+        }
+        @if (puedeAprobar)
+        {
+            <md-filled-button style="width:100%; margin-bottom:10px;" onclick="abrirCambioEstado('Aprobada')">
+                <md-icon slot="icon">check_circle</md-icon>
+                Aprobar Solicitud
+            </md-filled-button>
+        }
+        @if (puedeRechazar)
+        {
+            <md-outlined-button style="width:100%; --md-outlined-button-label-text-color:var(--md-sys-color-error); --md-outlined-button-outline-color:var(--md-sys-color-error);" onclick="abrirCambioEstado('Rechazada')">
+                <md-icon slot="icon">cancel</md-icon>
+                Rechazar Solicitud
+            </md-outlined-button>
+        }
+        @if (!puedeEnviarRevision && !puedeAprobar && !puedeRechazar)
+        {
+            <p class="md-typescale-body-small" style="color:var(--md-sys-color-on-surface-variant); text-align:center;">
+                Esta solicitud ya no admite cambios de estado.
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Modal cambio de estado -->
+<md-dialog id="modalEstado" style="min-width:440px; max-width:520px;">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon id="modalEstadoIcon" style="color:var(--md-sys-color-primary);">swap_horiz</md-icon>
+        <span id="modalEstadoTitulo">Cambiar Estado</span>
+    </div>
+    <div slot="content">
+        <p id="modalEstadoDesc" class="md-typescale-body-medium" style="margin:0 0 16px; color:var(--md-sys-color-on-surface-variant);"></p>
+        <div class="form-field">
+            <label class="md3-input-label">Notas (opcional)</label>
+            <textarea id="notasRevision" class="md3-input-field" rows="3" placeholder="Escribe una nota o justificación..." maxlength="500"></textarea>
+        </div>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="document.getElementById('modalEstado').close()">Cancelar</md-text-button>
+        <md-filled-button id="btnConfirmarEstado" onclick="ejecutarCambioEstado()">
+            <md-icon slot="icon">check</md-icon>
+            Confirmar
+        </md-filled-button>
+    </div>
+</md-dialog>
+
+<!-- Modal eliminar -->
+<md-dialog id="modalEliminar" style="min-width:380px; max-width:460px;">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-error);">delete_forever</md-icon>
+        Eliminar Solicitud
+    </div>
+    <div slot="content">
+        <p class="md-typescale-body-medium" style="margin:0; color:var(--md-sys-color-on-surface-variant);">
+            ¿Estás seguro de que deseas eliminar la solicitud <strong>"@Model.Titulo"</strong>? Esta acción no se puede deshacer.
+        </p>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="document.getElementById('modalEliminar').close()">Cancelar</md-text-button>
+        <form action="@Url.Action("Delete")" method="post" style="display:inline;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id">
+            <md-filled-button type="submit" style="--md-filled-button-container-color:var(--md-sys-color-error);">
+                <md-icon slot="icon">delete</md-icon>
+                Eliminar
+            </md-filled-button>
+        </form>
+    </div>
+</md-dialog>
+
+<!-- Form oculto para cambio de estado -->
+<form id="formEstado" action="@Url.Action("CambiarEstado")" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id">
+    <input type="hidden" name="nuevoEstado" id="inputNuevoEstado">
+    <input type="hidden" name="notasRevision" id="inputNotasRevision">
+</form>
+
+@section Scripts {
+<script>
+let estadoPendiente = '';
+
+const descripciones = {
+    'En Revisión': 'La solicitud pasará a revisión. Puedes agregar notas.',
+    'Aprobada':    'La solicitud será aprobada. Puedes agregar una nota de aprobación.',
+    'Rechazada':   'La solicitud será rechazada. Por favor indica el motivo.'
+};
+const iconos = {
+    'En Revisión': 'rate_review',
+    'Aprobada':    'check_circle',
+    'Rechazada':   'cancel'
+};
+
+function abrirCambioEstado(estado) {
+    estadoPendiente = estado;
+    document.getElementById('modalEstadoTitulo').textContent = `Cambiar a: ${estado}`;
+    document.getElementById('modalEstadoIcon').textContent   = iconos[estado] || 'swap_horiz';
+    document.getElementById('modalEstadoDesc').textContent   = descripciones[estado] || '';
+    document.getElementById('notasRevision').value = '';
+    document.getElementById('modalEstado').show();
+}
+
+function ejecutarCambioEstado() {
+    document.getElementById('inputNuevoEstado').value  = estadoPendiente;
+    document.getElementById('inputNotasRevision').value = document.getElementById('notasRevision').value;
+    document.getElementById('modalEstado').close();
+    document.getElementById('formEstado').submit();
+}
+
+function confirmarEliminar() {
+    document.getElementById('modalEliminar').show();
+}
+</script>
+}

@@ -1,0 +1,230 @@
+@{
+    ViewData["Title"] = "Nueva Solicitud de Compra";
+    var articulos = (ViewBag.Articulos as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom:16px; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface-variant); font-size:14px;">
+    <md-icon style="font-size:18px;">home</md-icon>
+    <a href="@Url.Action("Index")" style="color:var(--md-sys-color-on-surface-variant); text-decoration:none;">Solicitudes</a>
+    <md-icon style="font-size:18px;">chevron_right</md-icon>
+    <span style="color:var(--md-sys-color-primary);">Nueva Solicitud</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin:0 0 8px;">Nueva Solicitud de Compra</h1>
+        <p class="md-typescale-body-large" style="color:var(--md-sys-color-on-surface-variant); margin:0;">
+            Solicita artículos registrados o describe nuevos ítems a cotizar
+        </p>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div style="margin-bottom:16px; padding:12px 16px; border-radius:8px; background:rgba(211,47,47,0.12); color:var(--md-sys-color-error); display:flex; align-items:center; gap:8px;">
+        <md-icon>error</md-icon> @TempData["Error"]
+    </div>
+}
+
+<form action="@Url.Action("Create")" method="post" id="formSolicitud">
+    @Html.AntiForgeryToken()
+
+    <!-- Información general -->
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:16px; border-bottom:2px solid var(--md-sys-color-primary);">
+            <div style="width:48px; height:48px; border-radius:12px; background:rgba(4,115,148,0.15); display:flex; align-items:center; justify-content:center;">
+                <md-icon style="color:var(--md-sys-color-primary); font-size:28px;">request_quote</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin:0;">Datos de la Solicitud</h2>
+                <p class="md-typescale-body-small" style="margin:4px 0 0; color:var(--md-sys-color-on-surface-variant);">Información general de la solicitud</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="flex:2;">
+                <label class="md3-input-label">Título / Motivo *</label>
+                <input type="text" name="titulo" class="md3-input-field" required placeholder="Ej: Equipos para nueva sucursal norte" maxlength="200">
+                <p class="md3-input-supporting-text">Descripción breve del motivo de la solicitud</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-field" style="flex:1;">
+                <label class="md3-input-label">Observaciones generales</label>
+                <textarea name="observaciones" class="md3-input-field" rows="3" placeholder="Urgencia, justificación, notas adicionales..." maxlength="500"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Líneas de la solicitud -->
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid var(--md-sys-color-tertiary);">
+            <div style="width:48px; height:48px; border-radius:12px; background:rgba(91,201,229,0.15); display:flex; align-items:center; justify-content:center;">
+                <md-icon style="color:var(--md-sys-color-tertiary); font-size:28px;">list_alt</md-icon>
+            </div>
+            <div style="flex:1;">
+                <h2 class="md-typescale-title-large" style="margin:0;">Artículos Solicitados</h2>
+                <p class="md-typescale-body-small" style="margin:4px 0 0; color:var(--md-sys-color-on-surface-variant);">Selecciona artículos existentes o describe nuevos ítems</p>
+            </div>
+            <md-filled-tonal-button type="button" onclick="agregarLinea()">
+                <md-icon slot="icon">add</md-icon>
+                Agregar línea
+            </md-filled-tonal-button>
+        </div>
+
+        <div id="lineasContainer">
+            <!-- líneas dinámicas aquí -->
+        </div>
+        <p id="sinLineas" class="md-typescale-body-medium" style="text-align:center; padding:24px; color:var(--md-sys-color-on-surface-variant);">
+            <md-icon style="font-size:32px; display:block; margin-bottom:8px;">add_shopping_cart</md-icon>
+            Aún no has agregado artículos. Haz clic en «Agregar línea».
+        </p>
+    </div>
+
+    <!-- Acciones -->
+    <div class="form-actions" style="background:var(--md-sys-color-surface-container); padding:24px; border-radius:16px;">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="button" onclick="abrirConfirmacion()" style="height:48px; min-width:180px;">
+            <md-icon slot="icon">send</md-icon>
+            Enviar Solicitud
+        </md-filled-button>
+    </div>
+</form>
+
+<!-- Modal confirmación -->
+<md-dialog id="modalConfirm" style="min-width:480px; max-width:580px;">
+    <div slot="headline" style="display:flex; align-items:center; gap:12px;">
+        <md-icon style="color:var(--md-sys-color-primary);">fact_check</md-icon>
+        Confirmar Solicitud
+    </div>
+    <div slot="content">
+        <p class="md-typescale-body-medium" style="margin:0 0 16px; color:var(--md-sys-color-on-surface-variant);">
+            Revisa el resumen antes de enviar.
+        </p>
+        <div id="resumenModal" style="padding:14px 16px; border-radius:10px; background:rgba(4,115,148,0.07); margin-bottom:16px; font-size:13px;"></div>
+        <div id="resumenLineas" style="max-height:220px; overflow-y:auto; border:1px solid var(--md-sys-color-outline-variant); border-radius:8px;"></div>
+    </div>
+    <div slot="actions">
+        <md-text-button onclick="document.getElementById('modalConfirm').close()">Revisar</md-text-button>
+        <md-filled-button onclick="document.getElementById('formSolicitud').submit()">
+            <md-icon slot="icon">check_circle</md-icon>
+            Confirmar y Enviar
+        </md-filled-button>
+    </div>
+</md-dialog>
+
+@section Scripts {
+<script>
+// Lista de artículos del servidor
+const articulosList = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    (ViewBag.Articulos as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>())
+    .Select(a => new { id = (int)a.Id, nombre = (string)a.Nombre })
+    .ToList()
+));
+
+let lineaIdx = 0;
+const container = document.getElementById('lineasContainer');
+const sinLineas = document.getElementById('sinLineas');
+
+function agregarLinea() {
+    sinLineas.style.display = 'none';
+    const i = lineaIdx++;
+    const div = document.createElement('div');
+    div.id = `linea_${i}`;
+    div.style.cssText = 'display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:12px; align-items:start; padding:14px; border-radius:10px; background:var(--md-sys-color-surface-container-low); margin-bottom:10px;';
+    div.innerHTML = `
+        <div>
+            <label style="font-size:12px; color:var(--md-sys-color-on-surface-variant); display:block; margin-bottom:4px;">Artículo / Descripción *</label>
+            <div style="display:flex; gap:6px;">
+                <select name="articuloIds" class="md3-select" id="sel_${i}" onchange="onSelectArticulo(${i})"
+                    style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--md-sys-color-outline); background:var(--md-sys-color-surface); font-size:13px;">
+                    <option value="">— Artículo libre —</option>
+                    ${articulosList.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('')}
+                </select>
+            </div>
+            <input type="text" name="descripciones" id="desc_${i}" placeholder="Describe el artículo si no está en la lista..."
+                style="width:100%; margin-top:6px; padding:8px 10px; border-radius:8px; border:1px solid var(--md-sys-color-outline); background:var(--md-sys-color-surface); font-size:13px; box-sizing:border-box;"
+                maxlength="300">
+        </div>
+        <div>
+            <label style="font-size:12px; color:var(--md-sys-color-on-surface-variant); display:block; margin-bottom:4px;">Cantidad *</label>
+            <input type="number" name="cantidades" value="1" min="1"
+                style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--md-sys-color-outline); background:var(--md-sys-color-surface); font-size:13px; box-sizing:border-box;">
+        </div>
+        <div>
+            <label style="font-size:12px; color:var(--md-sys-color-on-surface-variant); display:block; margin-bottom:4px;">Observación</label>
+            <input type="text" name="obsDetalles" placeholder="Opcional..." maxlength="300"
+                style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--md-sys-color-outline); background:var(--md-sys-color-surface); font-size:13px; box-sizing:border-box;">
+        </div>
+        <md-icon-button type="button" onclick="quitarLinea(${i})" title="Eliminar" style="margin-top:20px;">
+            <md-icon style="color:var(--md-sys-color-error);">delete</md-icon>
+        </md-icon-button>`;
+    container.appendChild(div);
+    // Al elegir artículo real, oculta la descripción libre
+    onSelectArticulo(i);
+}
+
+function onSelectArticulo(i) {
+    const sel  = document.getElementById(`sel_${i}`);
+    const desc = document.getElementById(`desc_${i}`);
+    if (sel.value) {
+        desc.style.display = 'none';
+        desc.value = '';
+    } else {
+        desc.style.display = 'block';
+    }
+}
+
+function quitarLinea(i) {
+    document.getElementById(`linea_${i}`)?.remove();
+    if (container.children.length === 0) sinLineas.style.display = 'block';
+}
+
+function abrirConfirmacion() {
+    if (container.children.length === 0) {
+        alert('Agrega al menos un artículo a la solicitud.');
+        return;
+    }
+    const titulo = document.querySelector('[name="titulo"]').value?.trim();
+    if (!titulo) { alert('El título es requerido.'); return; }
+
+    // Resumen encabezado
+    document.getElementById('resumenModal').innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 24px;">
+            <span style="color:var(--md-sys-color-on-surface-variant);">Título:</span><span style="font-weight:500;">${titulo}</span>
+            <span style="color:var(--md-sys-color-on-surface-variant);">Ítems:</span><span style="font-weight:500;">${container.children.length}</span>
+        </div>`;
+
+    // Tabla líneas
+    const rows = Array.from(container.children).map((div, n) => {
+        const sel  = div.querySelector('[name="articuloIds"]');
+        const desc = div.querySelector('[name="descripciones"]');
+        const cant = div.querySelector('[name="cantidades"]');
+        const nombre = sel.value
+            ? sel.options[sel.selectedIndex].text
+            : (desc.value?.trim() || '—');
+        return `<tr style="border-top:1px solid var(--md-sys-color-outline-variant);">
+            <td style="padding:6px 12px; color:var(--md-sys-color-on-surface-variant);">${n+1}</td>
+            <td style="padding:6px 12px; font-weight:500;">${nombre}</td>
+            <td style="padding:6px 12px; text-align:center;">${cant.value}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('resumenLineas').innerHTML = `
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead><tr style="background:var(--md-sys-color-surface-variant);">
+                <th style="padding:8px 12px; text-align:left;">#</th>
+                <th style="padding:8px 12px; text-align:left;">Artículo / Descripción</th>
+                <th style="padding:8px 12px; text-align:center;">Cant.</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+
+    document.getElementById('modalConfirm').show();
+}
+</script>
+}

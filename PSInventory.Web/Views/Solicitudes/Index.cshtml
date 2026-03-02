@@ -1,0 +1,100 @@
+@model IEnumerable<PSData.Modelos.SolicitudCompra>
+@{
+    ViewData["Title"] = "Solicitudes de Compra";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom:16px; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface-variant); font-size:14px;">
+    <md-icon style="font-size:18px;">home</md-icon>
+    <span>Inicio</span>
+    <md-icon style="font-size:18px;">chevron_right</md-icon>
+    <span style="color:var(--md-sys-color-primary);">Solicitudes de Compra</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin:0 0 8px;">Solicitudes de Compra</h1>
+        <p class="md-typescale-body-large" style="color:var(--md-sys-color-on-surface-variant); margin:0;">
+            Gestiona solicitudes de artículos para cotización o compra
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("Create")'">
+        <md-icon slot="icon">add</md-icon>
+        Nueva Solicitud
+    </md-filled-button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom:16px; padding:12px 16px; border-radius:8px; background:rgba(76,175,80,0.12); color:var(--md-sys-color-success); display:flex; align-items:center; gap:8px;">
+        <md-icon>check_circle</md-icon> @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert" style="margin-bottom:16px; padding:12px 16px; border-radius:8px; background:rgba(211,47,47,0.12); color:var(--md-sys-color-error); display:flex; align-items:center; gap:8px;">
+        <md-icon>error</md-icon> @TempData["Error"]
+    </div>
+}
+
+<div class="card">
+    @if (!Model.Any())
+    {
+        <div class="empty-state" style="padding:48px; text-align:center;">
+            <md-icon style="font-size:64px; color:var(--md-sys-color-outline); display:block; margin-bottom:16px;">request_quote</md-icon>
+            <p class="md-typescale-title-medium" style="color:var(--md-sys-color-on-surface-variant);">No hay solicitudes registradas</p>
+            <md-filled-button onclick="window.location.href='@Url.Action("Create")'" style="margin-top:16px;">
+                <md-icon slot="icon">add</md-icon>
+                Crear primera solicitud
+            </md-filled-button>
+        </div>
+    }
+    else
+    {
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Título</th>
+                        <th>Solicitante</th>
+                        <th style="text-align:center;">Ítems</th>
+                        <th>Fecha</th>
+                        <th style="text-align:center;">Estado</th>
+                        <th class="actions-column"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr style="cursor:pointer;" onclick="window.location.href='@Url.Action("Details", new { id = s.Id })'">
+                            <td style="color:var(--md-sys-color-on-surface-variant); font-size:13px;">#@s.Id</td>
+                            <td><strong>@s.Titulo</strong></td>
+                            <td>@s.Solicitante</td>
+                            <td style="text-align:center;">
+                                <span class="badge badge-primary">@s.Detalles.Count</span>
+                            </td>
+                            <td style="font-size:13px;">@s.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="text-align:center;">
+                                @{
+                                    var (bg, color) = s.Estado switch {
+                                        "Aprobada"    => ("rgba(76,175,80,0.12)",  "var(--md-sys-color-success)"),
+                                        "Rechazada"   => ("rgba(211,47,47,0.12)", "var(--md-sys-color-error)"),
+                                        "En Revisión" => ("rgba(255,152,0,0.15)", "#e65100"),
+                                        _             => ("rgba(4,115,148,0.10)", "var(--md-sys-color-primary)")
+                                    };
+                                }
+                                <span class="badge" style="background:@bg; color:@color;">@s.Estado</span>
+                            </td>
+                            <td class="actions-cell" onclick="event.stopPropagation()">
+                                <a href="@Url.Action("Details", new { id = s.Id })" title="Ver detalle">
+                                    <md-icon-button><md-icon>visibility</md-icon></md-icon-button>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

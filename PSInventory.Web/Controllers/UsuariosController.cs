@@ -37,9 +37,11 @@ namespace PSInventory.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Nombre,Password,Email,Rol")] Usuario usuario)
         {
+            ModelState.Remove("Id"); // Id es generado server-side
             if (ModelState.IsValid)
             {
                 usuario.Id = Guid.NewGuid().ToString();
+                usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
                 _context.Add(usuario);
                 await _context.SaveChangesAsync();
                 TempData["Success"] = "Usuario creado exitosamente";
@@ -80,7 +82,19 @@ namespace PSInventory.Web.Controllers
             {
                 try
                 {
-                    _context.Update(usuario);
+                    var existing = await _context.Usuarios.FindAsync(id);
+                    if (existing == null) return NotFound();
+
+                    existing.Nombre = usuario.Nombre;
+                    existing.Email = usuario.Email;
+                    existing.Rol = usuario.Rol;
+
+                    // Solo actualizar contraseña si se proporcionó una nueva
+                    if (!string.IsNullOrWhiteSpace(usuario.Password))
+                    {
+                        existing.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
+                    }
+
                     await _context.SaveChangesAsync();
                     TempData["Success"] = "Usuario actualizado exitosamente";
                 }

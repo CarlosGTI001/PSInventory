@@ -9,57 +9,72 @@ namespace PSData.Datos
             // Asegurar que la base de datos está creada
             context.Database.EnsureCreated();
 
-            // Verificar si ya hay usuarios
-            if (context.Usuarios.Any())
+            // Usuarios - crear si no existen, y migrar contraseñas en texto plano a BCrypt
+            if (!context.Usuarios.Any())
             {
-                return; // La BD ya tiene datos
+                var usuarios = new[]
+                {
+                    new Usuario
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Nombre = "admin",
+                        Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                        Email = "admin@psinventory.com",
+                        Rol = "Administrador"
+                    },
+                    new Usuario
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Nombre = "supervisor",
+                        Password = BCrypt.Net.BCrypt.HashPassword("supervisor123"),
+                        Email = "supervisor@psinventory.com",
+                        Rol = "Supervisor"
+                    }
+                };
+                context.Usuarios.AddRange(usuarios);
+                context.SaveChanges();
+            }
+            else
+            {
+                // Migrar contraseñas en texto plano a BCrypt
+                var usuariosPlain = context.Usuarios
+                    .Where(u => !u.Eliminado && !u.Password.StartsWith("$2"))
+                    .ToList();
+
+                if (usuariosPlain.Any())
+                {
+                    foreach (var u in usuariosPlain)
+                        u.Password = BCrypt.Net.BCrypt.HashPassword(u.Password);
+                    context.SaveChanges();
+                }
             }
 
-            // Crear usuario administrador por defecto
-            var adminUser = new Usuario
+            // Categorías
+            if (!context.Categorias.Any())
             {
-                Id = Guid.NewGuid().ToString(),
-                Nombre = "admin",
-                Password = "admin123", // TODO: En producción usar hash BCrypt
-                Email = "admin@psinventory.com",
-                Rol = "Administrador"
-            };
+                var categorias = new[]
+                {
+                    new Categoria { Nombre = "Computadoras", Descripcion = "Equipos de cómputo" },
+                    new Categoria { Nombre = "Periféricos", Descripcion = "Teclados, ratones, monitores" },
+                    new Categoria { Nombre = "Networking", Descripcion = "Switches, routers, access points" },
+                    new Categoria { Nombre = "Mobiliario", Descripcion = "Sillas, escritorios, archiveros" }
+                };
+                context.Categorias.AddRange(categorias);
+                context.SaveChanges();
+            }
 
-            // Crear usuario supervisor de ejemplo
-            var supervisorUser = new Usuario
+            // Regiones
+            if (!context.Regiones.Any())
             {
-                Id = Guid.NewGuid().ToString(),
-                Nombre = "supervisor",
-                Password = "supervisor123",
-                Email = "supervisor@psinventory.com",
-                Rol = "Supervisor"
-            };
-
-            context.Usuarios.AddRange(adminUser, supervisorUser);
-
-            // Puedes agregar datos de prueba adicionales aquí
-            // Ejemplo: Categorías de ejemplo
-            var categorias = new[]
-            {
-                new Categoria { Nombre = "Computadoras", Descripcion = "Equipos de cómputo" },
-                new Categoria { Nombre = "Periféricos", Descripcion = "Teclados, ratones, monitores" },
-                new Categoria { Nombre = "Networking", Descripcion = "Switches, routers, access points" },
-                new Categoria { Nombre = "Mobiliario", Descripcion = "Sillas, escritorios, archiveros" }
-            };
-
-            context.Categorias.AddRange(categorias);
-
-            // Regiones de ejemplo
-            var regiones = new[]
-            {
-                new Region { Nombre = "Norte", Descripcion = "Región Norte del país" },
-                new Region { Nombre = "Sur", Descripcion = "Región Sur del país" },
-                new Region { Nombre = "Centro", Descripcion = "Región Centro del país" }
-            };
-
-            context.Regiones.AddRange(regiones);
-
-            context.SaveChanges();
+                var regiones = new[]
+                {
+                    new Region { Nombre = "Norte", Descripcion = "Región Norte del país" },
+                    new Region { Nombre = "Sur", Descripcion = "Región Sur del país" },
+                    new Region { Nombre = "Centro", Descripcion = "Región Centro del país" }
+                };
+                context.Regiones.AddRange(regiones);
+                context.SaveChanges();
+            }
         }
     }
 }

@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Services;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 
 namespace PSInventory.Web.Controllers
 {
@@ -149,6 +152,139 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
             TempData["Success"] = "Solicitud eliminada.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Solicitudes/DescargarPdf/5
+        public async Task<IActionResult> DescargarPdf(int? id)
+        {
+            if (id == null) return NotFound();
+            var solicitud = await _context.SolicitudesCompra
+                .Where(s => !s.Eliminado && s.Id == id)
+                .Include(s => s.Detalles).ThenInclude(d => d.Articulo)
+                .FirstOrDefaultAsync();
+            if (solicitud == null) return NotFound();
+
+            var usuario = UsuarioActual;
+            var estadoColor = solicitud.Estado switch {
+                "Aprobada"    => "#4caf50",
+                "Rechazada"   => "#d32f2f",
+                "En Revisión" => "#e65100",
+                _             => "#047394"
+            };
+
+            var pdf = Document.Create(doc =>
+            {
+                doc.Page(page =>
+                {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Solicitud de Compra", usuario));
+
+                    page.Content().PaddingVertical(15).Column(col =>
+                    {
+                        // Info de la solicitud
+                        col.Item().PaddingBottom(12).Row(row =>
+                        {
+                            row.RelativeItem().Column(info =>
+                            {
+                                info.Item().Text(solicitud.Titulo)
+                                    .FontSize(14).Bold().FontColor("#047394");
+                                info.Item().PaddingTop(4).Text($"Solicitud #{solicitud.Id}")
+                                    .FontSize(10).FontColor(Colors.Grey.Darken2);
+                            });
+                            row.ConstantItem(130).Column(info =>
+                            {
+                                info.Item().AlignRight()
+                                    .Background(estadoColor).Padding(6)
+                                    .Text(solicitud.Estado).FontSize(11).Bold().FontColor(Colors.White);
+                                info.Item().AlignRight().PaddingTop(4)
+                                    .Text($"Solicitado: {solicitud.FechaSolicitud:dd/MM/yyyy HH:mm}")
+                                    .FontSize(9).FontColor(Colors.Grey.Darken2);
+                                info.Item().AlignRight()
+                                    .Text($"Solicitante: {solicitud.Solicitante}")
+                                    .FontSize(9).FontColor(Colors.Grey.Darken2);
+                            });
+                        });
+
+                        col.Item().BorderBottom(1).BorderColor("#047394").PaddingBottom(2).Text("");
+
+                        // Tabla de artículos
+                        col.Item().PaddingTop(12).Text("Artículos Solicitados")
+                            .FontSize(11).Bold().FontColor(Colors.Grey.Darken3);
+
+                        col.Item().PaddingTop(8).Element(c =>
+                            PdfReportService.GenerarTablaSimple(c,
+                                new List<string> { "#", "Artículo / Descripción", "Cantidad", "Observación" },
+                                solicitud.Detalles.Select((d, i) => new List<string>
+                                {
+                                    (i + 1).ToString(),
+                                    d.Articulo != null ? $"{d.Articulo.Marca} {d.Articulo.Modelo}" : (d.DescripcionLibre ?? ""),
+                                    d.Cantidad.ToString(),
+                                    d.Observaciones ?? "—"
+                                }).ToList()
+                            )
+                        );
+
+                        // Total
+                        col.Item().PaddingTop(10).AlignRight()
+                            .Text($"Total de artículos: {solicitud.Detalles.Sum(d => d.Cantidad)}")
+                            .FontSize(10).Bold().FontColor("#047394");
+
+                        // Observaciones generales
+                        if (!string.IsNullOrEmpty(solicitud.Observaciones))
+                        {
+                            col.Item().PaddingTop(16).Column(obs =>
+                            {
+                                obs.Item().Text("Observaciones Generales")
+                                    .FontSize(11).Bold().FontColor(Colors.Grey.Darken3);
+                                obs.Item().PaddingTop(6).Background(Colors.Grey.Lighten4).Padding(10)
+                                    .Text(solicitud.Observaciones).FontSize(9).FontColor(Colors.Grey.Darken2);
+                            });
+                        }
+
+                        // Notas de revisión
+                        if (!string.IsNullOrEmpty(solicitud.NotasRevision))
+                        {
+                            col.Item().PaddingTop(16).Column(rev =>
+                            {
+                                rev.Item().Text("Notas de Revisión")
+                                    .FontSize(11).Bold().FontColor(Colors.Grey.Darken3);
+                                rev.Item().PaddingTop(6).Background(Colors.Grey.Lighten4).Padding(10).Column(inner =>
+                                {
+                                    inner.Item().Text(solicitud.NotasRevision!)
+                                        .FontSize(9).FontColor(Colors.Grey.Darken2);
+                                    inner.Item().PaddingTop(4)
+                                        .Text($"Revisado por: {solicitud.UsuarioRevisor} · {solicitud.FechaRevision:dd/MM/yyyy HH:mm}")
+                                        .FontSize(8).FontColor(Colors.Grey.Medium);
+                                });
+                            });
+                        }
+
+                        // Espacio para firmas
+                        col.Item().PaddingTop(50).Row(row =>
+                        {
+                            row.RelativeItem().Column(f =>
+                            {
+                                f.Item().Width(160).BorderBottom(1).BorderColor(Colors.Grey.Medium).Text("");
+                                f.Item().PaddingTop(4).Text("Solicitante").FontSize(9).FontColor(Colors.Grey.Darken2);
+                            });
+                            row.RelativeItem().Column(f =>
+                            {
+                                f.Item().AlignRight().Width(160).BorderBottom(1).BorderColor(Colors.Grey.Medium).Text("");
+                                f.Item().AlignRight().PaddingTop(4).Text("Aprobado por").FontSize(9).FontColor(Colors.Grey.Darken2);
+                            });
+                        });
+                    });
+
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            }).GeneratePdf();
+
+            var fileName = $"Solicitud_{solicitud.Id}_{solicitud.FechaSolicitud:yyyyMMdd}.pdf";
+            return File(pdf, "application/pdf", fileName);
         }
     }
 }

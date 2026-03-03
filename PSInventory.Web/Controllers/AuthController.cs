@@ -29,9 +29,9 @@ namespace PSInventory.Web.Controllers
         public IActionResult Login(string username, string password)
         {
             var user = _context.Usuarios
-                .FirstOrDefault(u => u.Nombre == username && u.Password == password);
+                .FirstOrDefault(u => u.Nombre == username && !u.Eliminado);
 
-            if (user != null)
+            if (user != null && VerifyPassword(password, user.Password))
             {
                 // Guardar en sesión
                 HttpContext.Session.SetString("UserName", user.Nombre);
@@ -50,6 +50,18 @@ namespace PSInventory.Web.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
+        }
+
+        private static bool VerifyPassword(string password, string hash)
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, hash);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

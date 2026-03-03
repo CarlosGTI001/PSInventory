@@ -29,15 +29,18 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
         var context = services.GetRequiredService<PSDatos>();
+        logger.LogInformation("Iniciando seed de base de datos...");
         DbInitializer.Initialize(context);
+        logger.LogInformation("Seed completado exitosamente.");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error al inicializar la base de datos.");
+        logger.LogError(ex, "Error al inicializar la base de datos: {Message}", ex.Message);
+        throw; // Re-lanzar para ver el error real en pantalla
     }
 }
 

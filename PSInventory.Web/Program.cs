@@ -12,7 +12,7 @@ builder.Services.AddControllersWithViews();
 
 // Configure Entity Framework
 builder.Services.AddDbContext<PSDatos>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add session support
 builder.Services.AddDistributedMemoryCache();

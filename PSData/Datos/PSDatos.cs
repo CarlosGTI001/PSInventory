@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PSData.Modelos;
 using System;
 using System.Linq;
@@ -22,7 +22,9 @@ namespace PSData.Datos
         private static DbContextOptions<PSDatos> GetOptions()
         {
             var optionsBuilder = new DbContextOptionsBuilder<PSDatos>();
-            optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=PSInventoryDB;Trusted_Connection=True;MultipleActiveResultSets=true");
+            var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PSInventory", "psinventory.db");
+            Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
             return optionsBuilder.Options;
         }
 

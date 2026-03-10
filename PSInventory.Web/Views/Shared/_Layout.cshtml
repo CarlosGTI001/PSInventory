@@ -155,6 +155,11 @@
                         <md-icon>group</md-icon>
                         <span>Usuarios</span>
                     </a>
+                    
+                    <a href="/Backup/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Backup" ? "active" : "")">
+                        <md-icon>cloud_sync</md-icon>
+                        <span>Backup y Migración</span>
+                    </a>
                 }
             </nav>
         </aside>

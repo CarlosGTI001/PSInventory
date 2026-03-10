@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Modelos;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace PSData.Datos
 {
@@ -22,9 +23,26 @@ namespace PSData.Datos
         private static DbContextOptions<PSDatos> GetOptions()
         {
             var optionsBuilder = new DbContextOptionsBuilder<PSDatos>();
-            var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PSInventory", "psinventory.db");
+
+            string dbPath;
+
+            if (OperatingSystem.IsWindows())
+            {
+                dbPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "PSInventory",
+                    "psinventory.db"
+                );
+            }
+            else
+            {
+                dbPath = "/var/psinventory/psinventory.db";
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+
             optionsBuilder.UseSqlite($"Data Source={dbPath}");
+
             return optionsBuilder.Options;
         }
 

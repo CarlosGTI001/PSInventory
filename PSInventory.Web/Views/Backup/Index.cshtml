@@ -1,0 +1,173 @@
+@{
+    ViewData["Title"] = "Backup y Migración";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inicio</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Backup y Migración</span>
+</div>
+
+<!-- Mensajes TempData -->
+@if (TempData["Success"] != null)
+{
+    <div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--md-sys-color-success); background: rgba(16, 185, 129, 0.1);">
+        <div style="padding: 16px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: var(--md-sys-color-success); font-size: 28px;">check_circle</md-icon>
+            <span class="md-typescale-body-large">@TempData["Success"]</span>
+        </div>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--md-sys-color-error); background: rgba(239, 68, 68, 0.1);">
+        <div style="padding: 16px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: var(--md-sys-color-error); font-size: 28px;">error</md-icon>
+            <span class="md-typescale-body-large">@TempData["Error"]</span>
+        </div>
+    </div>
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Backup y Migración</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Exporta, importa o haz backup de los datos para cambiar de computadora
+        </p>
+    </div>
+    <md-icon style="font-size: 80px; color: var(--md-sys-color-primary); opacity: 0.2;">cloud_sync</md-icon>
+</div>
+
+<!-- Cards Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 32px;">
+
+    <!-- 1. Exportar a JSON -->
+    <div class="backup-card">
+        <div class="backup-card-header" style="background: linear-gradient(135deg, #047394 0%, #0589ab 100%);">
+            <div class="backup-card-icon">
+                <md-icon>download</md-icon>
+            </div>
+            <div>
+                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Exportar datos (JSON)</h3>
+                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Descarga un archivo portable con todo el inventario</p>
+            </div>
+        </div>
+        <div style="padding: 24px;">
+            <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant); margin: 0 0 20px 0;">
+                Exporta regiones, sucursales, artículos, items, compras y más a un archivo JSON. Ideal para migrar a otra computadora.
+            </p>
+            <form method="post" action="/Backup/ExportarJson">
+                <md-filled-button type="submit" style="background-color: #047394; width: 100%;">
+                    <md-icon slot="icon">file_download</md-icon>
+                    Exportar ahora
+                </md-filled-button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Importar desde JSON -->
+    <div class="backup-card">
+        <div class="backup-card-header" style="background: linear-gradient(135deg, #ff5c00 0%, #ff7f2c 100%);">
+            <div class="backup-card-icon">
+                <md-icon>upload</md-icon>
+            </div>
+            <div>
+                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Importar datos (JSON)</h3>
+                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Restaura el inventario desde un archivo exportado</p>
+            </div>
+        </div>
+        <div style="padding: 24px;">
+            <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant); margin: 0 0 20px 0;">
+                <strong>⚠️ Atención:</strong> Se borrarán todos los datos actuales y se reemplazarán con los del archivo.
+            </p>
+            <form method="post" action="/Backup/ImportarJson" enctype="multipart/form-data">
+                <div style="margin-bottom: 16px;">
+                    <label class="md-typescale-label-large" style="display: block; margin-bottom: 8px;">Archivo JSON</label>
+                    <input type="file" name="archivo" accept=".json" required style="padding: 12px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; width: 100%;" />
+                </div>
+                <md-filled-button type="submit" style="background-color: #ff5c00; width: 100%;">
+                    <md-icon slot="icon">file_upload</md-icon>
+                    Importar
+                </md-filled-button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Backup SQL Server -->
+    <div class="backup-card">
+        <div class="backup-card-header" style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);">
+            <div class="backup-card-icon">
+                <md-icon>storage</md-icon>
+            </div>
+            <div>
+                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Backup base de datos (.db)</h3>
+                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Copia del archivo SQLite</p>
+            </div>
+        </div>
+        <div style="padding: 24px;">
+                <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant); margin: 0 0 20px 0;">
+                Copia el archivo de base de datos SQLite (.db) en la carpeta de Documentos. Puedes restaurar reemplazando el archivo original.
+            </p>
+            <form method="post" action="/Backup/CrearBackupSql">
+                <md-filled-button type="submit" style="background-color: #7c3aed; width: 100%;">
+                    <md-icon slot="icon">backup</md-icon>
+                    Crear copia .db
+                </md-filled-button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<!-- Guía de uso -->
+<div class="card" style="margin-top: 32px;">
+    <div style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+            <md-icon>help_outline</md-icon>
+            Cómo migrar a otra computadora
+        </h3>
+        <ol style="margin: 0; padding-left: 24px; line-height: 1.8; color: var(--md-sys-color-on-surface-variant);">
+            <li><strong>En la computadora actual:</strong> Usa "Exportar datos (JSON)" y guarda el archivo.</li>
+            <li><strong>En la nueva computadora:</strong> Instala PSInventory, ejecuta la aplicación para que cree la base de datos vacía.</li>
+            <li><strong>Inicia sesión</strong> como administrador (admin/admin123 si es instalación nueva).</li>
+            <li><strong>Importa el archivo JSON</strong> desde esta pantalla.</li>
+        </ol>
+    </div>
+</div>
+
+<style>
+    .backup-card {
+        background: var(--md-sys-color-surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .backup-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+    .backup-card-header {
+        padding: 24px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .backup-card-icon {
+        background: rgba(255,255,255,0.2);
+        border-radius: 12px;
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .backup-card-icon md-icon {
+        font-size: 32px;
+        color: white;
+    }
+</style>

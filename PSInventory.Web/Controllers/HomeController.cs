@@ -159,19 +159,24 @@ namespace PSInventory.Web.Controllers
 
         // API para Chart.js - Compras por Mes
         [HttpGet]
-        public IActionResult GetComprasPorMes()
+        public async Task<IActionResult> GetComprasPorMes()
         {
             var fechaInicio = DateTime.Now.AddMonths(-5).Date;
             
-            var data = _context.Compras
+            // SQLite no soporta Sum(decimal); traer a cliente y agregar
+            var comprasFiltradas = await _context.Compras
                 .Where(c => c.FechaCompra >= fechaInicio)
+                .Select(c => new { c.FechaCompra, c.CostoTotal })
+                .ToListAsync();
+
+            var data = comprasFiltradas
                 .GroupBy(c => new { c.FechaCompra.Year, c.FechaCompra.Month })
                 .Select(g => new
                 {
                     anio = g.Key.Year,
                     mes = g.Key.Month,
                     cantidad = g.Count(),
-                    monto = g.Sum(c => c.CostoTotal)
+                    monto = (double)g.Sum(c => c.CostoTotal)
                 })
                 .OrderBy(x => x.anio).ThenBy(x => x.mes)
                 .ToList();

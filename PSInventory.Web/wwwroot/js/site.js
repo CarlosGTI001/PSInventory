@@ -86,9 +86,16 @@ function showSnackbar(message, type = 'info') {
     }
     
     document.body.appendChild(snackbar);
-    snackbar.show();
+    if (typeof snackbar.show === 'function') {
+        snackbar.show();
+    } else {
+        snackbar.open = true;
+    }
     
     setTimeout(() => {
+        if (typeof snackbar.close === 'function') {
+            snackbar.close();
+        }
         snackbar.remove();
     }, 4000);
 }

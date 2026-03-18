@@ -14,6 +14,9 @@ namespace PSInventory.Web.Models.ViewModels
         public int? DepartamentoId { get; set; }
         public string SucursalDestinoId { get; set; } = string.Empty;
         public string ResponsableEmpleado { get; set; } = string.Empty;
+        public bool EntregaDepartamento { get; set; }
+        public int? DepartamentoDestinoId { get; set; }
+        public string PersonaEntregaDepartamento { get; set; } = string.Empty;
         public string? Observaciones { get; set; }
         public List<DespachoItemInput> Items { get; set; } = new();
     }

@@ -3,7 +3,8 @@
 @{
     ViewData["Title"] = "Salida sin registro";
     var categorias = (IEnumerable<SelectListItem>)(ViewBag.Categorias ?? new List<SelectListItem>());
-    var sucursales = (IEnumerable<SelectListItem>)(ViewBag.Sucursales ?? new List<SelectListItem>());
+    var departamentos = (IEnumerable<SelectListItem>)(ViewBag.Departamentos ?? new List<SelectListItem>());
+    var regiones = (IEnumerable<SelectListItem>)(ViewBag.Regiones ?? new List<SelectListItem>());
 }
 
 <div style="margin-bottom:16px; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface-variant); font-size:14px;">
@@ -38,30 +39,91 @@
         <md-icon>assignment_ind</md-icon>
         Datos generales
     </h3>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
         <div>
-            <div class="md3-select-field has-leading-icon">
-                <md-icon class="md3-select-leading-icon">store</md-icon>
-                <select id="sucursalDestinoId" class="md3-select" required>
-                    <option value="">Seleccione sucursal...</option>
-                    @foreach (var s in sucursales)
-                    {
-                        <option value="@s.Value">@s.Text</option>
-                    }
-                </select>
-                <label class="md3-select-label">Sucursal destino *</label>
+            <p class="step-label" style="margin:0 0 8px;">Paso 1 — Departamento</p>
+            <div class="select-with-search">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">business_center</md-icon>
+                    <select id="selectDepartamento" class="md3-select">
+                        <option value="">Todos los departamentos</option>
+                        @foreach (var d in departamentos)
+                        {
+                            <option value="@d.Value">@d.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Departamento</label>
+                </div>
+                <md-icon-button type="button" onclick="openSearchDialog('selectDepartamento','Buscar Departamento','Escribe el nombre...')" title="Buscar">
+                    <md-icon>search</md-icon>
+                </md-icon-button>
             </div>
         </div>
+
         <div>
-            <md-filled-text-field id="responsableEmpleado" label="Responsable de recepción *" style="width:100%;">
+            <p class="step-label" style="margin:0 0 8px;">Paso 2 — Región</p>
+            <div class="select-with-search">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">public</md-icon>
+                    <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)">
+                        <option value="">Seleccione región</option>
+                        @foreach (var r in regiones)
+                        {
+                            <option value="@r.Value">@r.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Región</label>
+                </div>
+                <md-icon-button id="btnBuscarRegion" type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
+                    <md-icon>search</md-icon>
+                </md-icon-button>
+            </div>
+        </div>
+
+        <div>
+            <p class="step-label" style="margin:0 0 8px;">Paso 3 — Sucursal</p>
+            <div class="select-with-search">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select id="sucursalDestinoId" class="md3-select" disabled>
+                        <option value="">Seleccione primero una región</option>
+                    </select>
+                    <label class="md3-select-label">Sucursal destino</label>
+                </div>
+                <md-icon-button id="btnBuscarSucursal" type="button" disabled
+                                onclick="openSearchDialog('sucursalDestinoId','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
+                    <md-icon>search</md-icon>
+                </md-icon-button>
+            </div>
+        </div>
+
+        <div>
+            <p class="step-label" style="margin:0 0 8px;">Responsable de recepción</p>
+            <md-filled-text-field id="responsableEmpleado" label="Responsable de recepción" style="width:100%;">
                 <md-icon slot="leading-icon">badge</md-icon>
             </md-filled-text-field>
         </div>
-    </div>
-    <div style="margin-top:16px;">
-        <md-filled-text-field id="observaciones" label="Observaciones" supporting-text="Opcional" style="width:100%;">
-            <md-icon slot="leading-icon">notes</md-icon>
-        </md-filled-text-field>
+
+        <div style="grid-column: 1 / -1;">
+            <div style="display:flex; align-items:center; gap:8px; margin:0 0 8px;">
+                <md-checkbox id="entregaDepartamento"></md-checkbox>
+                <label for="entregaDepartamento" class="md-typescale-body-medium" style="cursor:pointer;">
+                    Entregar a departamento (sin sucursal)
+                </label>
+            </div>
+            <div id="departamentoEntregaFields" style="display:none; margin-bottom:12px;">
+                <md-filled-text-field id="personaEntregaDepartamento" label="Persona que recibe en departamento" supporting-text="Opcional" style="width:100%;">
+                    <md-icon slot="leading-icon">person</md-icon>
+                </md-filled-text-field>
+            </div>
+        </div>
+
+        <div style="grid-column: 1 / -1;">
+            <p class="step-label" style="margin:0 0 8px;">Observaciones</p>
+            <md-filled-text-field id="observaciones" label="Observaciones" supporting-text="Opcional" style="width:100%;">
+                <md-icon slot="leading-icon">notes</md-icon>
+            </md-filled-text-field>
+        </div>
     </div>
 </div>
 
@@ -158,19 +220,14 @@
         }
 
         function collectPayload() {
+            const entregaDepartamento = document.getElementById('entregaDepartamento').checked;
+            const departamentoDestinoId = Number(document.getElementById('selectDepartamento').value || 0);
             const sucursalDestinoId = document.getElementById('sucursalDestinoId').value;
             const responsableEmpleado = document.getElementById('responsableEmpleado').value.trim();
+            const personaEntregaDepartamento = document.getElementById('personaEntregaDepartamento').value.trim();
             const observaciones = document.getElementById('observaciones').value.trim();
             const rows = Array.from(itemsBody.querySelectorAll('tr'));
 
-            if (!sucursalDestinoId) {
-                showSnackbar('Seleccione una sucursal destino.', 'warning');
-                return null;
-            }
-            if (!responsableEmpleado) {
-                showSnackbar('Ingrese el responsable de recepción.', 'warning');
-                return null;
-            }
             if (!rows.length) {
                 showSnackbar('Debe agregar al menos un ítem.', 'warning');
                 return null;
@@ -194,7 +251,15 @@
                 items.push({ marca, modelo, descripcion, categoriaId, serial, cantidad });
             }
 
-            return { sucursalDestinoId, responsableEmpleado, observaciones, items };
+            return {
+                entregaDepartamento,
+                departamentoDestinoId: entregaDepartamento && departamentoDestinoId ? departamentoDestinoId : null,
+                personaEntregaDepartamento,
+                sucursalDestinoId: entregaDepartamento ? null : sucursalDestinoId,
+                responsableEmpleado,
+                observaciones,
+                items
+            };
         }
 
         async function procesarSalidaSinRegistro() {
@@ -202,7 +267,9 @@
             if (!payload) return;
 
             const confirmed = await showConfirmDialog(
-                `Se registrarán ${payload.items.length} ítem(s) nuevos y se enviarán a la sucursal seleccionada. ¿Desea continuar?`,
+                payload.entregaDepartamento
+                    ? `Se registrarán ${payload.items.length} ítem(s) nuevos y se entregarán por departamento. ¿Desea continuar?`
+                    : `Se registrarán ${payload.items.length} ítem(s) nuevos y se enviarán con el destino configurado. ¿Desea continuar?`,
                 'Confirmar salida sin registro'
             );
             if (!confirmed) return;
@@ -223,8 +290,11 @@
                 const result = await response.json();
                 if (result.success) {
                     showSnackbar(result.message, 'success');
+                    document.getElementById('entregaDepartamento').checked = false;
+                    setModoEntregaDepartamento(false);
                     document.getElementById('sucursalDestinoId').value = '';
                     document.getElementById('responsableEmpleado').value = '';
+                    document.getElementById('personaEntregaDepartamento').value = '';
                     document.getElementById('observaciones').value = '';
                     itemsBody.innerHTML = '';
                     addRow();
@@ -239,8 +309,76 @@
             }
         }
 
+        function setModoEntregaDepartamento(activo) {
+            const selectRegion = document.getElementById('selectRegion');
+            const sucursal = document.getElementById('sucursalDestinoId');
+            const btnBuscarRegion = document.getElementById('btnBuscarRegion');
+            const btnBuscarSucursal = document.getElementById('btnBuscarSucursal');
+            const fields = document.getElementById('departamentoEntregaFields');
+
+            fields.style.display = activo ? 'block' : 'none';
+
+            if (activo) {
+                selectRegion.value = '';
+                selectRegion.disabled = true;
+                btnBuscarRegion.disabled = true;
+                sucursal.innerHTML = '<option value="">No aplica para entrega por departamento</option>';
+                sucursal.disabled = true;
+                btnBuscarSucursal.disabled = true;
+            } else {
+                selectRegion.disabled = false;
+                btnBuscarRegion.disabled = false;
+                sucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
+                sucursal.disabled = true;
+                btnBuscarSucursal.disabled = true;
+            }
+        }
+
+        async function onRegionChange(select) {
+            if (document.getElementById('entregaDepartamento').checked) {
+                return;
+            }
+            const regionId = select.value;
+            const selectSucursal = document.getElementById('sucursalDestinoId');
+            const btnBuscar = document.getElementById('btnBuscarSucursal');
+
+            selectSucursal.innerHTML = '<option value="">Cargando...</option>';
+            selectSucursal.disabled = true;
+            btnBuscar.disabled = true;
+
+            if (!regionId) {
+                selectSucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/SalidaSinRegistro/SucursalesPorRegion?regionId=${regionId}`);
+                const data = await resp.json();
+
+                selectSucursal.innerHTML = '<option value="">Seleccione sucursal destino</option>';
+                data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.value;
+                    opt.textContent = s.text;
+                    selectSucursal.appendChild(opt);
+                });
+
+                if (data.length === 0) {
+                    selectSucursal.innerHTML = '<option value="">Sin sucursales en esta región</option>';
+                } else {
+                    selectSucursal.disabled = false;
+                    btnBuscar.disabled = false;
+                }
+            } catch {
+                selectSucursal.innerHTML = '<option value="">Error cargando sucursales</option>';
+                showSnackbar('No se pudieron cargar las sucursales para la región seleccionada.', 'error');
+            }
+        }
+
         btnAgregar.addEventListener('click', () => addRow());
         btnProcesar.addEventListener('click', procesarSalidaSinRegistro);
+        document.getElementById('entregaDepartamento').addEventListener('change', (e) => setModoEntregaDepartamento(e.target.checked));
+        setModoEntregaDepartamento(false);
         addRow();
     </script>
 }

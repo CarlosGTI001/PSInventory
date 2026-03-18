@@ -138,11 +138,61 @@ namespace PSInventory.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Enviar([FromBody] DespachoInput input)
         {
-            if (string.IsNullOrEmpty(input.SucursalDestinoId) ||
-                string.IsNullOrEmpty(input.ResponsableEmpleado) ||
-                input.Items == null || input.Items.Count == 0)
+            if (input.Items == null || input.Items.Count == 0)
             {
                 return Json(new { success = false, message = "Datos incompletos para el despacho." });
+            }
+
+            var entregaDepartamento = input.EntregaDepartamento;
+            var sucursalDestinoId = !entregaDepartamento && !string.IsNullOrWhiteSpace(input.SucursalDestinoId)
+                ? input.SucursalDestinoId
+                : null;
+            string destinoNombre;
+            string responsableDestino;
+
+            if (entregaDepartamento)
+            {
+                if (input.DepartamentoDestinoId.HasValue && input.DepartamentoDestinoId.Value > 0)
+                {
+                    var departamento = await _context.Departamentos
+                        .Where(d => !d.Eliminado && d.Id == input.DepartamentoDestinoId.Value)
+                        .FirstOrDefaultAsync();
+                    if (departamento == null)
+                        return Json(new { success = false, message = "El departamento destino no es válido." });
+
+                    destinoNombre = departamento.Nombre;
+                }
+                else
+                {
+                    destinoNombre = "Departamento no especificado";
+                }
+
+                responsableDestino = !string.IsNullOrWhiteSpace(input.PersonaEntregaDepartamento)
+                    ? input.PersonaEntregaDepartamento.Trim()
+                    : (!string.IsNullOrWhiteSpace(input.ResponsableEmpleado)
+                        ? input.ResponsableEmpleado.Trim()
+                        : "Sin responsable especificado");
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(sucursalDestinoId))
+                {
+                    var sucursal = await _context.Sucursales
+                        .Where(s => !s.Eliminado && s.Id == sucursalDestinoId)
+                        .FirstOrDefaultAsync();
+                    if (sucursal == null)
+                        return Json(new { success = false, message = "La sucursal destino no es válida." });
+
+                    destinoNombre = sucursal.Nombre;
+                }
+                else
+                {
+                    destinoNombre = "Destino no especificado";
+                }
+
+                responsableDestino = !string.IsNullOrWhiteSpace(input.ResponsableEmpleado)
+                    ? input.ResponsableEmpleado.Trim()
+                    : "Sin responsable especificado";
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -166,9 +216,9 @@ namespace PSInventory.Web.Controllers
                         if (item.Estado != "Disponible" || item.SucursalId != null)
                         { errores.Add($"Item #{entry.ItemId} ya no está disponible."); continue; }
 
-                        item.SucursalId          = input.SucursalDestinoId;
+                        item.SucursalId          = sucursalDestinoId;
                         item.Estado              = "Asignado";
-                        item.ResponsableEmpleado = input.ResponsableEmpleado;
+                        item.ResponsableEmpleado = responsableDestino;
                         item.FechaAsignacion     = DateTime.Now;
                         _context.Update(item);
                         await _context.SaveChangesAsync();
@@ -178,12 +228,12 @@ namespace PSInventory.Web.Controllers
                             ItemId               = item.Id,
                             Cantidad             = 1,
                             SucursalOrigenId     = null,
-                            SucursalDestinoId    = input.SucursalDestinoId,
+                            SucursalDestinoId    = sucursalDestinoId,
                             FechaMovimiento      = DateTime.Now,
                             UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
-                            Motivo               = "Despacho",
+                            Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
                             Observaciones        = input.Observaciones,
-                            ResponsableRecepcion = input.ResponsableEmpleado,
+                            ResponsableRecepcion = responsableDestino,
                             FechaRecepcion       = DateTime.Now
                         });
                         await _context.SaveChangesAsync();
@@ -217,10 +267,10 @@ namespace PSInventory.Web.Controllers
                                 {
                                     ArticuloId               = it.ArticuloId,
                                     LoteId                   = it.LoteId,
-                                    SucursalId               = input.SucursalDestinoId,
+                                    SucursalId               = sucursalDestinoId,
                                     Estado                   = "Asignado",
                                     Cantidad                 = tomar,
-                                    ResponsableEmpleado      = input.ResponsableEmpleado,
+                                    ResponsableEmpleado      = responsableDestino,
                                     FechaAsignacion          = DateTime.Now,
                                     Serial                   = null,
                                     FechaGarantiaInicio      = it.FechaGarantiaInicio,
@@ -232,9 +282,9 @@ namespace PSInventory.Web.Controllers
                             }
                             else
                             {
-                                it.SucursalId          = input.SucursalDestinoId;
+                                it.SucursalId          = sucursalDestinoId;
                                 it.Estado              = "Asignado";
-                                it.ResponsableEmpleado = input.ResponsableEmpleado;
+                                it.ResponsableEmpleado = responsableDestino;
                                 it.FechaAsignacion     = DateTime.Now;
                                 itemAsignado = it;
                                 _context.Update(it);
@@ -246,12 +296,12 @@ namespace PSInventory.Web.Controllers
                                 ItemId               = itemAsignado.Id,
                                 Cantidad             = tomar,
                                 SucursalOrigenId     = null,
-                                SucursalDestinoId    = input.SucursalDestinoId,
+                                SucursalDestinoId    = sucursalDestinoId,
                                 FechaMovimiento      = DateTime.Now,
                                 UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
-                                Motivo               = "Despacho",
+                                Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
                                 Observaciones        = input.Observaciones,
-                                ResponsableRecepcion = input.ResponsableEmpleado,
+                                ResponsableRecepcion = responsableDestino,
                                 FechaRecepcion       = DateTime.Now
                             });
                             await _context.SaveChangesAsync();
@@ -266,8 +316,7 @@ namespace PSInventory.Web.Controllers
 
                 await transaction.CommitAsync();
 
-                var sucursal = await _context.Sucursales.FindAsync(input.SucursalDestinoId);
-                var msg = $"{procesados} item(s) despachado(s) a {sucursal?.Nombre} exitosamente.";
+                var msg = $"{procesados} item(s) despachado(s) a {destinoNombre} exitosamente.";
                 if (errores.Any())
                     msg += $" {errores.Count} error(es): {string.Join(" | ", errores)}";
 

@@ -31,18 +31,32 @@ namespace PSInventory.Web.Controllers
                 .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Nombre })
                 .ToListAsync();
 
-            ViewBag.Sucursales = await _context.Sucursales
-                .Where(s => !s.Eliminado && s.Activo)
-                .Include(s => s.Region)
-                .OrderBy(s => s.Nombre)
-                .Select(s => new SelectListItem
-                {
-                    Value = s.Id,
-                    Text = s.Region != null ? $"{s.Nombre} ({s.Region.Nombre})" : s.Nombre
-                })
+            ViewBag.Departamentos = await _context.Departamentos
+                .Where(d => !d.Eliminado)
+                .OrderBy(d => d.Nombre)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Nombre })
+                .ToListAsync();
+
+            ViewBag.Regiones = await _context.Regiones
+                .Where(r => !r.Eliminado)
+                .OrderBy(r => r.Nombre)
+                .Select(r => new SelectListItem { Value = r.RegionId.ToString(), Text = r.Nombre })
                 .ToListAsync();
 
             return View();
+        }
+
+        // GET: SalidaSinRegistro/SucursalesPorRegion?regionId=3
+        [HttpGet]
+        public async Task<IActionResult> SucursalesPorRegion(int regionId)
+        {
+            var sucursales = await _context.Sucursales
+                .Where(s => !s.Eliminado && s.Activo && s.RegionId == regionId)
+                .OrderBy(s => s.Nombre)
+                .Select(s => new { value = s.Id, text = s.Nombre })
+                .ToListAsync();
+
+            return Json(sucursales);
         }
 
         // POST: SalidaSinRegistro/Procesar
@@ -55,21 +69,38 @@ namespace PSInventory.Web.Controllers
                 return Json(new { success = false, message = "No se proporcionaron datos para procesar." });
             }
 
-            if (string.IsNullOrWhiteSpace(input.SucursalDestinoId))
-            {
-                return Json(new { success = false, message = "Debe seleccionar una sucursal de destino." });
-            }
+            var entregaDepartamento = input.EntregaDepartamento;
+            string departamentoNombre = string.Empty;
+            var sucursalDestinoId = !entregaDepartamento && !string.IsNullOrWhiteSpace(input.SucursalDestinoId)
+                ? input.SucursalDestinoId
+                : null;
 
-            if (string.IsNullOrWhiteSpace(input.ResponsableEmpleado))
+            if (entregaDepartamento)
             {
-                return Json(new { success = false, message = "Debe indicar un responsable de recepción." });
-            }
+                if (input.DepartamentoDestinoId.HasValue && input.DepartamentoDestinoId.Value > 0)
+                {
+                    var departamento = await _context.Departamentos
+                        .Where(d => !d.Eliminado && d.Id == input.DepartamentoDestinoId.Value)
+                        .FirstOrDefaultAsync();
+                    if (departamento == null)
+                    {
+                        return Json(new { success = false, message = "El departamento destino no es válido." });
+                    }
 
-            var sucursalExiste = await _context.Sucursales
-                .AnyAsync(s => s.Id == input.SucursalDestinoId && !s.Eliminado && s.Activo);
-            if (!sucursalExiste)
+                    departamentoNombre = departamento.Nombre;
+                }
+            }
+            else
             {
-                return Json(new { success = false, message = "La sucursal destino no es válida." });
+                if (!string.IsNullOrWhiteSpace(sucursalDestinoId))
+                {
+                    var sucursalExiste = await _context.Sucursales
+                        .AnyAsync(s => s.Id == sucursalDestinoId && !s.Eliminado && s.Activo);
+                    if (!sucursalExiste)
+                    {
+                        return Json(new { success = false, message = "La sucursal destino no es válida." });
+                    }
+                }
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -78,6 +109,24 @@ namespace PSInventory.Web.Controllers
             try
             {
                 var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+                var responsableDestino = entregaDepartamento
+                    ? (!string.IsNullOrWhiteSpace(input.PersonaEntregaDepartamento)
+                        ? input.PersonaEntregaDepartamento.Trim()
+                        : (!string.IsNullOrWhiteSpace(input.ResponsableEmpleado)
+                            ? input.ResponsableEmpleado.Trim()
+                            : "Sin responsable especificado"))
+                    : (!string.IsNullOrWhiteSpace(input.ResponsableEmpleado)
+                        ? input.ResponsableEmpleado.Trim()
+                        : "Sin responsable especificado");
+                var observacionMovimiento = input.Observaciones;
+                if (entregaDepartamento)
+                {
+                    var destinoDepto = string.IsNullOrWhiteSpace(departamentoNombre) ? "No especificado" : departamentoNombre;
+                    var prefijoDestino = $"Departamento destino: {destinoDepto}. Entregado a: {responsableDestino}.";
+                    observacionMovimiento = string.IsNullOrWhiteSpace(observacionMovimiento)
+                        ? prefijoDestino
+                        : $"{prefijoDestino} {observacionMovimiento}";
+                }
                 var compraSalida = new Compra
                 {
                     Proveedor = "Salida sin registro",
@@ -145,8 +194,8 @@ namespace PSInventory.Web.Controllers
                         Serial = string.IsNullOrWhiteSpace(itemInput.Serial) ? null : itemInput.Serial.Trim(),
                         Cantidad = itemInput.Cantidad,
                         Estado = "Asignado",
-                        SucursalId = input.SucursalDestinoId,
-                        ResponsableEmpleado = input.ResponsableEmpleado.Trim(),
+                        SucursalId = sucursalDestinoId,
+                        ResponsableEmpleado = responsableDestino,
                         FechaAsignacion = DateTime.Now,
                         Eliminado = false
                     };
@@ -159,12 +208,12 @@ namespace PSInventory.Web.Controllers
                         ItemId = item.Id,
                         Cantidad = item.Cantidad,
                         SucursalOrigenId = null, // Origen es "nuevo", no hay sucursal
-                        SucursalDestinoId = input.SucursalDestinoId,
+                        SucursalDestinoId = sucursalDestinoId,
                         FechaMovimiento = DateTime.Now,
                         UsuarioResponsable = usuario,
-                        Motivo = "Salida Sin Registro",
-                        Observaciones = input.Observaciones,
-                        ResponsableRecepcion = input.ResponsableEmpleado.Trim(),
+                        Motivo = entregaDepartamento ? "Salida Sin Registro - Departamento" : "Salida Sin Registro",
+                        Observaciones = observacionMovimiento,
+                        ResponsableRecepcion = responsableDestino,
                         FechaRecepcion = DateTime.Now
                     });
                     await _context.SaveChangesAsync();
@@ -172,7 +221,13 @@ namespace PSInventory.Web.Controllers
                 }
 
                 await transaction.CommitAsync();
-                return Json(new { success = true, message = $"{procesados} item(s) procesado(s) correctamente." });
+                return Json(new
+                {
+                    success = true,
+                    message = entregaDepartamento
+                        ? $"{procesados} item(s) procesado(s) correctamente para departamento {(string.IsNullOrWhiteSpace(departamentoNombre) ? "no especificado" : departamentoNombre)}."
+                        : $"{procesados} item(s) procesado(s) correctamente."
+                });
             }
             catch (Exception ex)
             {

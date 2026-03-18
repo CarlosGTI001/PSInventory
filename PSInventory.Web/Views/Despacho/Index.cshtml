@@ -124,18 +124,18 @@
 
                     <!-- PASO 2: Región -->
                     <div>
-                        <p class="step-label">Paso 2 — Región *</p>
+                        <p class="step-label">Paso 2 — Región</p>
                         <div class="select-with-search">
                             <div class="md3-select-field has-leading-icon">
                                 <md-icon class="md3-select-leading-icon">public</md-icon>
-                                <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)" required>
+                                <select id="selectRegion" class="md3-select" onchange="onRegionChange(this)">
                                     <option value="">Seleccione región</option>
                                     @foreach (var r in ViewBag.Regiones)
                                     {
                                         <option value="@r.Value">@r.Text</option>
                                     }
                                 </select>
-                                <label class="md3-select-label">Región *</label>
+                                <label class="md3-select-label">Región</label>
                             </div>
                             <md-icon-button type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
                                 <md-icon>search</md-icon>
@@ -145,14 +145,14 @@
 
                     <!-- PASO 3: Sucursal (cargada por AJAX según región) -->
                     <div>
-                        <p class="step-label">Paso 3 — Sucursal *</p>
+                        <p class="step-label">Paso 3 — Sucursal</p>
                         <div class="select-with-search">
                             <div class="md3-select-field has-leading-icon">
                                 <md-icon class="md3-select-leading-icon">store</md-icon>
-                                <select id="sucursalDestino" class="md3-select" required disabled>
+                                <select id="sucursalDestino" class="md3-select" disabled>
                                     <option value="">Seleccione primero una región</option>
                                 </select>
-                                <label class="md3-select-label">Sucursal Destino *</label>
+                                <label class="md3-select-label">Sucursal Destino</label>
                             </div>
                             <md-icon-button id="btnBuscarSucursal" type="button" disabled
                                 onclick="openSearchDialog('sucursalDestino','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
@@ -167,12 +167,29 @@
 
                 </div>
 
+                <div style="margin: 8px 0 14px; display:flex; align-items:center; gap:8px;">
+                    <md-checkbox id="entregaDepartamento"></md-checkbox>
+                    <label for="entregaDepartamento" class="md-typescale-body-medium" style="cursor:pointer;">
+                        Entregar a departamento (sin sucursal)
+                    </label>
+                </div>
+
+                <div id="personaDepartamentoWrap" class="form-field" style="margin-bottom: 16px; display:none;">
+                    <md-filled-text-field
+                        id="personaDepartamento"
+                        label="Persona que recibe en departamento"
+                        supporting-text="Opcional"
+                        style="width:100%;">
+                        <md-icon slot="leading-icon">person</md-icon>
+                    </md-filled-text-field>
+                </div>
+
                 <!-- Responsable y observaciones -->
                 <div class="form-field" style="margin-bottom: 16px;">
                     <md-filled-text-field
                         id="responsable"
-                        label="Responsable *"
-                        supporting-text="Empleado que recibe"
+                        label="Responsable"
+                        supporting-text="Opcional"
                         style="width:100%;">
                         <md-icon slot="leading-icon">person</md-icon>
                     </md-filled-text-field>
@@ -220,13 +237,17 @@
                     <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Región</div>
                     <div style="font-size:13px; font-weight:600;" id="cfmRegionVal"></div>
                 </div>
-                <div>
+                <div id="cfmSucursalRow">
                     <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Sucursal</div>
                     <div style="font-size:13px; font-weight:600;" id="cfmSucursalVal"></div>
                 </div>
                 <div>
                     <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Responsable</div>
                     <div style="font-size:13px; font-weight:600;" id="cfmResponsableVal"></div>
+                </div>
+                <div id="cfmPersonaDeptoRow" style="display:none;">
+                    <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">Persona en departamento</div>
+                    <div style="font-size:13px; font-weight:600;" id="cfmPersonaDeptoVal"></div>
                 </div>
             </div>
             <div id="cfmObsRow" style="display:none; margin-top:8px;">
@@ -538,29 +559,37 @@
         const sucursalSel = document.getElementById('sucursalDestino');
         const regionSel   = document.getElementById('selectRegion');
         const deptoSel    = document.getElementById('selectDepartamento');
+        const entregaDepto = document.getElementById('entregaDepartamento').checked;
+        const personaDepto = document.getElementById('personaDepartamento').value.trim();
         const responsable = document.getElementById('responsable').value.trim();
         const obs         = document.getElementById('observaciones').value.trim();
 
-        if (!regionSel.value)    { alert('Selecciona una región.');                   return; }
-        if (!sucursalSel.value)  { alert('Selecciona una sucursal destino.');          return; }
-        if (!responsable)        { alert('Ingresa el nombre del responsable.');        return; }
         if (cart.length === 0)   { alert('La lista de envío está vacía.');             return; }
 
         // Rellenar modal de confirmación
-        const deptoNombre    = deptoSel.value ? deptoSel.options[deptoSel.selectedIndex].text : null;
-        const regionNombre   = regionSel.options[regionSel.selectedIndex].text;
-        const sucursalNombre = sucursalSel.options[sucursalSel.selectedIndex].text;
+        const deptoNombre    = deptoSel.value ? deptoSel.options[deptoSel.selectedIndex].text : 'No especificado';
+        const regionNombre   = regionSel.value ? regionSel.options[regionSel.selectedIndex].text : 'No aplica';
+        const sucursalNombre = entregaDepto
+            ? 'No aplica (entrega a departamento)'
+            : (sucursalSel.value ? sucursalSel.options[sucursalSel.selectedIndex].text : 'No especificada');
 
         const cfmDepto = document.getElementById('cfmDepto');
-        if (deptoNombre) {
-            cfmDepto.style.display = 'block';
-            document.getElementById('cfmDeptoVal').textContent = deptoNombre;
+        cfmDepto.style.display = 'block';
+        document.getElementById('cfmDeptoVal').textContent = deptoNombre;
+
+        const cfmSucursalRow = document.getElementById('cfmSucursalRow');
+        const cfmPersonaDeptoRow = document.getElementById('cfmPersonaDeptoRow');
+        if (entregaDepto) {
+            cfmSucursalRow.style.display = 'none';
+            cfmPersonaDeptoRow.style.display = 'block';
+            document.getElementById('cfmPersonaDeptoVal').textContent = personaDepto || 'No especificada';
         } else {
-            cfmDepto.style.display = 'none';
+            cfmSucursalRow.style.display = 'block';
+            cfmPersonaDeptoRow.style.display = 'none';
         }
         document.getElementById('cfmRegionVal').textContent      = regionNombre;
         document.getElementById('cfmSucursalVal').textContent     = sucursalNombre;
-        document.getElementById('cfmResponsableVal').textContent  = responsable;
+        document.getElementById('cfmResponsableVal').textContent  = responsable || 'No especificado';
 
         const obsRow = document.getElementById('cfmObsRow');
         if (obs) { obsRow.style.display = 'block'; document.getElementById('cfmObsVal').textContent = obs; }
@@ -589,6 +618,8 @@
     async function ejecutarEnvio() {
         const sucursalId  = document.getElementById('sucursalDestino').value;
         const deptoId     = document.getElementById('selectDepartamento').value;
+        const entregaDepto = document.getElementById('entregaDepartamento').checked;
+        const personaDepto = document.getElementById('personaDepartamento').value.trim();
         const responsable = document.getElementById('responsable').value.trim();
         const obs         = document.getElementById('observaciones').value.trim();
 
@@ -600,7 +631,10 @@
 
         const payload = {
             departamentoId:      deptoId ? parseInt(deptoId) : null,
-            sucursalDestinoId:   sucursalId,
+            entregaDepartamento: entregaDepto,
+            departamentoDestinoId: deptoId ? parseInt(deptoId) : null,
+            personaEntregaDepartamento: personaDepto,
+            sucursalDestinoId:   entregaDepto ? null : sucursalId,
             responsableEmpleado: responsable,
             observaciones:       obs || null,
             items: cart.map(c => ({
@@ -642,6 +676,9 @@
 
     // ─── Cascada Región → Sucursal ────────────────────────────────────────────
     async function onRegionChange(select) {
+        if (document.getElementById('entregaDepartamento').checked) {
+            return;
+        }
         const regionId = select.value;
         const selectSucursal  = document.getElementById('sucursalDestino');
         const btnBuscar       = document.getElementById('btnBuscarSucursal');
@@ -680,11 +717,36 @@
         if (label) label.style.opacity = '1';
     }
 
+    function setModoEntregaDepartamento(activo) {
+        const selRegion = document.getElementById('selectRegion');
+        const selSucursal = document.getElementById('sucursalDestino');
+        const btnBuscarSucursal = document.getElementById('btnBuscarSucursal');
+        const personaWrap = document.getElementById('personaDepartamentoWrap');
+        const sucursalInfo = document.getElementById('sucursalSeleccionada');
+
+        personaWrap.style.display = activo ? 'block' : 'none';
+        if (sucursalInfo) sucursalInfo.style.display = 'none';
+
+        if (activo) {
+            selRegion.value = '';
+            selRegion.disabled = true;
+            selSucursal.innerHTML = '<option value="">No aplica para entrega por departamento</option>';
+            selSucursal.disabled = true;
+            btnBuscarSucursal.disabled = true;
+        } else {
+            selRegion.disabled = false;
+            selSucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
+            selSucursal.disabled = true;
+            btnBuscarSucursal.disabled = true;
+        }
+    }
+
     // Mostrar confirmación visual al seleccionar departamento
     document.addEventListener('DOMContentLoaded', () => {
         const selDepto = document.getElementById('selectDepartamento');
         const selRegion = document.getElementById('selectRegion');
         const selSucursal = document.getElementById('sucursalDestino');
+        const chkEntregaDepto = document.getElementById('entregaDepartamento');
 
         if (selDepto) {
             selDepto.addEventListener('change', () => {
@@ -712,6 +774,13 @@
                     }
                 }
             });
+        }
+
+        if (chkEntregaDepto) {
+            chkEntregaDepto.addEventListener('change', () => {
+                setModoEntregaDepartamento(chkEntregaDepto.checked);
+            });
+            setModoEntregaDepartamento(chkEntregaDepto.checked);
         }
 
         // search-dialog.js ya dispara event 'change' nativo en el select al seleccionar

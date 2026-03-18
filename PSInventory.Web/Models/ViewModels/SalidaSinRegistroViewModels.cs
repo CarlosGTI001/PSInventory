@@ -6,6 +6,9 @@ namespace PSInventory.Web.Models.ViewModels
     {
         public string SucursalDestinoId { get; set; } = string.Empty;
         public string ResponsableEmpleado { get; set; } = string.Empty;
+        public bool EntregaDepartamento { get; set; }
+        public int? DepartamentoDestinoId { get; set; }
+        public string PersonaEntregaDepartamento { get; set; } = string.Empty;
         public string Observaciones { get; set; } = string.Empty;
         public List<ItemSinRegistroInput> Items { get; set; } = new();
     }

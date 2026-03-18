@@ -18,14 +18,42 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Articulos
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
         {
-            var articulos = await _context.Articulos
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var query = _context.Articulos
                 .Where(a => !a.Eliminado)
                 .Include(a => a.Categoria)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(a =>
+                    a.Marca.ToLower().Contains(term) ||
+                    a.Modelo.ToLower().Contains(term) ||
+                    (a.Descripcion != null && a.Descripcion.ToLower().Contains(term)) ||
+                    (a.Categoria != null && a.Categoria.Nombre.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var articulos = await query
                 .OrderBy(a => a.Marca)
                 .ThenBy(a => a.Modelo)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(articulos);
         }
 

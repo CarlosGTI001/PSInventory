@@ -21,15 +21,43 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Compras
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 20)
         {
-            var compras = await _context.Compras
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var query = _context.Compras
                 .Where(c => !c.Eliminado)
                 .Include(c => c.Departamento)
                 .Include(c => c.Lotes)
                     .ThenInclude(l => l.Items)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(c =>
+                    (c.Proveedor != null && c.Proveedor.ToLower().Contains(term)) ||
+                    (c.NumeroFactura != null && c.NumeroFactura.ToLower().Contains(term)) ||
+                    (c.Estado != null && c.Estado.ToLower().Contains(term)) ||
+                    (c.Departamento != null && c.Departamento.Nombre.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var compras = await query
                 .OrderByDescending(c => c.FechaCompra)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(compras);
         }
 

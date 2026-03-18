@@ -16,8 +16,11 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Movimientos
-        public async Task<IActionResult> Index(string sucursalId = "", DateTime? fechaInicio = null, DateTime? fechaFin = null)
+        public async Task<IActionResult> Index(string sucursalId = "", DateTime? fechaInicio = null, DateTime? fechaFin = null, string q = "", int page = 1, int pageSize = 30)
         {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
             var query = _context.MovimientosItem
                 .Include(m => m.Item)
                     .ThenInclude(i => i.Articulo)
@@ -42,8 +45,25 @@ namespace PSInventory.Web.Controllers
                 query = query.Where(m => m.FechaMovimiento <= fechaFin.Value.AddDays(1).AddSeconds(-1));
             }
 
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(m =>
+                    (m.Item != null && m.Item.Serial != null && m.Item.Serial.ToLower().Contains(term)) ||
+                    (m.Item != null && m.Item.Articulo != null && m.Item.Articulo.Marca.ToLower().Contains(term)) ||
+                    (m.Item != null && m.Item.Articulo != null && m.Item.Articulo.Modelo.ToLower().Contains(term)) ||
+                    (m.Motivo != null && m.Motivo.ToLower().Contains(term)) ||
+                    (m.Observaciones != null && m.Observaciones.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
             var movimientos = await query
                 .OrderByDescending(m => m.FechaMovimiento)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             // Datos para filtros - solo sucursales activas
@@ -54,6 +74,11 @@ namespace PSInventory.Web.Controllers
             ViewBag.SucursalFiltro = sucursalId;
             ViewBag.FechaInicio = fechaInicio?.ToString("yyyy-MM-dd");
             ViewBag.FechaFin = fechaFin?.ToString("yyyy-MM-dd");
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
 
             return View(movimientos);
         }

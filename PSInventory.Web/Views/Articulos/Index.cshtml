@@ -2,9 +2,13 @@
 
 @{
     ViewData["Title"] = "Artículos";
-    var totalArticulos = Model.Count();
+    var totalArticulos = ViewBag.TotalCount != null ? (int)ViewBag.TotalCount : Model.Count();
     var conStock = Model.Count(a => a.StockMinimo > 0);
     var categorias = Model.Select(a => a.Categoria?.Nombre).Distinct().Count();
+    var q = ViewBag.Query as string ?? "";
+    var currentPage = ViewBag.Page != null ? (int)ViewBag.Page : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    var pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 30;
 }
 
 <!-- Breadcrumb -->
@@ -90,7 +94,7 @@
 
 <!-- Data Table -->
 <div class="card">
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <md-icon style="color: var(--md-sys-color-primary);">table_chart</md-icon>
             <h3 class="md-typescale-title-medium" style="margin: 0;">Lista de Artículos</h3>
@@ -99,6 +103,15 @@
             @totalArticulos artículo@(totalArticulos != 1 ? "s" : "") registrado@(totalArticulos != 1 ? "s" : "")
         </span>
     </div>
+    <form method="get" action="@Url.Action("Index")" style="display:flex; gap:12px; align-items:end; margin-bottom:16px; flex-wrap:wrap;">
+        <md-filled-text-field name="q" label="Buscar" value="@q" style="min-width:280px;">
+            <md-icon slot="leading-icon">search</md-icon>
+        </md-filled-text-field>
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="pageSize" value="@pageSize" />
+        <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Filtrar</md-filled-button>
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">Limpiar</md-text-button>
+    </form>
 
     <div class="data-table-container">
         <table class="data-table">
@@ -140,6 +153,14 @@
             </tbody>
         </table>
     </div>
+    @if (totalPages > 1)
+    {
+        <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center; margin-top:16px;">
+            <span class="md-typescale-body-small">Página @currentPage de @totalPages</span>
+            <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { q, page = currentPage - 1, pageSize })'" @(currentPage <= 1 ? "disabled" : "")>Anterior</md-outlined-button>
+            <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { q, page = currentPage + 1, pageSize })'" @(currentPage >= totalPages ? "disabled" : "")>Siguiente</md-outlined-button>
+        </div>
+    }
 </div>
 
 @if (!Model.Any())

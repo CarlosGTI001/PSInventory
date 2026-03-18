@@ -1,6 +1,11 @@
 @model IEnumerable<PSData.Modelos.SolicitudCompra>
 @{
     ViewData["Title"] = "Solicitudes de Compra";
+    var q = ViewBag.Query as string ?? "";
+    var currentPage = ViewBag.Page != null ? (int)ViewBag.Page : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    var pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 25;
+    var totalCount = ViewBag.TotalCount != null ? (int)ViewBag.TotalCount : Model.Count();
 }
 
 <!-- Breadcrumb -->
@@ -36,6 +41,18 @@
         <md-icon>error</md-icon> @TempData["Error"]
     </div>
 }
+
+<div class="card" style="margin-bottom:16px;">
+    <form method="get" action="@Url.Action("Index")" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+        <md-filled-text-field name="q" label="Buscar solicitud" value="@q" style="min-width:300px;">
+            <md-icon slot="leading-icon">search</md-icon>
+        </md-filled-text-field>
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="pageSize" value="@pageSize" />
+        <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Filtrar</md-filled-button>
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">Limpiar</md-text-button>
+    </form>
+</div>
 
 <div class="card">
     @if (!Model.Any())
@@ -96,5 +113,13 @@
                 </tbody>
             </table>
         </div>
+        @if (totalPages > 1)
+        {
+            <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center; margin-top:16px;">
+                <span class="md-typescale-body-small">@totalCount resultado@(totalCount != 1 ? "s" : "") · Página @currentPage de @totalPages</span>
+                <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { q, page = currentPage - 1, pageSize })'" @(currentPage <= 1 ? "disabled" : "")>Anterior</md-outlined-button>
+                <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { q, page = currentPage + 1, pageSize })'" @(currentPage >= totalPages ? "disabled" : "")>Siguiente</md-outlined-button>
+            </div>
+        }
     }
 </div>

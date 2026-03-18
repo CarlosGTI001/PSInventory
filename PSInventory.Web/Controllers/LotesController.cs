@@ -167,6 +167,39 @@ namespace PSInventory.Web.Controllers
                 return NotFound();
             }
 
+            var itemIds = lote.Items?
+                .Where(i => !i.Eliminado)
+                .Select(i => i.Id)
+                .ToList() ?? new List<int>();
+
+            var sucursalFallbackPorItem = new Dictionary<int, string>();
+            var responsableFallbackPorItem = new Dictionary<int, string>();
+
+            if (itemIds.Any())
+            {
+                var ultimosMovimientos = await _context.MovimientosItem
+                    .Where(m => itemIds.Contains(m.ItemId))
+                    .Include(m => m.SucursalDestino)
+                    .OrderByDescending(m => m.FechaMovimiento)
+                    .ToListAsync();
+
+                foreach (var mov in ultimosMovimientos)
+                {
+                    if (!sucursalFallbackPorItem.ContainsKey(mov.ItemId))
+                    {
+                        sucursalFallbackPorItem[mov.ItemId] = mov.SucursalDestino?.Nombre ?? "—";
+                    }
+
+                    if (!responsableFallbackPorItem.ContainsKey(mov.ItemId))
+                    {
+                        responsableFallbackPorItem[mov.ItemId] = mov.ResponsableRecepcion ?? string.Empty;
+                    }
+                }
+            }
+
+            ViewBag.SucursalFallbackPorItem = sucursalFallbackPorItem;
+            ViewBag.ResponsableFallbackPorItem = responsableFallbackPorItem;
+
             ViewBag.Sucursales = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
                 await _context.Sucursales.Where(s => !s.Eliminado).OrderBy(s => s.Nombre).ToListAsync(),
                 "Id", "Nombre");

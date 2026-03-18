@@ -218,6 +218,9 @@ namespace PSInventory.Web.Controllers
 
                 usaSucursalTecnica = true;
             }
+            var sucursalAsignacionId = string.IsNullOrWhiteSpace(sucursalDestinoId)
+                ? sucursalMovimientoId
+                : sucursalDestinoId;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             var procesados = 0;
@@ -240,7 +243,7 @@ namespace PSInventory.Web.Controllers
                         if (item.Estado != "Disponible" || item.SucursalId != null)
                         { errores.Add($"Item #{entry.ItemId} ya no está disponible."); continue; }
 
-                        item.SucursalId          = sucursalDestinoId;
+                        item.SucursalId          = sucursalAsignacionId;
                         item.Estado              = "Asignado";
                         item.ResponsableEmpleado = responsableDestino;
                         item.FechaAsignacion     = DateTime.Now;
@@ -291,7 +294,7 @@ namespace PSInventory.Web.Controllers
                                 {
                                     ArticuloId               = it.ArticuloId,
                                     LoteId                   = it.LoteId,
-                                    SucursalId               = sucursalDestinoId,
+                                    SucursalId               = sucursalAsignacionId,
                                     Estado                   = "Asignado",
                                     Cantidad                 = tomar,
                                     ResponsableEmpleado      = responsableDestino,
@@ -306,7 +309,7 @@ namespace PSInventory.Web.Controllers
                             }
                             else
                             {
-                                it.SucursalId          = sucursalDestinoId;
+                                it.SucursalId          = sucursalAsignacionId;
                                 it.Estado              = "Asignado";
                                 it.ResponsableEmpleado = responsableDestino;
                                 it.FechaAsignacion     = DateTime.Now;

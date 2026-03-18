@@ -12,6 +12,8 @@
     var articulosRequiereSerial = Model.Articulo?.RequiereSerial ?? true;
     var stockDisponible       = itemsActivos.Where(i => i.Estado == "Disponible" && i.SucursalId == null).Sum(i => i.Cantidad);
     var stockAsignado         = itemsActivos.Where(i => i.Estado == "Asignado").Sum(i => i.Cantidad);
+    var sucursalFallbackPorItem = ViewBag.SucursalFallbackPorItem as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var responsableFallbackPorItem = ViewBag.ResponsableFallbackPorItem as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
 <div class="page-header">
@@ -150,6 +152,7 @@
                         }
                         <th>Estado</th>
                         <th>Sucursal</th>
+                        <th>Responsable</th>
                         <th>Fecha Registro</th>
                         @if (articulosRequiereSerial)
                         {
@@ -161,7 +164,7 @@
                     @if (totalItemsRegistrados == 0)
                     {
                         <tr id="emptyRow">
-                            <td colspan="@(articulosRequiereSerial ? 5 : 4)" style="text-align: center; padding: 24px; color: var(--md-sys-color-outline);">
+                            <td colspan="@(articulosRequiereSerial ? 6 : 5)" style="text-align: center; padding: 24px; color: var(--md-sys-color-outline);">
                                 No hay items escaneados aún en este lote.
                             </td>
                         </tr>
@@ -196,7 +199,10 @@
                                     }
                                 </td>
                                 <td style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
-                                    @(item.Sucursal?.Nombre ?? "—")
+                                    @(item.Sucursal?.Nombre ?? (sucursalFallbackPorItem.ContainsKey(item.Id) ? sucursalFallbackPorItem[item.Id] : "—"))
+                                </td>
+                                <td style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
+                                    @(item.ResponsableEmpleado ?? (responsableFallbackPorItem.ContainsKey(item.Id) ? responsableFallbackPorItem[item.Id] : "—"))
                                 </td>
                                 <td>@item.FechaAsignacion?.ToString("dd/MM/yyyy HH:mm")</td>
                                 @if (articulosRequiereSerial)

@@ -127,11 +127,11 @@
                         <td>
                             <span class="badge">@item.StockMinimo</span>
                         </td>
-                        <td class="actions-cell">
-                            <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
+                        <td class="actions-cell" onclick="event.stopPropagation()">
+                            <md-icon-button onclick="event.stopPropagation(); window.location.href='@Url.Action("Edit", new { id = item.Id })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button onclick="confirmDelete(@item.Id, '@item.Marca @item.Modelo')">
+                            <md-icon-button onclick="event.stopPropagation(); confirmDelete(@item.Id, '@item.Marca @item.Modelo')">
                                 <md-icon>delete</md-icon>
                             </md-icon-button>
                         </td>

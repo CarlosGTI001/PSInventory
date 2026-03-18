@@ -1,0 +1,109 @@
+@model PSInventory.Web.Models.ViewModels.MovimientoEditViewModel
+
+@{
+    ViewData["Title"] = "Editar Salida";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-primary); text-decoration: none;">Movimientos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span>Editar Salida</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Salida</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Item: <strong>@Model.ItemCodigo</strong> · @Model.ArticuloNombre
+        </p>
+    </div>
+    <md-outlined-button onclick="window.location.href='@Url.Action("Index")'">
+        <md-icon slot="icon">arrow_back</md-icon>
+        Volver
+    </md-outlined-button>
+</div>
+
+@if (!Model.EsUltimoMovimientoDelItem)
+{
+    <div class="alert" style="margin-bottom:16px; background:rgba(255,152,0,0.12); color:#e65100;">
+        <md-icon>warning</md-icon>
+        <span>Este no es el último movimiento del item. Se actualizará solo el registro histórico.</span>
+    </div>
+}
+
+<div class="card" style="max-width: 900px;">
+    <form method="post" asp-action="Edit">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ItemId" />
+        <input type="hidden" asp-for="ItemCodigo" />
+        <input type="hidden" asp-for="ArticuloNombre" />
+        <input type="hidden" asp-for="Motivo" />
+        <input type="hidden" asp-for="FechaMovimiento" />
+        <input type="hidden" asp-for="EsUltimoMovimientoDelItem" />
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; margin-bottom:16px;">
+            <md-filled-text-field label="Motivo" value="@Model.Motivo" readonly>
+                <md-icon slot="leading-icon">label</md-icon>
+            </md-filled-text-field>
+
+            <md-filled-text-field label="Fecha Movimiento" value="@Model.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")" readonly>
+                <md-icon slot="leading-icon">event</md-icon>
+            </md-filled-text-field>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">store</md-icon>
+                <select asp-for="SucursalDestinoId" asp-items="ViewBag.Sucursales" class="md3-select">
+                    <option value="">Seleccione sucursal destino</option>
+                </select>
+                <label class="md3-select-label">Sucursal Destino *</label>
+            </div>
+            <span asp-validation-for="SucursalDestinoId" style="color: var(--md-sys-color-error); font-size: 12px;"></span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; margin-bottom:16px;">
+            <md-filled-text-field asp-for="ResponsableRecepcion" label="Persona que recibió">
+                <md-icon slot="leading-icon">person</md-icon>
+            </md-filled-text-field>
+
+            <md-filled-text-field asp-for="FechaRecepcion" label="Fecha de recepción" type="datetime-local">
+                <md-icon slot="leading-icon">schedule</md-icon>
+            </md-filled-text-field>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <md-filled-text-field asp-for="Observaciones" label="Observaciones" type="textarea" rows="3">
+                <md-icon slot="leading-icon">note</md-icon>
+            </md-filled-text-field>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <md-text-button type="button" onclick="window.location.href='@Url.Action("Index")'">Cancelar</md-text-button>
+            <md-filled-button type="submit">
+                <md-icon slot="icon">save</md-icon>
+                Guardar cambios
+            </md-filled-button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function() {
+            const fechaInput = document.querySelector('input[name="FechaRecepcion"]');
+            if (fechaInput && '@(Model.FechaRecepcion.HasValue ? "1" : "0")' === '1') {
+                const dt = new Date('@(Model.FechaRecepcion?.ToString("yyyy-MM-ddTHH:mm:ss"))');
+                if (!isNaN(dt.getTime())) {
+                    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    fechaInput.value = local;
+                }
+            }
+        })();
+    </script>
+}

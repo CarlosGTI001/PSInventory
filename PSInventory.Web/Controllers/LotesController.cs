@@ -187,7 +187,7 @@ namespace PSInventory.Web.Controllers
                 {
                     if (!sucursalFallbackPorItem.ContainsKey(mov.ItemId))
                     {
-                        sucursalFallbackPorItem[mov.ItemId] = mov.SucursalDestino?.Nombre ?? "—";
+                        sucursalFallbackPorItem[mov.ItemId] = mov.SucursalDestino?.Nombre ?? "P00";
                     }
 
                     if (!responsableFallbackPorItem.ContainsKey(mov.ItemId))

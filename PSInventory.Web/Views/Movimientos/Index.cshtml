@@ -81,6 +81,14 @@
     </div>
 </div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom:16px;">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
 <!-- Filtros -->
 <div class="card" style="margin-bottom: 24px;">
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
@@ -194,6 +202,7 @@ else
                         <th>Destino</th>
                         <th>Motivo</th>
                         <th>Usuario</th>
+                        <th class="actions-column">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -249,6 +258,13 @@ else
                             </td>
                             <td>
                                 <span class="md-typescale-body-small">@movimiento.UsuarioResponsable</span>
+                            </td>
+                            <td class="actions-cell">
+                                <a href="@Url.Action("Edit", new { id = movimiento.Id })" title="Editar salida">
+                                    <md-icon-button>
+                                        <md-icon>edit</md-icon>
+                                    </md-icon-button>
+                                </a>
                             </td>
                         </tr>
                     }

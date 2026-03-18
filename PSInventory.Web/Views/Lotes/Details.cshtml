@@ -199,7 +199,7 @@
                                     }
                                 </td>
                                 <td style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
-                                    @(item.Sucursal?.Nombre ?? (sucursalFallbackPorItem.ContainsKey(item.Id) ? sucursalFallbackPorItem[item.Id] : "—"))
+                                    @(item.Sucursal?.Nombre ?? (sucursalFallbackPorItem.ContainsKey(item.Id) ? sucursalFallbackPorItem[item.Id] : "P00"))
                                 </td>
                                 <td style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
                                     @(item.ResponsableEmpleado ?? (responsableFallbackPorItem.ContainsKey(item.Id) ? responsableFallbackPorItem[item.Id] : "—"))

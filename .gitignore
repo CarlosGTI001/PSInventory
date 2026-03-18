@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /PSData/Migrations
 /PSInventory.Web/psinventory.db
+*.db-shm
+*.db-wal

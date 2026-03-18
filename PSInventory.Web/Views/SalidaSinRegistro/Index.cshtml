@@ -1,0 +1,219 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Salida sin registro";
+    var categorias = (IEnumerable<SelectListItem>)(ViewBag.Categorias ?? new List<SelectListItem>());
+    var sucursales = (IEnumerable<SelectListItem>)(ViewBag.Sucursales ?? new List<SelectListItem>());
+}
+
+<div style="margin-bottom:16px; display:flex; align-items:center; gap:8px; color:var(--md-sys-color-on-surface-variant); font-size:14px;">
+    <md-icon style="font-size:18px;">home</md-icon>
+    <span>Operaciones</span>
+    <md-icon style="font-size:18px;">chevron_right</md-icon>
+    <span style="color:var(--md-sys-color-primary);">Salida sin registro</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin:0 0 8px;">Salida sin registro de inventario</h1>
+        <p class="md-typescale-body-large" style="color:var(--md-sys-color-on-surface-variant); margin:0;">
+            Registra artículos nuevos y envíalos directo a sucursal cuando aún no existían en inventario.
+        </p>
+    </div>
+    <md-filled-button id="btn-procesar">
+        <md-icon slot="icon">send</md-icon>
+        Procesar salida
+    </md-filled-button>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+    <h3 class="md-typescale-title-medium" style="margin:0 0 16px; display:flex; align-items:center; gap:8px;">
+        <md-icon>assignment_ind</md-icon>
+        Datos generales
+    </h3>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
+        <div>
+            <label class="md-typescale-label-medium" for="sucursalDestinoId">Sucursal destino</label>
+            <select id="sucursalDestinoId" class="md3-select-field" style="width:100%; margin-top:6px;">
+                <option value="">Seleccione sucursal...</option>
+                @foreach (var s in sucursales)
+                {
+                    <option value="@s.Value">@s.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="md-typescale-label-medium" for="responsableEmpleado">Responsable de recepción</label>
+            <input id="responsableEmpleado" class="input-modern" style="width:100%; margin-top:6px;" placeholder="Nombre del responsable" />
+        </div>
+    </div>
+    <div style="margin-top:16px;">
+        <label class="md-typescale-label-medium" for="observaciones">Observaciones</label>
+        <textarea id="observaciones" class="textarea-modern" style="width:100%; margin-top:6px; min-height:88px;" placeholder="Comentario opcional de la salida sin registro"></textarea>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <h3 class="md-typescale-title-medium" style="margin:0; display:flex; align-items:center; gap:8px;">
+            <md-icon>inventory_2</md-icon>
+            Items a registrar
+        </h3>
+        <md-filled-tonal-button id="btn-agregar-item">
+            <md-icon slot="icon">add</md-icon>
+            Agregar ítem
+        </md-filled-tonal-button>
+    </div>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:48px;">#</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Serial</th>
+                    <th style="width:100px;">Cantidad</th>
+                    <th class="actions-column"></th>
+                </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+        </table>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        const categorias = @Html.Raw(JsonSerializer.Serialize(categorias.Select(c => new { value = c.Value, text = c.Text })));
+        const itemsBody = document.getElementById('items-body');
+        const btnAgregar = document.getElementById('btn-agregar-item');
+        const btnProcesar = document.getElementById('btn-procesar');
+
+        function categoriaOptions(selectedValue = '') {
+            const defaultOption = `<option value="">Seleccione...</option>`;
+            const options = categorias.map(c => `<option value="${c.value}" ${String(c.value) === String(selectedValue) ? 'selected' : ''}>${c.text}</option>`).join('');
+            return defaultOption + options;
+        }
+
+        function addRow(data = {}) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="row-index"></td>
+                <td><input class="input-modern item-marca" placeholder="Marca" value="${data.marca ?? ''}" /></td>
+                <td><input class="input-modern item-modelo" placeholder="Modelo" value="${data.modelo ?? ''}" /></td>
+                <td><input class="input-modern item-descripcion" placeholder="Descripción" value="${data.descripcion ?? ''}" /></td>
+                <td><select class="md3-select-field item-categoria">${categoriaOptions(data.categoriaId)}</select></td>
+                <td><input class="input-modern item-serial" placeholder="Opcional" value="${data.serial ?? ''}" /></td>
+                <td><input type="number" min="1" class="input-modern item-cantidad" value="${data.cantidad ?? 1}" /></td>
+                <td class="actions-cell" style="text-align:center;">
+                    <md-icon-button class="btn-remove-item" title="Quitar">
+                        <md-icon>delete</md-icon>
+                    </md-icon-button>
+                </td>
+            `;
+            itemsBody.appendChild(row);
+            refreshRowIndexes();
+            row.querySelector('.btn-remove-item').addEventListener('click', () => {
+                row.remove();
+                if (!itemsBody.querySelector('tr')) addRow();
+                refreshRowIndexes();
+            });
+        }
+
+        function refreshRowIndexes() {
+            Array.from(itemsBody.querySelectorAll('tr')).forEach((row, idx) => {
+                row.querySelector('.row-index').textContent = idx + 1;
+            });
+        }
+
+        function collectPayload() {
+            const sucursalDestinoId = document.getElementById('sucursalDestinoId').value;
+            const responsableEmpleado = document.getElementById('responsableEmpleado').value.trim();
+            const observaciones = document.getElementById('observaciones').value.trim();
+            const rows = Array.from(itemsBody.querySelectorAll('tr'));
+
+            if (!sucursalDestinoId) {
+                showSnackbar('Seleccione una sucursal destino.', 'warning');
+                return null;
+            }
+            if (!responsableEmpleado) {
+                showSnackbar('Ingrese el responsable de recepción.', 'warning');
+                return null;
+            }
+            if (!rows.length) {
+                showSnackbar('Debe agregar al menos un ítem.', 'warning');
+                return null;
+            }
+
+            const items = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const marca = row.querySelector('.item-marca').value.trim();
+                const modelo = row.querySelector('.item-modelo').value.trim();
+                const descripcion = row.querySelector('.item-descripcion').value.trim();
+                const categoriaId = Number(row.querySelector('.item-categoria').value);
+                const serial = row.querySelector('.item-serial').value.trim();
+                const cantidad = Number(row.querySelector('.item-cantidad').value);
+
+                if (!marca || !modelo || !categoriaId || !cantidad || cantidad < 1) {
+                    showSnackbar(`Revise la fila ${i + 1}: marca, modelo, categoría y cantidad son obligatorios.`, 'warning');
+                    return null;
+                }
+
+                items.push({ marca, modelo, descripcion, categoriaId, serial, cantidad });
+            }
+
+            return { sucursalDestinoId, responsableEmpleado, observaciones, items };
+        }
+
+        async function procesarSalidaSinRegistro() {
+            const payload = collectPayload();
+            if (!payload) return;
+
+            const confirmed = await showConfirmDialog(
+                `Se registrarán ${payload.items.length} ítem(s) nuevos y se enviarán a la sucursal seleccionada. ¿Desea continuar?`,
+                'Confirmar salida sin registro'
+            );
+            if (!confirmed) return;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            btnProcesar.disabled = true;
+            showLoading('Procesando salida sin registro...');
+
+            try {
+                const response = await fetch('@Url.Action("Procesar", "SalidaSinRegistro")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showSnackbar(result.message, 'success');
+                    document.getElementById('sucursalDestinoId').value = '';
+                    document.getElementById('responsableEmpleado').value = '';
+                    document.getElementById('observaciones').value = '';
+                    itemsBody.innerHTML = '';
+                    addRow();
+                } else {
+                    showSnackbar(result.message || 'No se pudo procesar la salida sin registro.', 'error');
+                }
+            } catch (error) {
+                showSnackbar(`Error de conexión: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+                btnProcesar.disabled = false;
+            }
+        }
+
+        btnAgregar.addEventListener('click', () => addRow());
+        btnProcesar.addEventListener('click', procesarSalidaSinRegistro);
+        addRow();
+    </script>
+}

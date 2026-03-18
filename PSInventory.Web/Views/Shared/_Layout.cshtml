@@ -135,6 +135,11 @@
                     <span>Enviar Artículos</span>
                 </a>
 
+                <a href="/SalidaSinRegistro/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "SalidaSinRegistro" ? "active" : "")">
+                    <md-icon>post_add</md-icon>
+                    <span>Salida Sin Registro</span>
+                </a>
+
                 <a href="/Solicitudes/Index" class="nav-item @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Solicitudes" ? "active" : "")">
                     <md-icon>request_quote</md-icon>
                     <span>Solicitudes</span>

@@ -201,8 +201,9 @@ namespace PSInventory.Web.Controllers
             if (string.IsNullOrWhiteSpace(sucursalMovimientoId))
             {
                 sucursalMovimientoId = await _context.Sucursales
-                    .Where(s => !s.Eliminado && s.Activo)
-                    .OrderBy(s => s.Nombre)
+                    .Where(s => !s.Eliminado)
+                    .OrderByDescending(s => s.Activo)
+                    .ThenBy(s => s.Nombre)
                     .Select(s => s.Id)
                     .FirstOrDefaultAsync();
 
@@ -211,7 +212,7 @@ namespace PSInventory.Web.Controllers
                     return Json(new
                     {
                         success = false,
-                        message = "No hay sucursales activas para registrar el movimiento. Configure al menos una sucursal activa."
+                        message = "No hay sucursales registradas para completar la trazabilidad del movimiento. Configure al menos una sucursal."
                     });
                 }
 

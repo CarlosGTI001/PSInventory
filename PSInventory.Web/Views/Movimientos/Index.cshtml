@@ -2,10 +2,14 @@
 
 @{
     ViewData["Title"] = "Historial de Movimientos";
-    var totalMovimientos = Model.Count();
+    var totalMovimientos = ViewBag.TotalCount != null ? (int)ViewBag.TotalCount : Model.Count();
     var asignaciones = Model.Count(m => m.Motivo == "Asignación Inicial");
     var transferencias = Model.Count(m => m.Motivo == "Transferencia");
     var hoy = Model.Count(m => m.FechaMovimiento.Date == DateTime.Today);
+    var q = ViewBag.Query as string ?? "";
+    var currentPage = ViewBag.Page != null ? (int)ViewBag.Page : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    var pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 30;
 }
 
 <!-- Breadcrumb -->
@@ -122,7 +126,18 @@
                     <md-icon slot="leading-icon">event</md-icon>
                 </md-filled-text-field>
             </div>
+            <div class="form-field">
+                <md-filled-text-field
+                    label="Buscar"
+                    name="q"
+                    value="@q"
+                    supporting-text="Serial, artículo, motivo u observación">
+                    <md-icon slot="leading-icon">search</md-icon>
+                </md-filled-text-field>
+            </div>
         </div>
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="pageSize" value="@pageSize" />
 
         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
             <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
@@ -240,5 +255,13 @@ else
                 </tbody>
             </table>
         </div>
+        @if (totalPages > 1)
+        {
+            <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center; margin-top:16px;">
+                <span class="md-typescale-body-small">Página @currentPage de @totalPages</span>
+                <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { sucursalId = ViewBag.SucursalFiltro, fechaInicio = ViewBag.FechaInicio, fechaFin = ViewBag.FechaFin, q, page = currentPage - 1, pageSize })'" @(currentPage <= 1 ? "disabled" : "")>Anterior</md-outlined-button>
+                <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { sucursalId = ViewBag.SucursalFiltro, fechaInicio = ViewBag.FechaInicio, fechaFin = ViewBag.FechaFin, q, page = currentPage + 1, pageSize })'" @(currentPage >= totalPages ? "disabled" : "")>Siguiente</md-outlined-button>
+            </div>
+        }
     </div>
 }

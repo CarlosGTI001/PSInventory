@@ -3,10 +3,16 @@
 @{
     ViewData["Title"] = "Items";
     var estadoFiltro = ViewBag.EstadoFiltro as string;
-    var totalItems = Model.Count();
-    var disponibles = Model.Count(i => i.Estado == "Disponible");
-    var asignados = Model.Count(i => i.Estado == "Asignado");
-    var enReparacion = Model.Count(i => i.Estado == "En Reparación");
+    var totalItems = ViewBag.TotalItems != null ? (int)ViewBag.TotalItems : Model.Count();
+    var disponibles = ViewBag.Disponibles != null ? (int)ViewBag.Disponibles : Model.Count(i => i.Estado == "Disponible");
+    var asignados = ViewBag.Asignados != null ? (int)ViewBag.Asignados : Model.Count(i => i.Estado == "Asignado");
+    var enReparacion = ViewBag.EnReparacion != null ? (int)ViewBag.EnReparacion : Model.Count(i => i.Estado == "En Reparación");
+    var baja = ViewBag.Baja != null ? (int)ViewBag.Baja : Model.Count(i => i.Estado == "Baja");
+    var q = ViewBag.Query as string ?? "";
+    var currentPage = ViewBag.Page != null ? (int)ViewBag.Page : 1;
+    var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    var pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 30;
+    var totalFiltrados = ViewBag.TotalCount != null ? (int)ViewBag.TotalCount : Model.Count();
 }
 
 <!-- Breadcrumb -->
@@ -96,35 +102,45 @@
         <md-icon style="color: var(--md-sys-color-primary);">filter_list</md-icon>
         <h3 class="md-typescale-title-medium" style="margin: 0;">Filtrar por Estado</h3>
     </div>
+    <form method="get" action="@Url.Action("Index")" style="display:flex; gap:12px; align-items:end; margin-bottom:16px; flex-wrap:wrap;">
+        <md-filled-text-field name="q" label="Buscar item" value="@q" style="min-width:300px;">
+            <md-icon slot="leading-icon">search</md-icon>
+        </md-filled-text-field>
+        <input type="hidden" name="estado" value="@estadoFiltro" />
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="pageSize" value="@pageSize" />
+        <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Filtrar</md-filled-button>
+        <md-text-button onclick="window.location.href='@Url.Action("Index", new { estado = estadoFiltro })'; return false;">Limpiar texto</md-text-button>
+    </form>
     
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
         <md-filter-chip label="Todos (@totalItems)" 
                         @(string.IsNullOrEmpty(estadoFiltro) ? "selected" : "")
-                        onclick="window.location.href='@Url.Action("Index")'">
+                        onclick="window.location.href='@Url.Action("Index", new { q, pageSize })'">
             <md-icon slot="icon">apps</md-icon>
         </md-filter-chip>
         
         <md-filter-chip label="Disponibles (@disponibles)" 
                         @(estadoFiltro == "Disponible" ? "selected" : "")
-                        onclick="window.location.href='@Url.Action("Index", new { estado = "Disponible" })'">
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Disponible", q, pageSize })'">
             <md-icon slot="icon">check_circle</md-icon>
         </md-filter-chip>
         
         <md-filter-chip label="Asignados (@asignados)" 
                         @(estadoFiltro == "Asignado" ? "selected" : "")
-                        onclick="window.location.href='@Url.Action("Index", new { estado = "Asignado" })'">
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Asignado", q, pageSize })'">
             <md-icon slot="icon">deployed_code</md-icon>
         </md-filter-chip>
         
         <md-filter-chip label="En Reparación (@enReparacion)" 
                         @(estadoFiltro == "En Reparación" ? "selected" : "")
-                        onclick="window.location.href='@Url.Action("Index", new { estado = "En Reparación" })'">
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "En Reparación", q, pageSize })'">
             <md-icon slot="icon">build</md-icon>
         </md-filter-chip>
         
-        <md-filter-chip label="Baja" 
+        <md-filter-chip label="Baja (@baja)" 
                         @(estadoFiltro == "Baja" ? "selected" : "")
-                        onclick="window.location.href='@Url.Action("Index", new { estado = "Baja" })'">
+                        onclick="window.location.href='@Url.Action("Index", new { estado = "Baja", q, pageSize })'">
             <md-icon slot="icon">cancel</md-icon>
         </md-filter-chip>
     </div>
@@ -240,6 +256,14 @@ else
             </tbody>
         </table>
     </div>
+    @if (totalPages > 1)
+    {
+        <div style="display:flex; gap:12px; justify-content:flex-end; align-items:center; margin-top:16px;">
+            <span class="md-typescale-body-small">@totalFiltrados resultado@(totalFiltrados != 1 ? "s" : "") · Página @currentPage de @totalPages</span>
+            <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { estado = estadoFiltro, q, page = currentPage - 1, pageSize })'" @(currentPage <= 1 ? "disabled" : "")>Anterior</md-outlined-button>
+            <md-outlined-button onclick="window.location.href='@Url.Action("Index", new { estado = estadoFiltro, q, page = currentPage + 1, pageSize })'" @(currentPage >= totalPages ? "disabled" : "")>Siguiente</md-outlined-button>
+        </div>
+    }
 }
 
 @section Scripts {

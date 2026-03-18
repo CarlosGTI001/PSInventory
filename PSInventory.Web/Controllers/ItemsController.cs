@@ -18,10 +18,33 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Items
-        public async Task<IActionResult> Index(string estado = "")
+        public async Task<IActionResult> Index(string estado = "", string q = "", int page = 1, int pageSize = 30)
         {
-            var query = _context.Items
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var baseQuery = _context.Items
                 .Where(i => !i.Eliminado)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                baseQuery = baseQuery.Where(i =>
+                    (i.Serial != null && i.Serial.ToLower().Contains(term)) ||
+                    (i.Estado != null && i.Estado.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Marca.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Modelo.ToLower().Contains(term)) ||
+                    (i.Sucursal != null && i.Sucursal.Nombre.ToLower().Contains(term)));
+            }
+
+            ViewBag.TotalItems = await baseQuery.CountAsync();
+            ViewBag.Disponibles = await baseQuery.CountAsync(i => i.Estado == "Disponible");
+            ViewBag.Asignados = await baseQuery.CountAsync(i => i.Estado == "Asignado");
+            ViewBag.EnReparacion = await baseQuery.CountAsync(i => i.Estado == "En Reparación");
+            ViewBag.Baja = await baseQuery.CountAsync(i => i.Estado == "Baja");
+
+            var query = baseQuery
                 .Include(i => i.Articulo)
                 .ThenInclude(a => a.Categoria)
                 .Include(i => i.Lote)
@@ -34,8 +57,22 @@ namespace PSInventory.Web.Controllers
                 query = query.Where(i => i.Estado == estado);
             }
 
-            var items = await query.OrderByDescending(i => i.Serial).ToListAsync();
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var items = await query
+                .OrderByDescending(i => i.Serial)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
             ViewBag.EstadoFiltro = estado;
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(items);
         }
 

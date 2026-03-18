@@ -18,13 +18,41 @@ namespace PSInventory.Web.Controllers
         public SolicitudesController(PSDatos context) => _context = context;
 
         // GET: Solicitudes
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 25)
         {
-            var solicitudes = await _context.SolicitudesCompra
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var query = _context.SolicitudesCompra
                 .Where(s => !s.Eliminado)
                 .Include(s => s.Detalles)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    (s.Titulo != null && s.Titulo.ToLower().Contains(term)) ||
+                    (s.Solicitante != null && s.Solicitante.ToLower().Contains(term)) ||
+                    (s.Estado != null && s.Estado.ToLower().Contains(term)) ||
+                    (s.Observaciones != null && s.Observaciones.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var solicitudes = await query
                 .OrderByDescending(s => s.FechaSolicitud)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(solicitudes);
         }
 

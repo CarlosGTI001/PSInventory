@@ -26,6 +26,13 @@
     </md-filled-button>
 </div>
 
+<style>
+    .salida-table-field md-filled-text-field {
+        width: 100%;
+        --md-filled-text-field-container-height: 44px;
+    }
+</style>
+
 <div class="card" style="margin-bottom:20px;">
     <h3 class="md-typescale-title-medium" style="margin:0 0 16px; display:flex; align-items:center; gap:8px;">
         <md-icon>assignment_ind</md-icon>
@@ -33,23 +40,28 @@
     </h3>
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
         <div>
-            <label class="md-typescale-label-medium" for="sucursalDestinoId">Sucursal destino</label>
-            <select id="sucursalDestinoId" class="md3-select-field" style="width:100%; margin-top:6px;">
-                <option value="">Seleccione sucursal...</option>
-                @foreach (var s in sucursales)
-                {
-                    <option value="@s.Value">@s.Text</option>
-                }
-            </select>
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">store</md-icon>
+                <select id="sucursalDestinoId" class="md3-select" required>
+                    <option value="">Seleccione sucursal...</option>
+                    @foreach (var s in sucursales)
+                    {
+                        <option value="@s.Value">@s.Text</option>
+                    }
+                </select>
+                <label class="md3-select-label">Sucursal destino *</label>
+            </div>
         </div>
         <div>
-            <label class="md-typescale-label-medium" for="responsableEmpleado">Responsable de recepción</label>
-            <input id="responsableEmpleado" class="input-modern" style="width:100%; margin-top:6px;" placeholder="Nombre del responsable" />
+            <md-filled-text-field id="responsableEmpleado" label="Responsable de recepción *" style="width:100%;">
+                <md-icon slot="leading-icon">badge</md-icon>
+            </md-filled-text-field>
         </div>
     </div>
     <div style="margin-top:16px;">
-        <label class="md-typescale-label-medium" for="observaciones">Observaciones</label>
-        <textarea id="observaciones" class="textarea-modern" style="width:100%; margin-top:6px; min-height:88px;" placeholder="Comentario opcional de la salida sin registro"></textarea>
+        <md-filled-text-field id="observaciones" label="Observaciones" supporting-text="Opcional" style="width:100%;">
+            <md-icon slot="leading-icon">notes</md-icon>
+        </md-filled-text-field>
     </div>
 </div>
 
@@ -103,12 +115,27 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="row-index"></td>
-                <td><input class="input-modern item-marca" placeholder="Marca" value="${data.marca ?? ''}" /></td>
-                <td><input class="input-modern item-modelo" placeholder="Modelo" value="${data.modelo ?? ''}" /></td>
-                <td><input class="input-modern item-descripcion" placeholder="Descripción" value="${data.descripcion ?? ''}" /></td>
-                <td><select class="md3-select-field item-categoria">${categoriaOptions(data.categoriaId)}</select></td>
-                <td><input class="input-modern item-serial" placeholder="Opcional" value="${data.serial ?? ''}" /></td>
-                <td><input type="number" min="1" class="input-modern item-cantidad" value="${data.cantidad ?? 1}" /></td>
+                <td class="salida-table-field">
+                    <md-filled-text-field class="item-marca" label="Marca" value="${data.marca ?? ''}"></md-filled-text-field>
+                </td>
+                <td class="salida-table-field">
+                    <md-filled-text-field class="item-modelo" label="Modelo" value="${data.modelo ?? ''}"></md-filled-text-field>
+                </td>
+                <td class="salida-table-field">
+                    <md-filled-text-field class="item-descripcion" label="Descripción" value="${data.descripcion ?? ''}"></md-filled-text-field>
+                </td>
+                <td>
+                    <div class="md3-select-field">
+                        <select class="md3-select item-categoria">${categoriaOptions(data.categoriaId)}</select>
+                        <label class="md3-select-label">Categoría *</label>
+                    </div>
+                </td>
+                <td class="salida-table-field">
+                    <md-filled-text-field class="item-serial" label="Serial" value="${data.serial ?? ''}"></md-filled-text-field>
+                </td>
+                <td class="salida-table-field">
+                    <md-filled-text-field type="number" min="1" class="item-cantidad" label="Cantidad" value="${data.cantidad ?? 1}"></md-filled-text-field>
+                </td>
                 <td class="actions-cell" style="text-align:center;">
                     <md-icon-button class="btn-remove-item" title="Quitar">
                         <md-icon>delete</md-icon>

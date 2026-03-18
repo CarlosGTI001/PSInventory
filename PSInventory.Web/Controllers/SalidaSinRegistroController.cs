@@ -74,6 +74,7 @@ namespace PSInventory.Web.Controllers
             var sucursalDestinoId = !entregaDepartamento && !string.IsNullOrWhiteSpace(input.SucursalDestinoId)
                 ? input.SucursalDestinoId
                 : null;
+            var usaSucursalTecnica = false;
 
             if (entregaDepartamento)
             {
@@ -101,6 +102,28 @@ namespace PSInventory.Web.Controllers
                         return Json(new { success = false, message = "La sucursal destino no es válida." });
                     }
                 }
+            }
+
+            // MovimientosItem requiere SucursalDestinoId NOT NULL por esquema actual.
+            var sucursalMovimientoId = sucursalDestinoId;
+            if (string.IsNullOrWhiteSpace(sucursalMovimientoId))
+            {
+                sucursalMovimientoId = await _context.Sucursales
+                    .Where(s => !s.Eliminado && s.Activo)
+                    .OrderBy(s => s.Nombre)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync();
+
+                if (string.IsNullOrWhiteSpace(sucursalMovimientoId))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No hay sucursales activas para registrar el movimiento. Configure al menos una sucursal activa."
+                    });
+                }
+
+                usaSucursalTecnica = true;
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -208,7 +231,7 @@ namespace PSInventory.Web.Controllers
                         ItemId = item.Id,
                         Cantidad = item.Cantidad,
                         SucursalOrigenId = null, // Origen es "nuevo", no hay sucursal
-                        SucursalDestinoId = sucursalDestinoId,
+                        SucursalDestinoId = sucursalMovimientoId,
                         FechaMovimiento = DateTime.Now,
                         UsuarioResponsable = usuario,
                         Motivo = entregaDepartamento ? "Salida Sin Registro - Departamento" : "Salida Sin Registro",
@@ -221,13 +244,15 @@ namespace PSInventory.Web.Controllers
                 }
 
                 await transaction.CommitAsync();
-                return Json(new
+                var mensaje = entregaDepartamento
+                    ? $"{procesados} item(s) procesado(s) correctamente para departamento {(string.IsNullOrWhiteSpace(departamentoNombre) ? "no especificado" : departamentoNombre)}."
+                    : $"{procesados} item(s) procesado(s) correctamente.";
+                if (usaSucursalTecnica)
                 {
-                    success = true,
-                    message = entregaDepartamento
-                        ? $"{procesados} item(s) procesado(s) correctamente para departamento {(string.IsNullOrWhiteSpace(departamentoNombre) ? "no especificado" : departamentoNombre)}."
-                        : $"{procesados} item(s) procesado(s) correctamente."
-                });
+                    mensaje += " (Se registró sucursal técnica para trazabilidad de movimiento.)";
+                }
+
+                return Json(new { success = true, message = mensaje });
             }
             catch (Exception ex)
             {

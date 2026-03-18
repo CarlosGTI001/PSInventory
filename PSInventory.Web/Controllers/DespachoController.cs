@@ -147,6 +147,7 @@ namespace PSInventory.Web.Controllers
             var sucursalDestinoId = !entregaDepartamento && !string.IsNullOrWhiteSpace(input.SucursalDestinoId)
                 ? input.SucursalDestinoId
                 : null;
+            var usaSucursalTecnica = false;
             string destinoNombre;
             string responsableDestino;
 
@@ -195,6 +196,28 @@ namespace PSInventory.Web.Controllers
                     : "Sin responsable especificado";
             }
 
+            // MovimientosItem requiere SucursalDestinoId NOT NULL por esquema actual.
+            var sucursalMovimientoId = sucursalDestinoId;
+            if (string.IsNullOrWhiteSpace(sucursalMovimientoId))
+            {
+                sucursalMovimientoId = await _context.Sucursales
+                    .Where(s => !s.Eliminado && s.Activo)
+                    .OrderBy(s => s.Nombre)
+                    .Select(s => s.Id)
+                    .FirstOrDefaultAsync();
+
+                if (string.IsNullOrWhiteSpace(sucursalMovimientoId))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No hay sucursales activas para registrar el movimiento. Configure al menos una sucursal activa."
+                    });
+                }
+
+                usaSucursalTecnica = true;
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             var procesados = 0;
             var errores = new List<string>();
@@ -228,7 +251,7 @@ namespace PSInventory.Web.Controllers
                             ItemId               = item.Id,
                             Cantidad             = 1,
                             SucursalOrigenId     = null,
-                            SucursalDestinoId    = sucursalDestinoId,
+                            SucursalDestinoId    = sucursalMovimientoId,
                             FechaMovimiento      = DateTime.Now,
                             UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
                             Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
@@ -296,7 +319,7 @@ namespace PSInventory.Web.Controllers
                                 ItemId               = itemAsignado.Id,
                                 Cantidad             = tomar,
                                 SucursalOrigenId     = null,
-                                SucursalDestinoId    = sucursalDestinoId,
+                                SucursalDestinoId    = sucursalMovimientoId,
                                 FechaMovimiento      = DateTime.Now,
                                 UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
                                 Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
@@ -319,6 +342,8 @@ namespace PSInventory.Web.Controllers
                 var msg = $"{procesados} item(s) despachado(s) a {destinoNombre} exitosamente.";
                 if (errores.Any())
                     msg += $" {errores.Count} error(es): {string.Join(" | ", errores)}";
+                if (usaSucursalTecnica)
+                    msg += " (Se registró sucursal técnica para trazabilidad de movimiento.)";
 
                 return Json(new { success = true, message = msg, procesados, errores });
             }

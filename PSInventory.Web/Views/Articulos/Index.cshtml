@@ -131,7 +131,7 @@
                             <md-icon-button onclick="event.stopPropagation(); window.location.href='@Url.Action("Edit", new { id = item.Id })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>
-                            <md-icon-button onclick="event.stopPropagation(); confirmDelete(@item.Id, '@item.Marca @item.Modelo')">
+                            <md-icon-button onclick="event.stopPropagation(); confirmDisable(@item.Id, '@item.Marca @item.Modelo')">
                                 <md-icon>delete</md-icon>
                             </md-icon-button>
                         </td>
@@ -157,11 +157,11 @@
 
 @section Scripts {
     <script>
-        async function confirmDelete(id, nombre) {
+        async function confirmDisable(id, nombre) {
             if (await showConfirmDialog(
-                'Eliminar Artículo',
-                `¿Estás seguro de eliminar el artículo "${nombre}"?`,
-                'Eliminar'
+                'Deshabilitar Artículo',
+                `¿Estás seguro de deshabilitar el artículo "${nombre}"?`,
+                'Deshabilitar'
             )) {
                 const formData = new FormData();
                 formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);

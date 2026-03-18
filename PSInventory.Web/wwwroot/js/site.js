@@ -73,8 +73,14 @@ function hideLoading() {
 
 // Show snackbar notification
 function showSnackbar(message, type = 'info') {
+    const existing = document.querySelector('md-snackbar[data-app-snackbar="true"]');
+    if (existing) {
+        existing.remove();
+    }
+
     const snackbar = document.createElement('md-snackbar');
-    snackbar.textContent = message;
+    snackbar.setAttribute('data-app-snackbar', 'true');
+    snackbar.innerHTML = `<div slot="label-text">${message}</div>`;
     
     // Color based on type
     if (type === 'success') {

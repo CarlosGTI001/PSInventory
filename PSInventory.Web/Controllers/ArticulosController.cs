@@ -150,24 +150,38 @@ namespace PSInventory.Web.Controllers
                 .FirstOrDefaultAsync(a => a.Id == id);
             if (articulo == null)
             {
-                return Json(new { success = false, message = "Artículo no encontrado" });
+                return Json(new { success = false, message = "Artículo no encontrado o ya deshabilitado" });
             }
 
-            // Verificar si tiene items asociados activos
-            var tieneItems = await _context.Items.AnyAsync(i => i.ArticuloId == id && !i.Eliminado);
-            if (tieneItems)
+            var usuario = User.Identity?.Name ?? "Sistema";
+
+            var itemsAsociados = await _context.Items
+                .Where(i => i.ArticuloId == id && !i.Eliminado)
+                .ToListAsync();
+
+            foreach (var item in itemsAsociados)
             {
-                return Json(new { success = false, message = "No se puede eliminar el artículo porque tiene items asociados" });
+                item.Eliminado = true;
+                item.FechaEliminacion = DateTime.Now;
+                item.UsuarioEliminacion = usuario;
+                item.Estado = "Baja";
             }
 
             // Soft delete
             articulo.Eliminado = true;
             articulo.FechaEliminacion = DateTime.Now;
-            articulo.UsuarioEliminacion = User.Identity?.Name ?? "Sistema";
+            articulo.UsuarioEliminacion = usuario;
 
+            _context.UpdateRange(itemsAsociados);
             _context.Update(articulo);
             await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Artículo eliminado exitosamente" });
+            return Json(new
+            {
+                success = true,
+                message = itemsAsociados.Count > 0
+                    ? $"Artículo deshabilitado exitosamente. Se deshabilitaron {itemsAsociados.Count} item(s) asociados."
+                    : "Artículo deshabilitado exitosamente"
+            });
         }
 
         private bool ArticuloExists(int id)

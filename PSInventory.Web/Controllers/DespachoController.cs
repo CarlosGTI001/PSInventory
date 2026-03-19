@@ -49,6 +49,115 @@ namespace PSInventory.Web.Controllers
             return Json(sucursales);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearDepartamentoRapido([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre))
+            {
+                return Json(new { success = false, message = "Debe ingresar el nombre del departamento." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Departamentos
+                .AnyAsync(d => !d.Eliminado && d.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe un departamento con ese nombre." });
+            }
+
+            var departamento = new Departamento
+            {
+                Nombre = nombre,
+                Activo = true
+            };
+            _context.Departamentos.Add(departamento);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = departamento.Id.ToString(), text = departamento.Nombre } });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearRegionRapida([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre))
+            {
+                return Json(new { success = false, message = "Debe ingresar el nombre de la región." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Regiones
+                .AnyAsync(r => !r.Eliminado && r.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe una región con ese nombre." });
+            }
+
+            var region = new Region
+            {
+                Nombre = nombre,
+                Activo = true
+            };
+            _context.Regiones.Add(region);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = region.RegionId.ToString(), text = region.Nombre } });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearSucursalRapida([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre) || !input.RegionId.HasValue || input.RegionId.Value <= 0)
+            {
+                return Json(new { success = false, message = "Debe ingresar nombre y región para la sucursal." });
+            }
+
+            var region = await _context.Regiones
+                .Where(r => !r.Eliminado && r.RegionId == input.RegionId.Value)
+                .FirstOrDefaultAsync();
+            if (region == null)
+            {
+                return Json(new { success = false, message = "La región seleccionada no es válida." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Sucursales
+                .AnyAsync(s => !s.Eliminado && s.RegionId == input.RegionId.Value && s.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe una sucursal con ese nombre en esta región." });
+            }
+
+            var ultimoId = await _context.Sucursales
+                .Where(s => s.Id.StartsWith("SUC-"))
+                .OrderByDescending(s => s.Id)
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+            var siguienteNumero = 1;
+            if (!string.IsNullOrEmpty(ultimoId))
+            {
+                var numeroStr = ultimoId.Substring(4);
+                if (int.TryParse(numeroStr, out int numero))
+                {
+                    siguienteNumero = numero + 1;
+                }
+            }
+
+            var sucursal = new Sucursal
+            {
+                Id = $"SUC-{siguienteNumero:D3}",
+                Nombre = nombre,
+                RegionId = input.RegionId.Value,
+                Activo = true
+            };
+            _context.Sucursales.Add(sucursal);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = sucursal.Id, text = sucursal.Nombre } });
+        }
+
         // GET: Despacho/BuscarStock?q=laptop
         [HttpGet]
         public async Task<IActionResult> BuscarStock(string q)

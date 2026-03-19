@@ -57,6 +57,9 @@
                 <md-icon-button type="button" onclick="openSearchDialog('selectDepartamento','Buscar Departamento','Escribe el nombre...')" title="Buscar">
                     <md-icon>search</md-icon>
                 </md-icon-button>
+                <md-icon-button id="btnCrearDepartamento" type="button" onclick="crearDepartamentoRapido()" title="Agregar departamento">
+                    <md-icon>add</md-icon>
+                </md-icon-button>
             </div>
         </div>
 
@@ -77,6 +80,9 @@
                 <md-icon-button id="btnBuscarRegion" type="button" onclick="openSearchDialog('selectRegion','Buscar Región','Escribe el nombre...')" title="Buscar">
                     <md-icon>search</md-icon>
                 </md-icon-button>
+                <md-icon-button id="btnCrearRegion" type="button" onclick="crearRegionRapida()" title="Agregar región">
+                    <md-icon>add</md-icon>
+                </md-icon-button>
             </div>
         </div>
 
@@ -93,6 +99,10 @@
                 <md-icon-button id="btnBuscarSucursal" type="button" disabled
                                 onclick="openSearchDialog('sucursalDestinoId','Buscar Sucursal','Escribe el nombre...')" title="Buscar">
                     <md-icon>search</md-icon>
+                </md-icon-button>
+                <md-icon-button id="btnCrearSucursal" type="button" disabled
+                                onclick="crearSucursalRapida()" title="Agregar sucursal">
+                    <md-icon>add</md-icon>
                 </md-icon-button>
             </div>
         </div>
@@ -309,11 +319,112 @@
             }
         }
 
+        function upsertSelectOption(selectEl, value, text, selectIt = true) {
+            if (!selectEl) return;
+            let option = Array.from(selectEl.options).find(o => o.value === String(value));
+            if (!option) {
+                option = document.createElement('option');
+                option.value = String(value);
+                option.textContent = text;
+                selectEl.appendChild(option);
+            } else {
+                option.textContent = text;
+            }
+            if (selectIt) {
+                selectEl.value = String(value);
+                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        function getRequestToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        async function crearDepartamentoRapido() {
+            const nombre = await showTextInputDialog('Nuevo Departamento', 'Nombre del departamento');
+            if (!nombre) return;
+
+            const resp = await fetch('/SalidaSinRegistro/CrearDepartamentoRapido', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getRequestToken()
+                },
+                body: JSON.stringify({ nombre })
+            });
+            const data = await resp.json();
+            if (!data.success) {
+                showSnackbar(data.message || 'No se pudo crear el departamento.', 'error');
+                return;
+            }
+
+            upsertSelectOption(document.getElementById('selectDepartamento'), data.option.value, data.option.text, true);
+            showSnackbar('Departamento agregado.', 'success');
+        }
+
+        async function crearRegionRapida() {
+            const nombre = await showTextInputDialog('Nueva Región', 'Nombre de la región');
+            if (!nombre) return;
+
+            const resp = await fetch('/SalidaSinRegistro/CrearRegionRapida', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getRequestToken()
+                },
+                body: JSON.stringify({ nombre })
+            });
+            const data = await resp.json();
+            if (!data.success) {
+                showSnackbar(data.message || 'No se pudo crear la región.', 'error');
+                return;
+            }
+
+            const sel = document.getElementById('selectRegion');
+            upsertSelectOption(sel, data.option.value, data.option.text, true);
+            showSnackbar('Región agregada.', 'success');
+            await onRegionChange(sel);
+        }
+
+        async function crearSucursalRapida() {
+            const regionId = document.getElementById('selectRegion')?.value;
+            if (!regionId) {
+                showSnackbar('Primero selecciona una región.', 'warning');
+                return;
+            }
+
+            const nombre = await showTextInputDialog('Nueva Sucursal', 'Nombre de la sucursal');
+            if (!nombre) return;
+
+            const resp = await fetch('/SalidaSinRegistro/CrearSucursalRapida', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getRequestToken()
+                },
+                body: JSON.stringify({ nombre, regionId: Number(regionId) })
+            });
+            const data = await resp.json();
+            if (!data.success) {
+                showSnackbar(data.message || 'No se pudo crear la sucursal.', 'error');
+                return;
+            }
+
+            const sel = document.getElementById('sucursalDestinoId');
+            sel.disabled = false;
+            document.getElementById('btnBuscarSucursal').disabled = false;
+            document.getElementById('btnCrearSucursal').disabled = false;
+            upsertSelectOption(sel, data.option.value, data.option.text, true);
+            showSnackbar('Sucursal agregada.', 'success');
+        }
+
         function setModoEntregaDepartamento(activo) {
             const selectRegion = document.getElementById('selectRegion');
             const sucursal = document.getElementById('sucursalDestinoId');
             const btnBuscarRegion = document.getElementById('btnBuscarRegion');
             const btnBuscarSucursal = document.getElementById('btnBuscarSucursal');
+            const btnCrearRegion = document.getElementById('btnCrearRegion');
+            const btnCrearSucursal = document.getElementById('btnCrearSucursal');
             const fields = document.getElementById('departamentoEntregaFields');
 
             fields.style.display = activo ? 'block' : 'none';
@@ -322,15 +433,19 @@
                 selectRegion.value = '';
                 selectRegion.disabled = true;
                 btnBuscarRegion.disabled = true;
+                btnCrearRegion.disabled = true;
                 sucursal.innerHTML = '<option value="">No aplica para entrega por departamento</option>';
                 sucursal.disabled = true;
                 btnBuscarSucursal.disabled = true;
+                btnCrearSucursal.disabled = true;
             } else {
                 selectRegion.disabled = false;
                 btnBuscarRegion.disabled = false;
+                btnCrearRegion.disabled = false;
                 sucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
                 sucursal.disabled = true;
                 btnBuscarSucursal.disabled = true;
+                btnCrearSucursal.disabled = !selectRegion.value;
             }
         }
 
@@ -341,10 +456,12 @@
             const regionId = select.value;
             const selectSucursal = document.getElementById('sucursalDestinoId');
             const btnBuscar = document.getElementById('btnBuscarSucursal');
+            const btnCrear = document.getElementById('btnCrearSucursal');
 
             selectSucursal.innerHTML = '<option value="">Cargando...</option>';
             selectSucursal.disabled = true;
             btnBuscar.disabled = true;
+            btnCrear.disabled = true;
 
             if (!regionId) {
                 selectSucursal.innerHTML = '<option value="">Seleccione primero una región</option>';
@@ -365,9 +482,11 @@
 
                 if (data.length === 0) {
                     selectSucursal.innerHTML = '<option value="">Sin sucursales en esta región</option>';
+                    btnCrear.disabled = false;
                 } else {
                     selectSucursal.disabled = false;
                     btnBuscar.disabled = false;
+                    btnCrear.disabled = false;
                 }
             } catch {
                 selectSucursal.innerHTML = '<option value="">Error cargando sucursales</option>';

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Models.ViewModels;
 
 namespace PSInventory.Web.Controllers
 {
@@ -128,6 +129,34 @@ namespace PSInventory.Web.Controllers
             _context.Update(region);
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Región eliminada exitosamente" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearRapido([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre))
+            {
+                return Json(new { success = false, message = "Debe ingresar el nombre de la región." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Regiones
+                .AnyAsync(r => !r.Eliminado && r.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe una región con ese nombre." });
+            }
+
+            var region = new Region
+            {
+                Nombre = nombre,
+                Activo = true
+            };
+            _context.Regiones.Add(region);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = region.RegionId.ToString(), text = region.Nombre } });
         }
 
         private bool RegionExists(int id)

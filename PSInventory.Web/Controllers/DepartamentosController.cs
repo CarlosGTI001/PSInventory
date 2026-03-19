@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Models.ViewModels;
 
 namespace PSInventory.Web.Controllers
 {
@@ -130,6 +131,34 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = "Departamento eliminado exitosamente" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearRapido([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre))
+            {
+                return Json(new { success = false, message = "Debe ingresar el nombre del departamento." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Departamentos
+                .AnyAsync(d => !d.Eliminado && d.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe un departamento con ese nombre." });
+            }
+
+            var departamento = new Departamento
+            {
+                Nombre = nombre,
+                Activo = true
+            };
+            _context.Departamentos.Add(departamento);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = departamento.Id.ToString(), text = departamento.Nombre } });
         }
 
         private bool DepartamentoExists(int id)

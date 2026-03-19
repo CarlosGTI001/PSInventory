@@ -197,3 +197,57 @@ window.confirmDialog = confirmDialog;
 window.formatCurrency = formatCurrency;
 window.formatDate = formatDate;
 window.deleteItem = deleteItem;
+
+// Prompt dialog with text input (MD3)
+window.showTextInputDialog = function(title, label, confirmText = 'Guardar') {
+    return new Promise((resolve) => {
+        const dialog = document.createElement('md-dialog');
+        const inputId = `txt-${Math.random().toString(36).slice(2)}`;
+        dialog.innerHTML = `
+            <div slot="headline">${title}</div>
+            <div slot="content" style="min-width:320px;">
+                <md-filled-text-field id="${inputId}" label="${label}" style="width:100%;">
+                    <md-icon slot="leading-icon">add</md-icon>
+                </md-filled-text-field>
+            </div>
+            <div slot="actions">
+                <md-text-button class="cancel-btn">Cancelar</md-text-button>
+                <md-filled-button class="confirm-btn">${confirmText}</md-filled-button>
+            </div>
+        `;
+
+        const closeAndCleanup = (value) => {
+            if (typeof dialog.close === 'function') dialog.close();
+            setTimeout(() => dialog.remove(), 200);
+            resolve(value);
+        };
+
+        document.body.appendChild(dialog);
+        if (typeof dialog.show === 'function') {
+            dialog.show();
+        } else {
+            dialog.open = true;
+        }
+
+        const input = dialog.querySelector(`#${inputId}`);
+        setTimeout(() => input?.focus(), 50);
+
+        dialog.querySelector('.cancel-btn')?.addEventListener('click', () => closeAndCleanup(null));
+        dialog.querySelector('.confirm-btn')?.addEventListener('click', () => {
+            const value = (input?.value || '').trim();
+            if (!value) {
+                showSnackbar('Debe ingresar un nombre.', 'warning');
+                input?.focus();
+                return;
+            }
+            closeAndCleanup(value);
+        });
+
+        input?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                dialog.querySelector('.confirm-btn')?.click();
+            }
+        });
+    });
+};

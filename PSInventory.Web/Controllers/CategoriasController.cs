@@ -18,12 +18,38 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Categorias
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
         {
-            var categorias = await _context.Categorias
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var query = _context.Categorias
                 .Where(c => !c.Eliminado)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(c =>
+                    c.Nombre.ToLower().Contains(term) ||
+                    (c.Descripcion != null && c.Descripcion.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var categorias = await query
                 .OrderBy(c => c.Nombre)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(categorias);
         }
 

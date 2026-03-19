@@ -19,13 +19,41 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Sucursales
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
         {
-            var sucursales = await _context.Sucursales
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
+
+            var query = _context.Sucursales
                 .Where(s => !s.Eliminado)
                 .Include(s => s.Region)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    s.Nombre.ToLower().Contains(term) ||
+                    (s.Direccion != null && s.Direccion.ToLower().Contains(term)) ||
+                    (s.Telefono != null && s.Telefono.ToLower().Contains(term)) ||
+                    (s.Region != null && s.Region.Nombre.ToLower().Contains(term)));
+            }
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            if (totalPages > 0 && page > totalPages) page = totalPages;
+
+            var sucursales = await query
                 .OrderBy(s => s.Nombre)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
+
+            ViewBag.Query = q;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.TotalPages = totalPages;
             return View(sucursales);
         }
 

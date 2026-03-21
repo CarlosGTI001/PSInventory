@@ -51,7 +51,7 @@ namespace PSInventory.Web.Controllers
         public async Task<IActionResult> SucursalesPorRegion(int regionId)
         {
             var sucursales = await _context.Sucursales
-                .Where(s => !s.Eliminado && s.Activo && s.RegionId == regionId)
+                .Where(s => !s.Eliminado && s.RegionId == regionId)
                 .OrderBy(s => s.Nombre)
                 .Select(s => new { value = s.Id, text = s.Nombre })
                 .ToListAsync();

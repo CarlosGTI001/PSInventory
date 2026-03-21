@@ -30,7 +30,7 @@ namespace PSData.Modelos
         [ForeignKey("RegionId")]
         public virtual Region Region { get; set; }
 
-        public bool Activo { get; set; }
+        public bool Activo { get; set; } = true;
 
         // Soft Delete
         public bool Eliminado { get; set; } = false;

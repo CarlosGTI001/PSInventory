@@ -5,6 +5,7 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using System.Text.Json;
 
 namespace PSInventory.Web.Controllers
 {
@@ -16,6 +17,13 @@ namespace PSInventory.Web.Controllers
         public DespachoController(PSDatos context)
         {
             _context = context;
+        }
+
+        private string GuardarComprobanteSalidaEnSesion(ComprobanteSalidaContext comprobante)
+        {
+            var key = $"comprobante-salida-{Guid.NewGuid():N}";
+            HttpContext.Session.SetString(key, JsonSerializer.Serialize(comprobante));
+            return key;
         }
 
         // GET: Despacho
@@ -330,10 +338,19 @@ namespace PSInventory.Web.Controllers
             var sucursalAsignacionId = string.IsNullOrWhiteSpace(sucursalDestinoId)
                 ? sucursalMovimientoId
                 : sucursalDestinoId;
+            var observacionMovimiento = input.Observaciones;
+            if (entregaDepartamento)
+            {
+                var prefijoDestino = $"Departamento destino: {destinoNombre}. Entregado a: {responsableDestino}.";
+                observacionMovimiento = string.IsNullOrWhiteSpace(observacionMovimiento)
+                    ? prefijoDestino
+                    : $"{prefijoDestino} {observacionMovimiento}";
+            }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             var procesados = 0;
             var errores = new List<string>();
+            var movimientosRegistrados = new List<int>();
 
             try
             {
@@ -359,7 +376,7 @@ namespace PSInventory.Web.Controllers
                         _context.Update(item);
                         await _context.SaveChangesAsync();
 
-                        _context.MovimientosItem.Add(new MovimientoItem
+                        var movimiento = new MovimientoItem
                         {
                             ItemId               = item.Id,
                             Cantidad             = 1,
@@ -368,11 +385,13 @@ namespace PSInventory.Web.Controllers
                             FechaMovimiento      = DateTime.Now,
                             UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
                             Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
-                            Observaciones        = input.Observaciones,
+                            Observaciones        = observacionMovimiento,
                             ResponsableRecepcion = responsableDestino,
                             FechaRecepcion       = DateTime.Now
-                        });
+                        };
+                        _context.MovimientosItem.Add(movimiento);
                         await _context.SaveChangesAsync();
+                        movimientosRegistrados.Add(movimiento.Id);
                         procesados++;
                     }
                     // ── Caso 2: Sin serial — distribuir cantidad entre stock disponible ─
@@ -427,7 +446,7 @@ namespace PSInventory.Web.Controllers
                                 await _context.SaveChangesAsync();
                             }
 
-                            _context.MovimientosItem.Add(new MovimientoItem
+                            var movimiento = new MovimientoItem
                             {
                                 ItemId               = itemAsignado.Id,
                                 Cantidad             = tomar,
@@ -436,11 +455,13 @@ namespace PSInventory.Web.Controllers
                                 FechaMovimiento      = DateTime.Now,
                                 UsuarioResponsable   = HttpContext.Session.GetString("UserName") ?? "Sistema",
                                 Motivo               = entregaDepartamento ? "Despacho - Departamento" : "Despacho",
-                                Observaciones        = input.Observaciones,
+                                Observaciones        = observacionMovimiento,
                                 ResponsableRecepcion = responsableDestino,
                                 FechaRecepcion       = DateTime.Now
-                            });
+                            };
+                            _context.MovimientosItem.Add(movimiento);
                             await _context.SaveChangesAsync();
+                            movimientosRegistrados.Add(movimiento.Id);
                         }
 
                         if (pendiente > 0)
@@ -458,7 +479,26 @@ namespace PSInventory.Web.Controllers
                 if (usaSucursalTecnica)
                     msg += " (Se registró sucursal técnica para trazabilidad de movimiento.)";
 
-                return Json(new { success = true, message = msg, procesados, errores });
+                string? comprobanteUrl = null;
+                if (movimientosRegistrados.Any())
+                {
+                    var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+                    var key = GuardarComprobanteSalidaEnSesion(new ComprobanteSalidaContext
+                    {
+                        MovimientoIds = movimientosRegistrados,
+                        TipoSalida = entregaDepartamento ? "Despacho (departamento)" : "Despacho (sucursal)",
+                        DestinoNombre = destinoNombre,
+                        ResponsableRecepcion = responsableDestino,
+                        Observaciones = observacionMovimiento ?? string.Empty,
+                        UsuarioResponsable = usuario,
+                        EntregaDepartamento = entregaDepartamento,
+                        FechaGeneracion = DateTime.Now
+                    });
+
+                    comprobanteUrl = Url.Action("ComprobanteSalida", "Reportes", new { key });
+                }
+
+                return Json(new { success = true, message = msg, procesados, errores, comprobanteUrl });
             }
             catch (Exception ex)
             {

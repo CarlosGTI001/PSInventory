@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Services;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace PSInventory.Web.Controllers
 {
@@ -35,7 +39,8 @@ namespace PSInventory.Web.Controllers
                     (i.Estado != null && i.Estado.ToLower().Contains(term)) ||
                     (i.Articulo != null && i.Articulo.Marca.ToLower().Contains(term)) ||
                     (i.Articulo != null && i.Articulo.Modelo.ToLower().Contains(term)) ||
-                    (i.Sucursal != null && i.Sucursal.Nombre.ToLower().Contains(term)));
+                    (i.Sucursal != null && i.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    (i.ResponsableEmpleado != null && i.ResponsableEmpleado.ToLower().Contains(term)));
             }
 
             ViewBag.TotalItems = await baseQuery.CountAsync();
@@ -74,6 +79,186 @@ namespace PSInventory.Web.Controllers
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
             return View(items);
+        }
+
+        // GET: Items/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string estado = "", string q = "")
+        {
+            var query = _context.Items
+                .Where(i => !i.Eliminado)
+                .Include(i => i.Articulo)
+                    .ThenInclude(a => a.Categoria)
+                .Include(i => i.Lote)
+                    .ThenInclude(l => l.Compra)
+                .Include(i => i.Sucursal)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(i =>
+                    (i.Serial != null && i.Serial.ToLower().Contains(term)) ||
+                    (i.Estado != null && i.Estado.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Marca.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Modelo.ToLower().Contains(term)) ||
+                    (i.Sucursal != null && i.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    (i.ResponsableEmpleado != null && i.ResponsableEmpleado.ToLower().Contains(term)));
+            }
+
+            if (!string.IsNullOrEmpty(estado))
+            {
+                query = query.Where(i => i.Estado == estado);
+            }
+
+            var items = await query
+                .OrderByDescending(i => i.Serial)
+                .ToListAsync();
+
+            var headers = new[]
+            {
+                "Serial", "Articulo", "Categoria", "Sucursal", "Estado", "Responsable", "Cantidad", "CostoUnitario", "Proveedor", "GarantiaInicio", "GarantiaVencimiento", "Observaciones"
+            };
+
+            var rows = items.Select(i => new[]
+            {
+                i.Serial ?? $"Lote {i.LoteId}",
+                $"{i.Articulo?.Marca} {i.Articulo?.Modelo}".Trim(),
+                i.Articulo?.Categoria?.Nombre ?? string.Empty,
+                i.Sucursal?.Nombre ?? "Sin asignar",
+                i.Estado ?? string.Empty,
+                i.ResponsableEmpleado ?? "No asignado",
+                i.Cantidad.ToString(),
+                (i.Lote?.CostoUnitario ?? 0m).ToString("F2"),
+                i.Lote?.Compra?.Proveedor ?? string.Empty,
+                i.FechaGarantiaInicio?.ToString("dd/MM/yyyy") ?? string.Empty,
+                i.FechaGarantiaVencimiento?.ToString("dd/MM/yyyy") ?? string.Empty,
+                i.Observaciones ?? string.Empty
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"items_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+        }
+
+        // GET: Items/ExportarPdf
+        public async Task<IActionResult> ExportarPdf(string estado = "", string q = "")
+        {
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+
+            var query = _context.Items
+                .Where(i => !i.Eliminado)
+                .Include(i => i.Articulo)
+                    .ThenInclude(a => a.Categoria)
+                .Include(i => i.Lote)
+                    .ThenInclude(l => l.Compra)
+                .Include(i => i.Sucursal)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(i =>
+                    (i.Serial != null && i.Serial.ToLower().Contains(term)) ||
+                    (i.Estado != null && i.Estado.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Marca.ToLower().Contains(term)) ||
+                    (i.Articulo != null && i.Articulo.Modelo.ToLower().Contains(term)) ||
+                    (i.Sucursal != null && i.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    (i.ResponsableEmpleado != null && i.ResponsableEmpleado.ToLower().Contains(term)));
+            }
+
+            if (!string.IsNullOrEmpty(estado))
+            {
+                query = query.Where(i => i.Estado == estado);
+            }
+
+            var items = await query
+                .OrderByDescending(i => i.Serial)
+                .ToListAsync();
+
+            if (!items.Any())
+            {
+                var pdfVacio = PdfReportService.GenerarPdfVacio(
+                    "Items del Inventario",
+                    "No hay items con los filtros aplicados"
+                );
+                return File(pdfVacio, "application/pdf", "items.pdf");
+            }
+
+            var filtros = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                filtros.Add("Estado", estado);
+            }
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                filtros.Add("Búsqueda", q.Trim());
+            }
+
+            var headers = new List<string>
+            {
+                "Serial / ID", "Artículo", "Categoría", "Sucursal", "Estado", "Responsable", "Garantía", "Costo"
+            };
+
+            var filas = items.Select(i =>
+            {
+                var garantia = "Sin garantía";
+                if (i.FechaGarantiaVencimiento.HasValue)
+                {
+                    var fechaGarantia = i.FechaGarantiaVencimiento.Value.ToString("dd/MM/yyyy");
+                    garantia = i.FechaGarantiaVencimiento.Value.Date >= DateTime.Today
+                        ? $"Vigente ({fechaGarantia})"
+                        : $"Vencida ({fechaGarantia})";
+                }
+
+                return new List<string>
+                {
+                    i.Serial ?? $"Lote {i.LoteId}",
+                    $"{i.Articulo?.Marca} {i.Articulo?.Modelo}".Trim(),
+                    i.Articulo?.Categoria?.Nombre ?? "N/A",
+                    i.Sucursal?.Nombre ?? "Sin asignar",
+                    i.Estado ?? string.Empty,
+                    i.ResponsableEmpleado ?? "No asignado",
+                    garantia,
+                    (i.Lote?.CostoUnitario ?? 0m).ToString("C")
+                };
+            }).ToList();
+
+            var totales = new Dictionary<string, string>
+            {
+                { "Total Registros", items.Count.ToString() },
+                { "Total Unidades", items.Sum(i => i.Cantidad).ToString() },
+                { "Costo Total", items.Sum(i => (i.Lote?.CostoUnitario ?? 0m) * i.Cantidad).ToString("C") }
+            };
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Items del Inventario", usuario));
+
+                    page.Content().Column(column =>
+                    {
+                        if (filtros.Any())
+                        {
+                            column.Item().Element(c => PdfReportService.GenerarFiltros(c, filtros));
+                            column.Item().PaddingTop(15);
+                        }
+
+                        column.Item().Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
+                        column.Item().PaddingTop(15);
+                        column.Item().Element(c => PdfReportService.GenerarResumenTotales(c, totales));
+                    });
+
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            });
+
+            var pdfBytes = document.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"items_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
         }
 
         // GET: Items/Create

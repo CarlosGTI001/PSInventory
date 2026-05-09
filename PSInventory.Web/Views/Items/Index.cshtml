@@ -13,6 +13,7 @@
     var totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
     var pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 30;
     var totalFiltrados = ViewBag.TotalCount != null ? (int)ViewBag.TotalCount : Model.Count();
+    var fechaHoy = DateTime.Today;
 }
 
 <!-- Breadcrumb -->
@@ -86,6 +87,18 @@
             </div>
         </div>
     </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-error);">@baja</div>
+                <div class="stat-card-label">Baja</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(186, 26, 26, 0.15);">
+                <md-icon style="color: var(--md-sys-color-error);">cancel</md-icon>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)
@@ -110,6 +123,8 @@
         <input type="hidden" name="page" value="1" />
         <input type="hidden" name="pageSize" value="@pageSize" />
         <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Filtrar</md-filled-button>
+        <md-outlined-button type="button" onclick="window.location.href='@Url.Action("ExportarPdf", new { estado = estadoFiltro, q })'"><md-icon slot="icon">picture_as_pdf</md-icon>Exportar PDF</md-outlined-button>
+        <md-outlined-button type="button" onclick="window.location.href='@Url.Action("ExportarCsv", new { estado = estadoFiltro, q })'"><md-icon slot="icon">download</md-icon>Exportar CSV</md-outlined-button>
         <md-text-button onclick="window.location.href='@Url.Action("Index", new { estado = estadoFiltro })'; return false;">Limpiar texto</md-text-button>
     </form>
     
@@ -169,7 +184,9 @@ else
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">category</md-icon>Categoría</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">store</md-icon>Sucursal</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">attach_money</md-icon>Costo</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">verified</md-icon>Garantía</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">info</md-icon>Estado</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">person</md-icon>Responsable</th>
                     <th class="actions-column">Acciones</th>
                 </tr>
             </thead>
@@ -193,7 +210,21 @@ else
                         "Baja" => "cancel",
                         _ => "info"
                     };
-                    
+
+                    var garantiaClass = "badge-info";
+                    var garantiaIcon = "verified";
+                    var garantiaTexto = "Sin garantía";
+                    var garantiaFecha = string.Empty;
+
+                    if (item.FechaGarantiaVencimiento.HasValue)
+                    {
+                        var garantiaVigente = item.FechaGarantiaVencimiento.Value.Date >= fechaHoy;
+                        garantiaClass = garantiaVigente ? "badge-success" : "badge-error";
+                        garantiaIcon = garantiaVigente ? "verified" : "gpp_bad";
+                        garantiaTexto = garantiaVigente ? "Vigente" : "Vencida";
+                        garantiaFecha = item.FechaGarantiaVencimiento.Value.ToString("dd/MM/yyyy");
+                    }
+                     
                     <tr>
                         <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -226,10 +257,35 @@ else
                             <strong style="color: var(--md-sys-color-primary);">$@(item.Lote?.CostoUnitario.ToString("N2"))</strong>
                         </td>
                         <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span class="badge @garantiaClass" style="display: flex; align-items: center; gap: 6px; width: fit-content;">
+                                    <md-icon style="font-size: 16px;">@garantiaIcon</md-icon>
+                                    @garantiaTexto
+                                </span>
+                                @if (!string.IsNullOrEmpty(garantiaFecha))
+                                {
+                                    <span class="md-typescale-body-small" style="color: var(--md-sys-color-on-surface-variant);">Hasta @garantiaFecha</span>
+                                }
+                            </div>
+                        </td>
+                        <td>
                             <span class="badge @estadoClass" style="display: flex; align-items: center; gap: 6px; width: fit-content;">
                                 <md-icon style="font-size: 16px;">@estadoIcon</md-icon>
                                 @item.Estado
                             </span>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.ResponsableEmpleado))
+                            {
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <md-icon style="font-size: 18px; color: var(--md-sys-color-secondary);">person</md-icon>
+                                    <span>@item.ResponsableEmpleado</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color: var(--md-sys-color-outline);">No asignado</span>
+                            }
                         </td>
                         <td class="actions-cell">
                             @if (item.Estado == "Disponible" && string.IsNullOrEmpty(item.SucursalId))

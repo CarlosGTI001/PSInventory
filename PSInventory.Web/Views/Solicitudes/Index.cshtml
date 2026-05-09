@@ -50,6 +50,7 @@
         <input type="hidden" name="page" value="1" />
         <input type="hidden" name="pageSize" value="@pageSize" />
         <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Filtrar</md-filled-button>
+        <md-outlined-button type="button" onclick="window.location.href='@Url.Action("ExportarCsv", new { q })'"><md-icon slot="icon">download</md-icon>Exportar CSV</md-outlined-button>
         <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">Limpiar</md-text-button>
     </form>
 </div>

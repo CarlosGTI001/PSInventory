@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -55,6 +56,48 @@ namespace PSInventory.Web.Controllers
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
             return View(articulos);
+        }
+
+        // GET: Articulos/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "")
+        {
+            var query = _context.Articulos
+                .Where(a => !a.Eliminado)
+                .Include(a => a.Categoria)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(a =>
+                    a.Marca.ToLower().Contains(term) ||
+                    a.Modelo.ToLower().Contains(term) ||
+                    (a.Descripcion != null && a.Descripcion.ToLower().Contains(term)) ||
+                    (a.Categoria != null && a.Categoria.Nombre.ToLower().Contains(term)));
+            }
+
+            var articulos = await query
+                .OrderBy(a => a.Marca)
+                .ThenBy(a => a.Modelo)
+                .ToListAsync();
+
+            var headers = new[]
+            {
+                "Marca", "Modelo", "Categoria", "Descripcion", "StockMinimo", "RequiereSerial"
+            };
+
+            var rows = articulos.Select(a => new[]
+            {
+                a.Marca,
+                a.Modelo,
+                a.Categoria?.Nombre ?? string.Empty,
+                a.Descripcion ?? string.Empty,
+                a.StockMinimo.ToString(),
+                a.RequiereSerial ? "Si" : "No"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"articulos_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Articulos/Create

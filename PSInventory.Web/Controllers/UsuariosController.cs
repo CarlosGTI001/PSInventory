@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -51,6 +52,38 @@ namespace PSInventory.Web.Controllers
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
             return View(usuarios);
+        }
+
+        // GET: Usuarios/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "")
+        {
+            var query = _context.Usuarios
+                .Where(u => !u.Eliminado)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(u =>
+                    u.Nombre.ToLower().Contains(term) ||
+                    (u.Email != null && u.Email.ToLower().Contains(term)) ||
+                    (u.Rol != null && u.Rol.ToLower().Contains(term)));
+            }
+
+            var usuarios = await query
+                .OrderBy(u => u.Nombre)
+                .ToListAsync();
+
+            var headers = new[] { "Nombre", "Email", "Rol" };
+            var rows = usuarios.Select(u => new[]
+            {
+                u.Nombre,
+                u.Email ?? string.Empty,
+                u.Rol ?? string.Empty
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"usuarios_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Usuarios/Create

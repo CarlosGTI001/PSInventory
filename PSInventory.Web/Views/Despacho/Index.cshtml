@@ -655,8 +655,10 @@
         };
 
         const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        let comprobanteWindow = null;
 
         try {
+            comprobanteWindow = window.open('', '_blank');
             const resp = await fetch('/Despacho/Enviar', {
                 method: 'POST',
                 headers: {
@@ -668,15 +670,31 @@
             const result = await resp.json();
 
             if (result.success) {
+                if (result.comprobanteUrl) {
+                    if (comprobanteWindow && !comprobanteWindow.closed) {
+                        comprobanteWindow.location.href = result.comprobanteUrl;
+                    } else {
+                        window.open(result.comprobanteUrl, '_blank');
+                    }
+                } else if (comprobanteWindow && !comprobanteWindow.closed) {
+                    comprobanteWindow.close();
+                }
+
                 cart.length = 0;
                 renderCart();
                 document.getElementById('searchResults').style.display = 'none';
                 document.getElementById('searchInput').value = '';
                 showSnackbar(result.message, 'success');
             } else {
+                if (comprobanteWindow && !comprobanteWindow.closed) {
+                    comprobanteWindow.close();
+                }
                 showSnackbar(result.message, 'error');
             }
         } catch (e) {
+            if (comprobanteWindow && !comprobanteWindow.closed) {
+                comprobanteWindow.close();
+            }
             showSnackbar('Error de conexión al servidor.', 'error');
         } finally {
             btn.disabled = false;

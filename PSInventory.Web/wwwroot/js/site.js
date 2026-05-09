@@ -34,6 +34,7 @@ document.addEventListener('submit', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const menuButton = document.getElementById('menu-button');
     const appContainer = document.querySelector('.app-container');
+    const submenuTriggers = document.querySelectorAll('.nav-parent[data-submenu-target]');
     
     if (menuButton) {
         menuButton.addEventListener('click', function() {
@@ -46,6 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth <= 1024 && appContainer.classList.contains('drawer-open')) {
             appContainer.classList.remove('drawer-open');
         }
+    });
+
+    submenuTriggers.forEach(function(trigger) {
+        trigger.addEventListener('click', function() {
+            const targetId = trigger.getAttribute('data-submenu-target');
+            const submenu = targetId ? document.getElementById(targetId) : null;
+            if (!submenu) return;
+
+            const willOpen = !submenu.classList.contains('open');
+            submenu.classList.toggle('open', willOpen);
+            trigger.classList.toggle('expanded', willOpen);
+        });
     });
 });
 

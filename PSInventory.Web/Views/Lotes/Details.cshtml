@@ -27,6 +27,10 @@
         <md-icon slot="icon">arrow_back</md-icon>
         Volver al Artículo
     </md-outlined-button>
+    <md-outlined-button onclick="window.location.href='@Url.Action("DescargarPdf", "Lotes", new { id = Model.Id })'">
+        <md-icon slot="icon">picture_as_pdf</md-icon>
+        Exportar PDF
+    </md-outlined-button>
     @if (!articulosRequiereSerial && stockDisponible > 0)
     {
         <md-filled-tonal-button onclick="document.getElementById('modalDespacho').show()">

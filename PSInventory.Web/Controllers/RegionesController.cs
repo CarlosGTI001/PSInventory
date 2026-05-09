@@ -4,6 +4,7 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -18,7 +19,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Regiones
-        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
+        public async Task<IActionResult> Index(string q = "", string activo = "", int page = 1, int pageSize = 30)
         {
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
@@ -26,6 +27,15 @@ namespace PSInventory.Web.Controllers
             var query = _context.Regiones
                 .Where(r => !r.Eliminado)
                 .AsQueryable();
+
+            if (activo == "1")
+            {
+                query = query.Where(r => r.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(r => !r.Activo);
+            }
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -36,6 +46,8 @@ namespace PSInventory.Web.Controllers
             }
 
             var totalCount = await query.CountAsync();
+            var conDescripcion = await query.CountAsync(r => !string.IsNullOrWhiteSpace(r.Descripcion));
+            var activas = await query.CountAsync(r => r.Activo);
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             if (totalPages > 0 && page > totalPages) page = totalPages;
 
@@ -46,11 +58,54 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             ViewBag.Query = q;
+            ViewBag.ActivoFiltro = activo;
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
+            ViewBag.ConDescripcion = conDescripcion;
+            ViewBag.Activas = activas;
             return View(regiones);
+        }
+
+        // GET: Regiones/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "", string activo = "")
+        {
+            var query = _context.Regiones
+                .Where(r => !r.Eliminado)
+                .AsQueryable();
+
+            if (activo == "1")
+            {
+                query = query.Where(r => r.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(r => !r.Activo);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(r =>
+                    r.Nombre.ToLower().Contains(term) ||
+                    (r.Descripcion != null && r.Descripcion.ToLower().Contains(term)));
+            }
+
+            var regiones = await query
+                .OrderBy(r => r.Nombre)
+                .ToListAsync();
+
+            var headers = new[] { "Nombre", "Descripcion", "Activa" };
+            var rows = regiones.Select(r => new[]
+            {
+                r.Nombre,
+                r.Descripcion ?? string.Empty,
+                r.Activo ? "Si" : "No"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"regiones_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Regiones/Create

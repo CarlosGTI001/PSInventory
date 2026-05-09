@@ -4,6 +4,7 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -51,6 +52,36 @@ namespace PSInventory.Web.Controllers
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
             return View(categorias);
+        }
+
+        // GET: Categorias/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "")
+        {
+            var query = _context.Categorias
+                .Where(c => !c.Eliminado)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(c =>
+                    c.Nombre.ToLower().Contains(term) ||
+                    (c.Descripcion != null && c.Descripcion.ToLower().Contains(term)));
+            }
+
+            var categorias = await query
+                .OrderBy(c => c.Nombre)
+                .ToListAsync();
+
+            var headers = new[] { "Nombre", "Descripcion" };
+            var rows = categorias.Select(c => new[]
+            {
+                c.Nombre,
+                c.Descripcion ?? string.Empty
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"categorias_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Categorias/Create

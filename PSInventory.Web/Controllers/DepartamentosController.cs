@@ -4,6 +4,7 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -18,7 +19,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Departamentos
-        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
+        public async Task<IActionResult> Index(string q = "", string activo = "", int page = 1, int pageSize = 30)
         {
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
@@ -26,6 +27,15 @@ namespace PSInventory.Web.Controllers
             var query = _context.Departamentos
                 .Where(d => !d.Eliminado)
                 .AsQueryable();
+
+            if (activo == "1")
+            {
+                query = query.Where(d => d.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(d => !d.Activo);
+            }
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -37,6 +47,8 @@ namespace PSInventory.Web.Controllers
             }
 
             var totalCount = await query.CountAsync();
+            var activos = await query.CountAsync(d => d.Activo);
+            var conResponsable = await query.CountAsync(d => !string.IsNullOrWhiteSpace(d.Responsable));
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             if (totalPages > 0 && page > totalPages) page = totalPages;
 
@@ -47,11 +59,56 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             ViewBag.Query = q;
+            ViewBag.ActivoFiltro = activo;
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
+            ViewBag.Activos = activos;
+            ViewBag.ConResponsable = conResponsable;
             return View(departamentos);
+        }
+
+        // GET: Departamentos/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "", string activo = "")
+        {
+            var query = _context.Departamentos
+                .Where(d => !d.Eliminado)
+                .AsQueryable();
+
+            if (activo == "1")
+            {
+                query = query.Where(d => d.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(d => !d.Activo);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(d =>
+                    d.Nombre.ToLower().Contains(term) ||
+                    (d.Descripcion != null && d.Descripcion.ToLower().Contains(term)) ||
+                    (d.Responsable != null && d.Responsable.ToLower().Contains(term)));
+            }
+
+            var departamentos = await query
+                .OrderBy(d => d.Nombre)
+                .ToListAsync();
+
+            var headers = new[] { "Nombre", "Descripcion", "Responsable", "Activo" };
+            var rows = departamentos.Select(d => new[]
+            {
+                d.Nombre,
+                d.Descripcion ?? string.Empty,
+                d.Responsable ?? string.Empty,
+                d.Activo ? "Si" : "No"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"departamentos_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Departamentos/Create

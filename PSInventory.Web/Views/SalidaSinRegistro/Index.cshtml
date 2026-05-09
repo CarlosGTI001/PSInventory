@@ -287,8 +287,10 @@
             const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             btnProcesar.disabled = true;
             showLoading('Procesando salida sin registro...');
+            let comprobanteWindow = null;
 
             try {
+                comprobanteWindow = window.open('', '_blank');
                 const response = await fetch('@Url.Action("Procesar", "SalidaSinRegistro")', {
                     method: 'POST',
                     headers: {
@@ -299,6 +301,16 @@
                 });
                 const result = await response.json();
                 if (result.success) {
+                    if (result.comprobanteUrl) {
+                        if (comprobanteWindow && !comprobanteWindow.closed) {
+                            comprobanteWindow.location.href = result.comprobanteUrl;
+                        } else {
+                            window.open(result.comprobanteUrl, '_blank');
+                        }
+                    } else if (comprobanteWindow && !comprobanteWindow.closed) {
+                        comprobanteWindow.close();
+                    }
+
                     showSnackbar(result.message, 'success');
                     document.getElementById('entregaDepartamento').checked = false;
                     setModoEntregaDepartamento(false);
@@ -309,9 +321,15 @@
                     itemsBody.innerHTML = '';
                     addRow();
                 } else {
+                    if (comprobanteWindow && !comprobanteWindow.closed) {
+                        comprobanteWindow.close();
+                    }
                     showSnackbar(result.message || 'No se pudo procesar la salida sin registro.', 'error');
                 }
             } catch (error) {
+                if (comprobanteWindow && !comprobanteWindow.closed) {
+                    comprobanteWindow.close();
+                }
                 showSnackbar(`Error de conexión: ${error.message}`, 'error');
             } finally {
                 hideLoading();

@@ -1,0 +1,109 @@
+@model PSData.Modelos.MovimientoItem
+
+@{
+    ViewData["Title"] = "Detalle de Movimiento";
+    var articulo = $"{Model.Item?.Articulo?.Marca} {Model.Item?.Articulo?.Modelo}".Trim();
+    if (string.IsNullOrWhiteSpace(articulo))
+    {
+        articulo = "Sin articulo";
+    }
+    var esAnulado = !string.IsNullOrWhiteSpace(Model.Observaciones)
+        && Model.Observaciones.Contains("[ANULADO_LOGICO]", StringComparison.OrdinalIgnoreCase);
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Inventario</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-primary); text-decoration: none;">Movimientos</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span>Detalle</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Detalle de Movimiento</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            ID #@Model.Id · Item: <strong>@(Model.Item?.Serial ?? $"ID: {Model.ItemId}")</strong> · @articulo
+        </p>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("Index")'">
+            <md-icon slot="icon">arrow_back</md-icon>
+            Volver
+        </md-outlined-button>
+        @if (!esAnulado)
+        {
+            <md-filled-button onclick="window.location.href='@Url.Action("Edit", new { id = Model.Id })'">
+                <md-icon slot="icon">edit</md-icon>
+                Editar salida
+            </md-filled-button>
+        }
+    </div>
+</div>
+
+@if (esAnulado)
+{
+    <div class="alert alert-error" style="margin-bottom:16px;">
+        <md-icon>info</md-icon>
+        <span>Este registro está anulado lógicamente y se mantiene solo para trazabilidad histórica.</span>
+    </div>
+}
+
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:16px;">
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Fecha del movimiento</div>
+            <div style="font-size: 15px; font-weight: 500;">@Model.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Motivo</div>
+            <div style="font-size: 15px; font-weight: 500;">@Model.Motivo</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Cantidad</div>
+            <div style="font-size: 15px; font-weight: 500;">@Model.Cantidad</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Estado del item</div>
+            <div style="font-size: 15px; font-weight: 500;">@(Model.Item?.Estado ?? "Sin estado")</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Sucursal origen</div>
+            <div style="font-size: 15px; font-weight: 500;">@(Model.SucursalOrigen?.Nombre ?? "Almacen")</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Sucursal destino</div>
+            <div style="font-size: 15px; font-weight: 500;">@(Model.SucursalDestino?.Nombre ?? "-")</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Usuario responsable</div>
+            <div style="font-size: 15px; font-weight: 500;">@Model.UsuarioResponsable</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Persona que recibe</div>
+            <div style="font-size: 15px; font-weight: 500;">@(string.IsNullOrWhiteSpace(Model.ResponsableRecepcion) ? "No registrado" : Model.ResponsableRecepcion)</div>
+        </div>
+        <div>
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">Fecha de recepcion</div>
+            <div style="font-size: 15px; font-weight: 500;">@(Model.FechaRecepcion.HasValue ? Model.FechaRecepcion.Value.ToString("dd/MM/yyyy HH:mm") : "No registrada")</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <md-icon style="color: var(--md-sys-color-primary);">note</md-icon>
+        <h2 class="md-typescale-title-medium" style="margin: 0;">Observaciones</h2>
+    </div>
+    @if (string.IsNullOrWhiteSpace(Model.Observaciones))
+    {
+        <p class="md-typescale-body-medium" style="margin: 0; color: var(--md-sys-color-on-surface-variant);">
+            Sin observaciones.
+        </p>
+    }
+    else
+    {
+        <p class="md-typescale-body-medium" style="margin: 0; white-space: pre-wrap;">@Model.Observaciones</p>
+    }
+</div>

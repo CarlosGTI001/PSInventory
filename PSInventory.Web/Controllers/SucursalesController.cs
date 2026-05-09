@@ -5,6 +5,7 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
@@ -19,7 +20,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Sucursales
-        public async Task<IActionResult> Index(string q = "", int page = 1, int pageSize = 30)
+        public async Task<IActionResult> Index(string q = "", int? regionId = null, string activo = "", int page = 1, int pageSize = 30)
         {
             page = page < 1 ? 1 : page;
             pageSize = pageSize < 10 ? 10 : (pageSize > 100 ? 100 : pageSize);
@@ -29,10 +30,25 @@ namespace PSInventory.Web.Controllers
                 .Include(s => s.Region)
                 .AsQueryable();
 
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                query = query.Where(s => s.RegionId == regionId.Value);
+            }
+
+            if (activo == "1")
+            {
+                query = query.Where(s => s.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(s => !s.Activo);
+            }
+
             if (!string.IsNullOrWhiteSpace(q))
             {
                 var term = q.Trim().ToLower();
                 query = query.Where(s =>
+                    s.Id.ToLower().Contains(term) ||
                     s.Nombre.ToLower().Contains(term) ||
                     (s.Direccion != null && s.Direccion.ToLower().Contains(term)) ||
                     (s.Telefono != null && s.Telefono.ToLower().Contains(term)) ||
@@ -40,6 +56,9 @@ namespace PSInventory.Web.Controllers
             }
 
             var totalCount = await query.CountAsync();
+            var conTelefono = await query.CountAsync(s => !string.IsNullOrWhiteSpace(s.Telefono));
+            var regiones = await query.Select(s => s.RegionId).Distinct().CountAsync();
+            var activas = await query.CountAsync(s => s.Activo);
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             if (totalPages > 0 && page > totalPages) page = totalPages;
 
@@ -50,11 +69,72 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             ViewBag.Query = q;
+            ViewBag.RegionFiltro = regionId;
+            ViewBag.ActivoFiltro = activo;
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
             ViewBag.TotalCount = totalCount;
             ViewBag.TotalPages = totalPages;
+            ViewBag.ConTelefono = conTelefono;
+            ViewBag.TotalRegiones = regiones;
+            ViewBag.Activas = activas;
+            ViewBag.Regiones = await _context.Regiones
+                .Where(r => !r.Eliminado)
+                .OrderBy(r => r.Nombre)
+                .ToListAsync();
             return View(sucursales);
+        }
+
+        // GET: Sucursales/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "", int? regionId = null, string activo = "")
+        {
+            var query = _context.Sucursales
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Region)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                query = query.Where(s => s.RegionId == regionId.Value);
+            }
+
+            if (activo == "1")
+            {
+                query = query.Where(s => s.Activo);
+            }
+            else if (activo == "0")
+            {
+                query = query.Where(s => !s.Activo);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    s.Id.ToLower().Contains(term) ||
+                    s.Nombre.ToLower().Contains(term) ||
+                    (s.Direccion != null && s.Direccion.ToLower().Contains(term)) ||
+                    (s.Telefono != null && s.Telefono.ToLower().Contains(term)) ||
+                    (s.Region != null && s.Region.Nombre.ToLower().Contains(term)));
+            }
+
+            var sucursales = await query
+                .OrderBy(s => s.Nombre)
+                .ToListAsync();
+
+            var headers = new[] { "Codigo", "Nombre", "Region", "Direccion", "Telefono", "Activa" };
+            var rows = sucursales.Select(s => new[]
+            {
+                s.Id,
+                s.Nombre,
+                s.Region?.Nombre ?? string.Empty,
+                s.Direccion ?? string.Empty,
+                s.Telefono ?? string.Empty,
+                s.Activo ? "Si" : "No"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"sucursales_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         // GET: Sucursales/Create

@@ -56,6 +56,50 @@ namespace PSInventory.Web.Controllers
             return View(solicitudes);
         }
 
+        // GET: Solicitudes/ExportarCsv
+        public async Task<IActionResult> ExportarCsv(string q = "")
+        {
+            var query = _context.SolicitudesCompra
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Detalles)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    (s.Titulo != null && s.Titulo.ToLower().Contains(term)) ||
+                    (s.Solicitante != null && s.Solicitante.ToLower().Contains(term)) ||
+                    (s.Estado != null && s.Estado.ToLower().Contains(term)) ||
+                    (s.Observaciones != null && s.Observaciones.ToLower().Contains(term)));
+            }
+
+            var solicitudes = await query
+                .OrderByDescending(s => s.FechaSolicitud)
+                .ToListAsync();
+
+            var headers = new[]
+            {
+                "Id", "Titulo", "Solicitante", "Estado", "FechaSolicitud", "Items", "Observaciones", "UsuarioRevisor", "FechaRevision"
+            };
+
+            var rows = solicitudes.Select(s => new[]
+            {
+                s.Id.ToString(),
+                s.Titulo ?? string.Empty,
+                s.Solicitante ?? string.Empty,
+                s.Estado ?? string.Empty,
+                s.FechaSolicitud.ToString("dd/MM/yyyy HH:mm"),
+                (s.Detalles?.Count ?? 0).ToString(),
+                s.Observaciones ?? string.Empty,
+                s.UsuarioRevisor ?? string.Empty,
+                s.FechaRevision?.ToString("dd/MM/yyyy HH:mm") ?? string.Empty
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv; charset=utf-8", $"solicitudes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+        }
+
         // GET: Solicitudes/Create
         public async Task<IActionResult> Create()
         {

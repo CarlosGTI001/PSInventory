@@ -1,373 +1,308 @@
 @{
-    ViewData["Title"] = "Reportes PDF";
+    ViewData["Title"] = "Reportes";
     var categorias = ViewBag.Categorias as List<PSData.Modelos.Categoria> ?? new List<PSData.Modelos.Categoria>();
     var sucursales = ViewBag.Sucursales as List<PSData.Modelos.Sucursal> ?? new List<PSData.Modelos.Sucursal>();
 }
 
-<!-- Breadcrumb -->
 <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
     <md-icon style="font-size: 18px;">home</md-icon>
     <span>Inicio</span>
     <md-icon style="font-size: 18px;">chevron_right</md-icon>
-    <span style="color: var(--md-sys-color-primary);">Reportes PDF</span>
+    <span style="color: var(--md-sys-color-primary);">Reportes</span>
 </div>
 
-<!-- Page Header -->
 <div class="page-header">
     <div>
-        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Reportes PDF</h1>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Centro de Reportes</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
-            Genera reportes profesionales del inventario
+            Reportes PDF actualizados al flujo operativo y accesos directos a consultas con tabla y filtros avanzados.
         </p>
     </div>
-    <md-icon style="font-size: 80px; color: var(--md-sys-color-primary); opacity: 0.2;">description</md-icon>
 </div>
 
-<!-- Reports Grid -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; margin-top: 32px;">
-
-    <!-- 1. INVENTARIO GENERAL -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #047394 0%, #0589ab 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">inventory_2</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Inventario General</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Reporte completo de todos los items</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- Filters Row 1 -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-select label="Estado" id="ig-estado">
-                            <md-select-option value=""></md-select-option>
-                            <md-select-option value="Disponible">Disponible</md-select-option>
-                            <md-select-option value="Asignado">Asignado</md-select-option>
-                            <md-select-option value="En Reparación">En Reparación</md-select-option>
-                            <md-select-option value="Baja">Baja</md-select-option>
-                        </md-filled-select>
-                    </div>
-                </div>
-
-                <!-- Filters Row 2 -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-select label="Categoría" id="ig-categoria">
-                            <md-select-option value=""></md-select-option>
-                            @foreach (var cat in categorias)
-                            {
-                                <md-select-option value="@cat.Id">@cat.Nombre</md-select-option>
-                            }
-                        </md-filled-select>
-                    </div>
-                </div>
-
-                <!-- Filters Row 3 -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-select label="Sucursal" id="ig-sucursal">
-                            <md-select-option value=""></md-select-option>
-                            @foreach (var suc in sucursales)
-                            {
-                                <md-select-option value="@suc.Id">@suc.Nombre</md-select-option>
-                            }
-                        </md-filled-select>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button style="background-color: #047394;" onclick="generarInventarioGeneral()">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. INVENTARIO POR SUCURSAL -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #ff5c00 0%, #ff7f2c 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">store</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Inventario por Sucursal</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Items detallados por sucursal</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- Filters -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-select label="Sucursal *" required id="ips-sucursal">
-                            <md-select-option value=""></md-select-option>
-                            @foreach (var suc in sucursales)
-                            {
-                                <md-select-option value="@suc.Id">@suc.Nombre</md-select-option>
-                            }
-                        </md-filled-select>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button style="background-color: #ff5c00;" onclick="generarInventarioPorSucursal()">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. MOVIMIENTOS DE ITEMS -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">swap_horiz</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Movimientos de Items</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Historial de transferencias y movimientos</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <form action="/Reportes/MovimientosItems" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;" id="formMovimientos">
-                <!-- Filters Row 1 -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-text-field label="Fecha Inicio" type="date" name="fechaInicio"></md-filled-text-field>
-                    </div>
-                    <div style="flex: 1;">
-                        <md-filled-text-field label="Fecha Fin" type="date" name="fechaFin"></md-filled-text-field>
-                    </div>
-                </div>
-
-                <!-- Filters Row 2 -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-select label="Sucursal (Opcional)" id="mov-sucursal">
-                            <md-select-option value=""></md-select-option>
-                            @foreach (var suc in sucursales)
-                            {
-                                <md-select-option value="@suc.Id">@suc.Nombre</md-select-option>
-                            }
-                        </md-filled-select>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button style="background-color: #7c3aed;" onclick="generarMovimientos(event)">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 4. ITEMS GARANTÍA POR VENCER -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">schedule</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Items Garantía por Vencer</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Garantías próximas a expirar</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <form action="/Reportes/ItemsGarantiaPorVencer" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- Filters -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-text-field label="Días de Anticipación" type="number" name="diasAnticipacion" value="30"></md-filled-text-field>
-                    </div>
-                </div>
-
-                <p style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin: 0; text-align: center;">
-                    Mostrará items con garantía que vence en los próximos días especificados
-                </p>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #f59e0b;">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 5. REPORTE DE COMPRAS -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">shopping_cart</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Reporte de Compras</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Análisis de compras realizadas</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <form action="/Reportes/ReporteCompras" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- Filters -->
-                <div class="form-row">
-                    <div style="flex: 1;">
-                        <md-filled-text-field label="Fecha Inicio" type="date" name="fechaInicio"></md-filled-text-field>
-                    </div>
-                    <div style="flex: 1;">
-                        <md-filled-text-field label="Fecha Fin" type="date" name="fechaFin"></md-filled-text-field>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #10b981;">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 6. ESTADÍSTICAS GENERALES -->
-    <div class="card" style="transition: all 0.3s ease;">
-        <!-- Card Header with Icon -->
-        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 24px; color: white; display: flex; align-items: center; gap: 16px;">
-            <div style="background: rgba(255,255,255,0.2); border-radius: 12px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
-                <md-icon style="font-size: 32px;">analytics</md-icon>
-            </div>
-            <div>
-                <h3 class="md-typescale-title-large" style="margin: 0; color: white;">Estadísticas Generales</h3>
-                <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 14px;">Resumen estadístico del inventario</p>
-            </div>
-        </div>
-
-        <!-- Card Content -->
-        <div style="padding: 24px;">
-            <form action="/Reportes/EstadisticasGenerales" method="get" target="_blank" style="display: flex; flex-direction: column; gap: 16px;">
-                <p style="font-size: 14px; color: var(--md-sys-color-on-surface-variant); margin: 0; text-align: center;">
-                    <md-icon style="font-size: 20px; vertical-align: middle;">info</md-icon>
-                    Este reporte no requiere filtros. Mostrará estadísticas generales de todo el inventario.
-                </p>
-
-                <!-- Submit Button -->
-                <div style="display: flex; justify-content: center; margin-top: 8px;">
-                    <md-filled-button type="submit" style="background-color: #6366f1;">
-                        <md-icon slot="icon">picture_as_pdf</md-icon>
-                        Generar PDF
-                    </md-filled-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+<div class="alert alert-info">
+    <md-icon>info</md-icon>
+    <span>Para análisis en pantalla con paginación y filtros avanzados, usa los módulos de consulta rápida.</span>
 </div>
 
-<style>
-    .card {
-        background: var(--md-sys-color-surface);
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-    }
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <md-icon style="color: var(--md-sys-color-primary);">table_chart</md-icon>
+        <h2 class="md-typescale-title-large" style="margin: 0;">Consultas rápidas en pantalla</h2>
+    </div>
 
-    .card:hover {
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
-    }
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Módulo</th>
+                    <th>Uso</th>
+                    <th class="actions-column">Abrir</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Movimientos</strong></td>
+                    <td>Historial con filtros avanzados por fechas, motivo, usuario, estado y sucursal.</td>
+                    <td class="actions-cell"><md-filled-button onclick="window.location.href='/Movimientos/Index'">Abrir</md-filled-button></td>
+                </tr>
+                <tr>
+                    <td><strong>Sucursales</strong></td>
+                    <td>Tabla con filtros por región, estado, texto libre y paginación configurable.</td>
+                    <td class="actions-cell"><md-filled-button onclick="window.location.href='/Sucursales/Index'">Abrir</md-filled-button></td>
+                </tr>
+                <tr>
+                    <td><strong>Regiones</strong></td>
+                    <td>Listado de regiones con filtros por estado y paginador.</td>
+                    <td class="actions-cell"><md-filled-button onclick="window.location.href='/Regiones/Index'">Abrir</md-filled-button></td>
+                </tr>
+                <tr>
+                    <td><strong>Departamentos</strong></td>
+                    <td>Listado con filtros de estado y búsqueda textual.</td>
+                    <td class="actions-cell"><md-filled-button onclick="window.location.href='/Departamentos/Index'">Abrir</md-filled-button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    .form-row {
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Inventario General (PDF)</h3>
+        <div class="form-row">
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">check_circle</md-icon>
+                <select id="ig-estado" class="md3-select">
+                    <option value="">Todos</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Asignado">Asignado</option>
+                    <option value="En Reparación">En Reparación</option>
+                    <option value="Baja">Baja</option>
+                </select>
+                <label class="md3-select-label">Estado</label>
+            </div>
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">category</md-icon>
+                <select id="ig-categoria" class="md3-select">
+                    <option value="">Todas las categorías</option>
+                    @foreach (var categoria in categorias)
+                    {
+                        <option value="@categoria.Id">@categoria.Nombre</option>
+                    }
+                </select>
+                <label class="md3-select-label">Categoría</label>
+            </div>
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">store</md-icon>
+                <select id="ig-sucursal" class="md3-select">
+                    <option value="">Todas las sucursales</option>
+                    @foreach (var sucursal in sucursales)
+                    {
+                        <option value="@sucursal.Id">@sucursal.Nombre</option>
+                    }
+                </select>
+                <label class="md3-select-label">Sucursal</label>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <input id="ig-include-costos" type="checkbox" checked />
+                Incluir costos y resumen monetario
+            </label>
+        </div>
+        <div style="margin-top: 12px;">
+            <md-filled-button onclick="generarInventarioGeneral()">
+                <md-icon slot="icon">picture_as_pdf</md-icon>
+                Generar PDF
+            </md-filled-button>
+        </div>
+    </div>
 
-    .form-row > div {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Inventario por Sucursal (PDF)</h3>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">store</md-icon>
+            <select id="ips-sucursal" class="md3-select">
+                <option value="">Selecciona sucursal</option>
+                @foreach (var sucursal in sucursales)
+                {
+                    <option value="@sucursal.Id">@sucursal.Nombre</option>
+                }
+            </select>
+            <label class="md3-select-label">Sucursal</label>
+        </div>
+        <div style="margin-top: 10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <input id="ips-include-costos" type="checkbox" checked />
+                Incluir costos y resumen monetario
+            </label>
+        </div>
+        <div style="margin-top: 12px;">
+            <md-filled-button onclick="generarInventarioPorSucursal()">
+                <md-icon slot="icon">picture_as_pdf</md-icon>
+                Generar PDF
+            </md-filled-button>
+        </div>
+    </div>
 
-    md-filled-select,
-    md-filled-text-field {
-        width: 100%;
-    }
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Movimientos de Items (PDF)</h3>
+        <div class="form-row">
+            <md-filled-text-field id="mov-fecha-inicio" type="date" label="Fecha inicio"></md-filled-text-field>
+            <md-filled-text-field id="mov-fecha-fin" type="date" label="Fecha fin"></md-filled-text-field>
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">store</md-icon>
+                <select id="mov-sucursal" class="md3-select">
+                    <option value="">Todas las sucursales</option>
+                    @foreach (var sucursal in sucursales)
+                    {
+                        <option value="@sucursal.Id">@sucursal.Nombre</option>
+                    }
+                </select>
+                <label class="md3-select-label">Sucursal</label>
+            </div>
+            <div class="md3-select-field has-leading-icon">
+                <md-icon class="md3-select-leading-icon">swap_horiz</md-icon>
+                <select id="mov-motivo" class="md3-select">
+                    <option value="">Todos los motivos</option>
+                    <option value="Asignación Inicial">Asignación Inicial</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Despacho">Despacho</option>
+                    <option value="Despacho - Departamento">Despacho - Departamento</option>
+                    <option value="Salida Sin Registro">Salida Sin Registro</option>
+                    <option value="Salida Sin Registro - Departamento">Salida Sin Registro - Departamento</option>
+                </select>
+                <label class="md3-select-label">Motivo</label>
+            </div>
+            <md-filled-text-field id="mov-usuario" label="Usuario responsable"></md-filled-text-field>
+        </div>
+        <div style="margin-top: 12px;">
+            <md-filled-button onclick="generarMovimientos()">
+                <md-icon slot="icon">picture_as_pdf</md-icon>
+                Generar PDF
+            </md-filled-button>
+        </div>
+    </div>
 
-    md-filled-button {
-        width: 100%;
-        max-width: 200px;
-    }
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Items Garantía por Vencer (PDF)</h3>
+        <md-filled-text-field id="garantia-dias" type="number" label="Días de anticipación" value="30"></md-filled-text-field>
+        <div style="margin-top: 12px;">
+            <md-filled-button onclick="generarGarantias()">
+                <md-icon slot="icon">picture_as_pdf</md-icon>
+                Generar PDF
+            </md-filled-button>
+        </div>
+    </div>
 
-    @@media (max-width: 768px) {
-        div[style*="grid-template-columns: repeat(auto-fit, minmax(500px"] {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Reporte de Compras (PDF)</h3>
+        <div class="form-row">
+            <md-filled-text-field id="compra-fecha-inicio" type="date" label="Fecha inicio"></md-filled-text-field>
+            <md-filled-text-field id="compra-fecha-fin" type="date" label="Fecha fin"></md-filled-text-field>
+        </div>
+        <div style="margin-top: 10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <input id="compra-include-costos" type="checkbox" checked />
+                Incluir costos y resumen monetario
+            </label>
+        </div>
+        <div style="margin-top: 12px;">
+            <md-filled-button onclick="generarCompras()">
+                <md-icon slot="icon">picture_as_pdf</md-icon>
+                Generar PDF
+            </md-filled-button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin: 0 0 12px 0;">Estadísticas Generales (PDF)</h3>
+        <p class="md-typescale-body-medium" style="color: var(--md-sys-color-on-surface-variant); margin: 0 0 12px 0;">
+            Reporte consolidado por estado, categoría, sucursal y valor total del inventario.
+        </p>
+        <div style="margin: 0 0 10px 0;">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 14px;">
+                <input id="est-include-costos" type="checkbox" checked />
+                Incluir costos y resumen monetario
+            </label>
+        </div>
+        <md-filled-button onclick="generarEstadisticas()">
+            <md-icon slot="icon">picture_as_pdf</md-icon>
+            Generar PDF
+        </md-filled-button>
+    </div>
+</div>
 
 <script>
-    function getSelectValue(id) {
+    function valueOf(id) {
         return document.getElementById(id)?.value ?? '';
+    }
+
+    function checkedOf(id) {
+        return document.getElementById(id)?.checked ?? true;
     }
 
     function buildUrl(base, params) {
         const query = Object.entries(params)
-            .filter(([, v]) => v)
-            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+            .filter(([, value]) => value !== null && value !== undefined && value !== '')
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
             .join('&');
+
         return query ? `${base}?${query}` : base;
     }
 
     function generarInventarioGeneral() {
         const url = buildUrl('/Reportes/InventarioGeneral', {
-            estado:      getSelectValue('ig-estado'),
-            categoriaId: getSelectValue('ig-categoria'),
-            sucursalId:  getSelectValue('ig-sucursal')
+            estado: valueOf('ig-estado'),
+            categoriaId: valueOf('ig-categoria'),
+            sucursalId: valueOf('ig-sucursal'),
+            includeCostos: checkedOf('ig-include-costos')
         });
         window.open(url, '_blank');
     }
 
     function generarInventarioPorSucursal() {
-        const sucursalId = getSelectValue('ips-sucursal');
-        if (!sucursalId) { alert('Selecciona una sucursal.'); return; }
-        window.open(`/Reportes/InventarioPorSucursal?sucursalId=${encodeURIComponent(sucursalId)}`, '_blank');
+        const sucursalId = valueOf('ips-sucursal');
+        if (!sucursalId) {
+            alert('Selecciona una sucursal.');
+            return;
+        }
+        const url = buildUrl('/Reportes/InventarioPorSucursal', {
+            sucursalId,
+            includeCostos: checkedOf('ips-include-costos')
+        });
+        window.open(url, '_blank');
     }
 
-    function generarMovimientos(e) {
-        e.preventDefault();
-        const form = document.getElementById('formMovimientos');
-        const params = new URLSearchParams();
-        form.querySelectorAll('[name]').forEach(el => { if (el.value) params.set(el.name, el.value); });
-        const sucursal = getSelectValue('mov-sucursal');
-        if (sucursal) params.set('sucursalId', sucursal);
-        window.open(`/Reportes/MovimientosItems?${params.toString()}`, '_blank');
+    function generarMovimientos() {
+        const url = buildUrl('/Reportes/MovimientosItems', {
+            fechaInicio: valueOf('mov-fecha-inicio'),
+            fechaFin: valueOf('mov-fecha-fin'),
+            sucursalId: valueOf('mov-sucursal'),
+            motivo: valueOf('mov-motivo'),
+            usuario: valueOf('mov-usuario')
+        });
+        window.open(url, '_blank');
+    }
+
+    function generarGarantias() {
+        const dias = valueOf('garantia-dias') || '30';
+        window.open(`/Reportes/ItemsGarantiaPorVencer?dias=${encodeURIComponent(dias)}`, '_blank');
+    }
+
+    function generarCompras() {
+        const url = buildUrl('/Reportes/ReporteCompras', {
+            fechaInicio: valueOf('compra-fecha-inicio'),
+            fechaFin: valueOf('compra-fecha-fin'),
+            includeCostos: checkedOf('compra-include-costos')
+        });
+        window.open(url, '_blank');
+    }
+
+    function generarEstadisticas() {
+        const url = buildUrl('/Reportes/EstadisticasGenerales', {
+            includeCostos: checkedOf('est-include-costos')
+        });
+        window.open(url, '_blank');
     }
 </script>

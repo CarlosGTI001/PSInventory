@@ -8,6 +8,7 @@ using PSInventory.Web.Models.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace PSInventory.Web.Controllers
@@ -20,6 +21,13 @@ namespace PSInventory.Web.Controllers
         public SalidaSinRegistroController(PSDatos context)
         {
             _context = context;
+        }
+
+        private string GuardarComprobanteSalidaEnSesion(ComprobanteSalidaContext comprobante)
+        {
+            var key = $"comprobante-salida-{Guid.NewGuid():N}";
+            HttpContext.Session.SetString(key, JsonSerializer.Serialize(comprobante));
+            return key;
         }
 
         // GET: SalidaSinRegistro
@@ -184,6 +192,7 @@ namespace PSInventory.Web.Controllers
                 ? input.SucursalDestinoId
                 : null;
             var usaSucursalTecnica = false;
+            string destinoNombreComprobante;
 
             if (entregaDepartamento)
             {
@@ -199,17 +208,29 @@ namespace PSInventory.Web.Controllers
 
                     departamentoNombre = departamento.Nombre;
                 }
+
+                destinoNombreComprobante = string.IsNullOrWhiteSpace(departamentoNombre)
+                    ? "Departamento no especificado"
+                    : departamentoNombre;
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(sucursalDestinoId))
                 {
-                    var sucursalExiste = await _context.Sucursales
-                        .AnyAsync(s => s.Id == sucursalDestinoId && !s.Eliminado && s.Activo);
-                    if (!sucursalExiste)
+                    var sucursalDestino = await _context.Sucursales
+                        .Where(s => s.Id == sucursalDestinoId && !s.Eliminado && s.Activo)
+                        .Select(s => new { s.Id, s.Nombre })
+                        .FirstOrDefaultAsync();
+                    if (sucursalDestino == null)
                     {
                         return Json(new { success = false, message = "La sucursal destino no es válida." });
                     }
+
+                    destinoNombreComprobante = sucursalDestino.Nombre;
+                }
+                else
+                {
+                    destinoNombreComprobante = "Destino no especificado";
                 }
             }
 
@@ -237,6 +258,7 @@ namespace PSInventory.Web.Controllers
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             var procesados = 0;
+            var movimientosRegistrados = new List<int>();
 
             try
             {
@@ -335,7 +357,7 @@ namespace PSInventory.Web.Controllers
                     await _context.SaveChangesAsync(); // Guardar para obtener el ID del item
 
                     // 4. Registrar el movimiento de salida
-                    _context.MovimientosItem.Add(new MovimientoItem
+                    var movimiento = new MovimientoItem
                     {
                         ItemId = item.Id,
                         Cantidad = item.Cantidad,
@@ -347,8 +369,10 @@ namespace PSInventory.Web.Controllers
                         Observaciones = observacionMovimiento,
                         ResponsableRecepcion = responsableDestino,
                         FechaRecepcion = DateTime.Now
-                    });
+                    };
+                    _context.MovimientosItem.Add(movimiento);
                     await _context.SaveChangesAsync();
+                    movimientosRegistrados.Add(movimiento.Id);
                     procesados++;
                 }
 
@@ -361,7 +385,25 @@ namespace PSInventory.Web.Controllers
                     mensaje += " (Se registró sucursal técnica para trazabilidad de movimiento.)";
                 }
 
-                return Json(new { success = true, message = mensaje });
+                string? comprobanteUrl = null;
+                if (movimientosRegistrados.Any())
+                {
+                    var key = GuardarComprobanteSalidaEnSesion(new ComprobanteSalidaContext
+                    {
+                        MovimientoIds = movimientosRegistrados,
+                        TipoSalida = entregaDepartamento ? "Salida sin registro (departamento)" : "Salida sin registro (sucursal)",
+                        DestinoNombre = destinoNombreComprobante,
+                        ResponsableRecepcion = responsableDestino,
+                        Observaciones = observacionMovimiento ?? string.Empty,
+                        UsuarioResponsable = usuario,
+                        EntregaDepartamento = entregaDepartamento,
+                        FechaGeneracion = DateTime.Now
+                    });
+
+                    comprobanteUrl = Url.Action("ComprobanteSalida", "Reportes", new { key });
+                }
+
+                return Json(new { success = true, message = mensaje, comprobanteUrl });
             }
             catch (Exception ex)
             {

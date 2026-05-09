@@ -44,7 +44,8 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Fecha de Compra *" 
-                    asp-for="FechaCompra" 
+                    id="FechaCompra"
+                    name="FechaCompra"
                     type="date"
                     required
                     value="@Model.FechaCompra.ToString("yyyy-MM-dd")"
@@ -57,7 +58,8 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Proveedor *" 
-                    asp-for="Proveedor" 
+                    id="Proveedor"
+                    name="Proveedor"
                     required
                     value="@Model.Proveedor"
                     supporting-text="Nombre o razón social">
@@ -71,7 +73,8 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Número de Factura" 
-                    asp-for="NumeroFactura" 
+                    id="NumeroFactura"
+                    name="NumeroFactura"
                     value="@Model.NumeroFactura"
                     supporting-text="Número de factura del proveedor">
                     <md-icon slot="leading-icon">tag</md-icon>
@@ -182,7 +185,8 @@
             <div class="form-field">
                 <md-filled-text-field 
                     label="Observaciones" 
-                    asp-for="Observaciones"
+                    id="Observaciones"
+                    name="Observaciones"
                     type="textarea"
                     rows="4"
                     value="@Model.Observaciones"
@@ -326,18 +330,5 @@
             loteIndex = lotes.length;
         }
 
-        // Initial loading of existing lots for edit view
-        @if (Model.Lotes != null && Model.Lotes.Any())
-        {
-            foreach (var lote in Model.Lotes)
-            {
-                <text>addLoteRow({ 
-                    id: @lote.Id,
-                    articuloId: @lote.ArticuloId,
-                    cantidad: @lote.Cantidad,
-                    costoUnitario: @lote.CostoUnitario
-                });</text>
-            }
-        }
     </script>
 }

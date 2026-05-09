@@ -13,4 +13,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 8090
 
-ENTRYPOINT ["dotnet", "PSInventory.dll"]
+ENTRYPOINT ["dotnet", "PSInventory.Web.dll"]

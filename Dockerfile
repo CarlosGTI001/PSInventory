@@ -12,8 +12,9 @@ RUN mkdir -p /data
 
 COPY --from=build /app/publish .
 
-EXPOSE 8090
+EXPOSE 9000
 
+ENV ASPNETCORE_HTTP_PORTS=9000
 ENV ConnectionStrings__DefaultConnection="Data Source=/data/psinventory.db"
 VOLUME ["/data"]
 

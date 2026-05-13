@@ -16,7 +16,7 @@ namespace PSData.Datos
                 {
                     new Usuario
                     {
-                        Id = Guid.NewGuid().ToString(),
+                        Id = "admin",
                         Nombre = "admin",
                         Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
                         Email = "admin@psinventory.com",
@@ -24,7 +24,7 @@ namespace PSData.Datos
                     },
                     new Usuario
                     {
-                        Id = Guid.NewGuid().ToString(),
+                        Id = "supervisor",
                         Nombre = "supervisor",
                         Password = BCrypt.Net.BCrypt.HashPassword("supervisor123"),
                         Email = "supervisor@psinventory.com",

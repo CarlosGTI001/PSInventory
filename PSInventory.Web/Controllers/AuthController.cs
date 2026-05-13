@@ -28,8 +28,10 @@ namespace PSInventory.Web.Controllers
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
+            var normalizedUser = (username ?? string.Empty).Trim();
             var user = _context.Usuarios
-                .FirstOrDefault(u => u.Nombre == username && !u.Eliminado);
+                .FirstOrDefault(u => u.Id == normalizedUser && !u.Eliminado)
+                ?? _context.Usuarios.FirstOrDefault(u => u.Nombre == normalizedUser && !u.Eliminado);
 
             if (user != null && VerifyPassword(password, user.Password))
             {

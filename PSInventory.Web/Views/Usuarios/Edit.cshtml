@@ -26,7 +26,6 @@
 
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="Id" />
     
     <!-- Sección 1: Datos de Autenticación -->
     <div class="card" style="margin-bottom: 24px;">
@@ -43,13 +42,14 @@
         <div class="form-row">
             <div class="form-field">
                 <md-filled-text-field 
-                    label="Nombre de Usuario" 
-                    name="IdDisplay" 
+                    label="Nombre de Usuario *" 
+                    name="Id"
                     value="@Model.Id"
-                    disabled
-                    supporting-text="No se puede modificar el ID">
+                    required
+                    supporting-text="Identificador único para iniciar sesión">
                     <md-icon slot="leading-icon">person</md-icon>
                 </md-filled-text-field>
+                <span asp-validation-for="Id" class="field-error"></span>
             </div>
             
             <div class="form-field">

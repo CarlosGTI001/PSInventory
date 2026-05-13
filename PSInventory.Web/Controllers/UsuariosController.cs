@@ -95,12 +95,19 @@ namespace PSInventory.Web.Controllers
         // POST: Usuarios/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Nombre,Password,Email,Rol")] Usuario usuario)
+        public async Task<IActionResult> Create([Bind("Id,Nombre,Password,Email,Rol")] Usuario usuario)
         {
-            ModelState.Remove("Id"); // Id es generado server-side
+            usuario.Id = (usuario.Id ?? string.Empty).Trim();
+            usuario.Nombre = (usuario.Nombre ?? string.Empty).Trim();
+            usuario.Email = (usuario.Email ?? string.Empty).Trim();
+
+            if (await _context.Usuarios.AnyAsync(u => u.Id == usuario.Id))
+            {
+                ModelState.AddModelError(nameof(Usuario.Id), "El nombre de usuario ya existe.");
+            }
+
             if (ModelState.IsValid)
             {
-                usuario.Id = Guid.NewGuid().ToString();
                 usuario.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
                 _context.Add(usuario);
                 await _context.SaveChangesAsync();
@@ -133,29 +140,74 @@ namespace PSInventory.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(string id, [Bind("Id,Nombre,Password,Email,Rol")] Usuario usuario)
         {
-            if (id != usuario.Id)
+            if (string.IsNullOrWhiteSpace(id))
             {
                 return NotFound();
+            }
+
+            usuario.Id = (usuario.Id ?? string.Empty).Trim();
+            usuario.Nombre = (usuario.Nombre ?? string.Empty).Trim();
+            usuario.Email = (usuario.Email ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(usuario.Password))
+            {
+                ModelState.Remove(nameof(Usuario.Password));
+            }
+
+            var existing = await _context.Usuarios
+                .Where(u => !u.Eliminado)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            if (existing == null) return NotFound();
+
+            var idChanged = !string.Equals(id, usuario.Id, StringComparison.Ordinal);
+            if (idChanged && await _context.Usuarios.AnyAsync(u => u.Id == usuario.Id))
+            {
+                ModelState.AddModelError(nameof(Usuario.Id), "El nombre de usuario ya existe.");
             }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var existing = await _context.Usuarios.FindAsync(id);
-                    if (existing == null) return NotFound();
+                    var updatedPassword = string.IsNullOrWhiteSpace(usuario.Password)
+                        ? existing.Password
+                        : BCrypt.Net.BCrypt.HashPassword(usuario.Password);
 
-                    existing.Nombre = usuario.Nombre;
-                    existing.Email = usuario.Email;
-                    existing.Rol = usuario.Rol;
-
-                    // Solo actualizar contraseña si se proporcionó una nueva
-                    if (!string.IsNullOrWhiteSpace(usuario.Password))
+                    if (idChanged)
                     {
-                        existing.Password = BCrypt.Net.BCrypt.HashPassword(usuario.Password);
+                        var usuarioActualizado = new Usuario
+                        {
+                            Id = usuario.Id,
+                            Nombre = usuario.Nombre,
+                            Email = usuario.Email,
+                            Rol = usuario.Rol,
+                            Password = updatedPassword,
+                            Eliminado = existing.Eliminado,
+                            FechaEliminacion = existing.FechaEliminacion,
+                            UsuarioEliminacion = existing.UsuarioEliminacion
+                        };
+
+                        _context.Usuarios.Remove(existing);
+                        _context.Usuarios.Add(usuarioActualizado);
+                    }
+                    else
+                    {
+                        existing.Nombre = usuario.Nombre;
+                        existing.Email = usuario.Email;
+                        existing.Rol = usuario.Rol;
+                        existing.Password = updatedPassword;
                     }
 
                     await _context.SaveChangesAsync();
+
+                    if (HttpContext.Session.GetString("UserId") == id)
+                    {
+                        HttpContext.Session.SetString("UserId", usuario.Id);
+                        HttpContext.Session.SetString("UserName", usuario.Nombre);
+                        HttpContext.Session.SetString("UserRole", usuario.Rol);
+                        HttpContext.Session.SetString("UserEmail", usuario.Email);
+                    }
+
                     TempData["Success"] = "Usuario actualizado exitosamente";
                 }
                 catch (DbUpdateConcurrencyException)

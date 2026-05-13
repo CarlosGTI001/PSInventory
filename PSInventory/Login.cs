@@ -42,8 +42,10 @@ namespace PSInventory
                 {
                     using (var db = new PSDatos())
                     {
+                        var normalizedUser = (usuarioTxt.Text ?? string.Empty).Trim();
                         var usuario = db.Usuarios.AsNoTracking()
-                            .FirstOrDefault(u => u.Nombre == usuarioTxt.Text);
+                            .FirstOrDefault(u => u.Id == normalizedUser)
+                            ?? db.Usuarios.AsNoTracking().FirstOrDefault(u => u.Nombre == normalizedUser);
 
                         if (usuario == null)
                         {

@@ -399,8 +399,8 @@ Al iniciar sesión, verás el **Dashboard** con:
 3. **Guardar**
 
 #### Editar Usuario
-- Modificar nombre, email, rol
-- **Nota**: No se puede cambiar el ID
+- Modificar ID (username), nombre, email y rol
+- Si cambias el ID, debe ser único
 
 #### Eliminar Usuario
 - Click en **Eliminar**

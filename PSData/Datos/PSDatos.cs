@@ -20,23 +20,6 @@ namespace PSData.Datos
         {
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            // Si no está configurado (como en el caso de la inyección de dependencias)
-            // o si queremos forzar la ruta en Linux:
-            if (!OperatingSystem.IsWindows())
-            {
-                string dbPath = "/var/psinventory/psinventory.db";
-                // Asegurar que el directorio existe
-                var dir = Path.GetDirectoryName(dbPath);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-                
-                optionsBuilder.UseSqlite($"Data Source={dbPath}");
-            }
-            
-            base.OnConfiguring(optionsBuilder);
-        }
-
         private static DbContextOptions<PSDatos> GetOptions()
         {
             var optionsBuilder = new DbContextOptionsBuilder<PSDatos>();

@@ -190,26 +190,30 @@
 
     <div class="card" style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
-            <md-icon style="color: var(--md-sys-color-on-surface-variant); font-size: 28px;">groups</md-icon>
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">groups</md-icon>
+            </div>
             <div>
-                <h2 class="md-typescale-title-large" style="margin: 0;">Asignación</h2>
-                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Puede asignarse a uno o varios departamentos</p>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Asignación de Departamentos</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Selecciona los departamentos donde opera este equipo</p>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-field">
-                <div class="md3-select-field has-leading-icon">
-                    <md-icon class="md3-select-leading-icon">business_center</md-icon>
-                    <select name="DepartamentosSeleccionados" id="DepartamentosSeleccionados" class="md3-select" multiple size="6">
-                        @foreach (var dep in Model.Departamentos)
-                        {
-                            <option value="@dep.Value" selected="@Model.DepartamentosSeleccionados.Contains(int.Parse(dep.Value!))">@dep.Text</option>
-                        }
-                    </select>
-                    <label class="md3-select-label">Departamentos</label>
+                <label class="md3-input-label">Departamentos involucrados</label>
+                <div class="checkbox-list-container">
+                    @foreach (var dep in Model.Departamentos)
+                    {
+                        var depId = int.Parse(dep.Value!);
+                        var isChecked = Model.DepartamentosSeleccionados.Contains(depId);
+                        <label class="checkbox-item @(isChecked ? "selected" : "")">
+                            <input type="checkbox" name="DepartamentosSeleccionados" value="@dep.Value" @(isChecked ? "checked" : "") onchange="this.parentElement.classList.toggle('selected', this.checked)" />
+                            <span>@dep.Text</span>
+                        </label>
+                    }
                 </div>
-                <p class="md3-select-supporting">Mantén Ctrl/Cmd para seleccionar múltiples opciones</p>
+                <p class="md3-input-supporting-text">Puedes seleccionar uno o varios departamentos</p>
                 <span asp-validation-for="DepartamentosSeleccionados" class="field-error"></span>
             </div>
             <div class="form-field">

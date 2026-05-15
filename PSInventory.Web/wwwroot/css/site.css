@@ -1128,3 +1128,51 @@ md-dialog [slot="actions"] {
     margin: 0;
     color: var(--md-sys-color-outline);
 }
+
+/* ============================================
+   CHECKBOX LIST - Para selecciones múltiples
+   ============================================ */
+.checkbox-list-container {
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 12px;
+    padding: 12px;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--md-sys-color-surface-container-lowest);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    color: var(--md-sys-color-on-surface);
+    user-select: none;
+}
+
+.checkbox-item:hover {
+    background: rgba(4, 115, 148, 0.08);
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--md-sys-color-primary);
+}
+
+.checkbox-item span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.checkbox-item.selected {
+    background: rgba(4, 115, 148, 0.12);
+    color: var(--md-sys-color-primary);
+}

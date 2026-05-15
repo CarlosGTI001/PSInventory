@@ -151,6 +151,103 @@ namespace PSInventory.Web.Controllers
             return View(vm);
         }
 
+        // GET: Infraestructura/ExportarEquiposCsv
+        public async Task<IActionResult> ExportarEquiposCsv(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        {
+            var query = _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(e => e.Sucursal != null && e.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(e => e.SucursalId == sucursalId);
+
+            if (departamentoId.HasValue && departamentoId.Value > 0)
+                query = query.Where(e => e.EquiposDepartamentos.Any(ed => ed.DepartamentoId == departamentoId.Value));
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(e =>
+                    e.NombreEquipo.ToLower().Contains(term) ||
+                    e.Serial.ToLower().Contains(term) ||
+                    (e.CodigoActivo != null && e.CodigoActivo.ToLower().Contains(term)));
+            }
+
+            var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "S.O.", "Procesador", "RAM", "Departamentos", "Estado" };
+            var rows = items.Select(e => new[] {
+                e.NombreEquipo,
+                e.Serial,
+                e.CodigoActivo ?? "",
+                e.Sucursal?.Region?.Nombre ?? "N/D",
+                e.Sucursal?.Nombre ?? "N/D",
+                e.SistemaOperativo?.Nombre ?? "",
+                e.TipoProcesador?.Nombre ?? "",
+                e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "",
+                string.Join("|", e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre ?? "")),
+                e.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv", $"equipos_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+        // GET: Infraestructura/ExportarEquiposPdf
+        public async Task<IActionResult> ExportarEquiposPdf(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        {
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+            var query = _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(e => e.Sucursal != null && e.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(e => e.SucursalId == sucursalId);
+
+            if (departamentoId.HasValue && departamentoId.Value > 0)
+                query = query.Where(e => e.EquiposDepartamentos.Any(ed => ed.DepartamentoId == departamentoId.Value));
+
+            var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
+            if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Equipos", "No hay equipos"), "application/pdf", "equipos.pdf");
+
+            var headers = new List<string> { "Equipo", "Serial", "Sucursal", "S.O.", "RAM", "Estado" };
+            var filas = items.Select(e => new List<string> {
+                e.NombreEquipo,
+                e.Serial,
+                e.Sucursal?.Nombre ?? "N/D",
+                e.SistemaOperativo?.Nombre ?? "N/D",
+                e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb}GB" : "N/D",
+                e.Activo ? "Activo" : "Inactivo"
+            }).ToList();
+
+            var document = Document.Create(container => {
+                container.Page(page => {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Equipos de Cómputo", usuario));
+                    page.Content().PaddingTop(10).Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            });
+
+            return File(document.GeneratePdf(), "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+
         // GET: Infraestructura/Equipos
         public async Task<IActionResult> Equipos(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
         {
@@ -214,6 +311,159 @@ namespace PSInventory.Web.Controllers
             };
 
             return View(vm);
+        }
+
+        // GET: Infraestructura/ExportarServiciosCsv
+        public async Task<IActionResult> ExportarServiciosCsv(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var query = _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Sucursal).ThenInclude(su => su.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(s => s.Sucursal != null && s.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(s => s.SucursalId == sucursalId);
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(s =>
+                    (s.NumeroServicio != null && s.NumeroServicio.ToLower().Contains(term)) ||
+                    (s.TipoServicio != null && s.TipoServicio.Nombre.ToLower().Contains(term)));
+            }
+
+            var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Tipo", "Operador", "Número", "Sucursal", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
+            var rows = items.Select(s => new[] {
+                s.TipoServicio?.Nombre ?? "N/D",
+                s.OperadorServicio?.Nombre ?? "N/D",
+                s.NumeroServicio ?? "",
+                s.Sucursal?.Nombre ?? "N/D",
+                s.VelocidadBajadaMbps?.ToString() ?? "0",
+                s.VelocidadSubidaMbps?.ToString() ?? "0",
+                s.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv", $"servicios_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+        // GET: Infraestructura/ExportarServiciosPdf
+        public async Task<IActionResult> ExportarServiciosPdf(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+            var query = _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Sucursal)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(s => s.Sucursal != null && s.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(s => s.SucursalId == sucursalId);
+
+            var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
+            if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Servicios", "No hay servicios"), "application/pdf", "servicios.pdf");
+
+            var headers = new List<string> { "Tipo", "Operador", "Número", "Sucursal", "Velocidad", "Estado" };
+            var filas = items.Select(s => new List<string> {
+                s.TipoServicio?.Nombre ?? "N/D",
+                s.OperadorServicio?.Nombre ?? "N/D",
+                s.NumeroServicio ?? "—",
+                s.Sucursal?.Nombre ?? "N/D",
+                $"{s.VelocidadBajadaMbps}/{s.VelocidadSubidaMbps} Mbps",
+                s.Activo ? "Activo" : "Inactivo"
+            }).ToList();
+
+            var document = Document.Create(container => {
+                container.Page(page => {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Servicios de Sucursal", usuario));
+                    page.Content().PaddingTop(10).Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            });
+
+            return File(document.GeneratePdf(), "application/pdf", $"servicios_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+
+        // GET: Infraestructura/ExportarAccesoriosCsv
+        public async Task<IActionResult> ExportarAccesoriosCsv(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var query = _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado)
+                .Include(a => a.Sucursal).ThenInclude(su => su.Region)
+                .Include(a => a.TipoAccesorio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(a => a.Sucursal != null && a.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(a => a.SucursalId == sucursalId);
+
+            var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Tipo", "Cantidad", "Sucursal", "Especificaciones", "Estado" };
+            var rows = items.Select(a => new[] {
+                a.TipoAccesorio?.Nombre ?? "N/D",
+                a.Cantidad.ToString(),
+                a.Sucursal?.Nombre ?? "N/D",
+                a.Especificaciones ?? "",
+                a.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = CsvExportService.BuildCsv(headers, rows);
+            return File(bytes, "text/csv", $"accesorios_{DateTime.Now:yyyyMMdd}.csv");
+        }
+
+        // GET: Infraestructura/ExportarAccesoriosPdf
+        public async Task<IActionResult> ExportarAccesoriosPdf(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+            var query = _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado)
+                .Include(a => a.Sucursal)
+                .Include(a => a.TipoAccesorio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(a => a.Sucursal != null && a.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(a => a.SucursalId == sucursalId);
+
+            var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
+            if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Accesorios", "No hay accesorios"), "application/pdf", "accesorios.pdf");
+
+            var headers = new List<string> { "Tipo", "Cantidad", "Sucursal", "Especificaciones", "Estado" };
+            var filas = items.Select(a => new List<string> {
+                a.TipoAccesorio?.Nombre ?? "N/D",
+                a.Cantidad.ToString(),
+                a.Sucursal?.Nombre ?? "N/D",
+                a.Especificaciones ?? "—",
+                a.Activo ? "Activo" : "Inactivo"
+            }).ToList();
+
+            var document = Document.Create(container => {
+                container.Page(page => {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Accesorios de Sucursal", usuario));
+                    page.Content().PaddingTop(10).Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            });
+
+            return File(document.GeneratePdf(), "application/pdf", $"accesorios_{DateTime.Now:yyyyMMdd}.pdf");
         }
 
         // GET: Infraestructura/Servicios

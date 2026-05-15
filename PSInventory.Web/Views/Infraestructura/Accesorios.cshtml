@@ -18,10 +18,18 @@
             UPS, DVR, cámaras y otros elementos por zona y sucursal
         </p>
     </div>
-    <md-filled-button onclick="window.location.href='@Url.Action("CreateAccesorio")'">
-        <md-icon slot="icon">add</md-icon>
-        Nuevo Accesorio
-    </md-filled-button>
+    <div style="display:flex; gap:12px;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarAccesoriosCsv", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro })'">
+            <md-icon slot="icon">download</md-icon> CSV
+        </md-outlined-button>
+        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarAccesoriosPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro })'">
+            <md-icon slot="icon">picture_as_pdf</md-icon> PDF
+        </md-outlined-button>
+        <md-filled-button onclick="window.location.href='@Url.Action("CreateAccesorio")'">
+            <md-icon slot="icon">add</md-icon>
+            Nuevo Accesorio
+        </md-filled-button>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)

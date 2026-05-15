@@ -18,10 +18,18 @@
             Internet y otros servicios por zona y sucursal
         </p>
     </div>
-    <md-filled-button onclick="window.location.href='@Url.Action("CreateServicio")'">
-        <md-icon slot="icon">add</md-icon>
-        Nuevo Servicio
-    </md-filled-button>
+    <div style="display:flex; gap:12px;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarServiciosCsv", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro })'">
+            <md-icon slot="icon">download</md-icon> CSV
+        </md-outlined-button>
+        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarServiciosPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro })'">
+            <md-icon slot="icon">picture_as_pdf</md-icon> PDF
+        </md-outlined-button>
+        <md-filled-button onclick="window.location.href='@Url.Action("CreateServicio")'">
+            <md-icon slot="icon">add</md-icon>
+            Nuevo Servicio
+        </md-filled-button>
+    </div>
 </div>
 
 @if (TempData["Success"] != null)

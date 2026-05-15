@@ -19,8 +19,8 @@
         </p>
     </div>
     <div style="display:flex; gap:12px;">
-        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposCsv", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro })'">
-            <md-icon slot="icon">download</md-icon> CSV
+        <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposExcel", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro })'">
+            <md-icon slot="icon">table_view</md-icon> Excel
         </md-outlined-button>
         <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro })'">
             <md-icon slot="icon">picture_as_pdf</md-icon> PDF

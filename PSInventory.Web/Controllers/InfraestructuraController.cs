@@ -5,6 +5,10 @@ using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
 using PSInventory.Web.Models.ViewModels;
+using PSInventory.Web.Services;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace PSInventory.Web.Controllers
 {
@@ -151,6 +155,127 @@ namespace PSInventory.Web.Controllers
             return View(vm);
         }
 
+        // GET: Infraestructura/ExportarEquiposExcel
+        public async Task<IActionResult> ExportarEquiposExcel(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        {
+            var query = _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(e => e.Sucursal != null && e.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(e => e.SucursalId == sucursalId);
+
+            if (departamentoId.HasValue && departamentoId.Value > 0)
+                query = query.Where(e => e.EquiposDepartamentos.Any(ed => ed.DepartamentoId == departamentoId.Value));
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                query = query.Where(e =>
+                    e.NombreEquipo.ToLower().Contains(term) ||
+                    e.Serial.ToLower().Contains(term) ||
+                    (e.CodigoActivo != null && e.CodigoActivo.ToLower().Contains(term)));
+            }
+
+            var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "Detalle CPU", "RAM (GB)", "Tipo RAM", "Almacenamiento", "IP", "Departamentos", "Estado" };
+            
+            var rows = items.Select(e => new string?[] {
+                e.NombreEquipo,
+                e.Serial,
+                e.CodigoActivo,
+                e.Sucursal?.Region?.Nombre,
+                e.Sucursal?.Nombre,
+                e.Marca,
+                e.Modelo,
+                e.SistemaOperativo?.Nombre,
+                e.TipoProcesador?.Nombre,
+                e.CpuDetalle,
+                e.RamCantidadGb?.ToString(),
+                e.TipoRam?.Nombre,
+                e.Almacenamiento,
+                e.DireccionIp,
+                string.Join(", ", e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre ?? "")),
+                e.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = ExcelExportService.BuildExcel("Equipos", headers, rows);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"equipos_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+
+        // GET: Infraestructura/ExportarServiciosExcel
+        public async Task<IActionResult> ExportarServiciosExcel(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var query = _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Sucursal).ThenInclude(su => su.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(s => s.Sucursal != null && s.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(s => s.SucursalId == sucursalId);
+
+            var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Zona", "Sucursal", "Tipo de Servicio", "Operador", "Número de Servicio", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
+            
+            var rows = items.Select(s => new string?[] {
+                s.Sucursal?.Region?.Nombre,
+                s.Sucursal?.Nombre,
+                s.TipoServicio?.Nombre,
+                s.OperadorServicio?.Nombre,
+                s.NumeroServicio,
+                s.VelocidadBajadaMbps?.ToString(),
+                s.VelocidadSubidaMbps?.ToString(),
+                s.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = ExcelExportService.BuildExcel("Servicios", headers, rows);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"servicios_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+
+        // GET: Infraestructura/ExportarAccesoriosExcel
+        public async Task<IActionResult> ExportarAccesoriosExcel(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var query = _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado)
+                .Include(a => a.Sucursal).ThenInclude(su => su.Region)
+                .Include(a => a.TipoAccesorio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+                query = query.Where(a => a.Sucursal != null && a.Sucursal.RegionId == regionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+                query = query.Where(a => a.SucursalId == sucursalId);
+
+            var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
+            var headers = new[] { "Zona", "Sucursal", "Tipo de Accesorio", "Cantidad", "Especificaciones", "Estado" };
+            
+            var rows = items.Select(a => new string?[] {
+                a.Sucursal?.Region?.Nombre,
+                a.Sucursal?.Nombre,
+                a.TipoAccesorio?.Nombre,
+                a.Cantidad.ToString(),
+                a.Especificaciones,
+                a.Activo ? "Activo" : "Inactivo"
+            });
+
+            var bytes = ExcelExportService.BuildExcel("Accesorios", headers, rows);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"accesorios_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+
         // GET: Infraestructura/ExportarEquiposCsv
         public async Task<IActionResult> ExportarEquiposCsv(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
         {
@@ -225,13 +350,12 @@ namespace PSInventory.Web.Controllers
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
             if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Equipos", "No hay equipos"), "application/pdf", "equipos.pdf");
 
-            var headers = new List<string> { "Equipo", "Serial", "Sucursal", "S.O.", "RAM", "Estado" };
+            var headers = new List<string> { "Equipo", "Serial", "Sucursal", "Especificaciones", "Estado" };
             var filas = items.Select(e => new List<string> {
                 e.NombreEquipo,
                 e.Serial,
                 e.Sucursal?.Nombre ?? "N/D",
-                e.SistemaOperativo?.Nombre ?? "N/D",
-                e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb}GB" : "N/D",
+                $"• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• IP: {e.DireccionIp ?? "N/D"}",
                 e.Activo ? "Activo" : "Inactivo"
             }).ToList();
 

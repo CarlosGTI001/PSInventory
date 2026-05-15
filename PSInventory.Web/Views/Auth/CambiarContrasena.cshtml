@@ -1,0 +1,106 @@
+@model PSInventory.Web.Models.ViewModels.CambiarContrasenaViewModel
+
+@{
+    ViewData["Title"] = "Cambiar Contraseña";
+}
+
+<!-- Breadcrumb -->
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Cuenta</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Cambiar Contraseña</span>
+</div>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Cambiar Contraseña</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Actualiza tu contraseña de acceso de forma segura
+        </p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 20px;">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<form asp-action="CambiarContrasena" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="card" style="max-width: 720px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">lock</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Datos de Seguridad</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">
+                    Usuario: <strong>@(ViewBag.UserName ?? Context.Session.GetString("UserName"))</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field
+                    label="Contraseña Actual *"
+                    name="ContrasenaActual"
+                    type="password"
+                    required
+                    supporting-text="Ingresa tu contraseña actual">
+                    <md-icon slot="leading-icon">vpn_key</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="ContrasenaActual" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field
+                    label="Nueva Contraseña *"
+                    name="NuevaContrasena"
+                    type="password"
+                    required
+                    supporting-text="Mínimo 6 caracteres">
+                    <md-icon slot="leading-icon">lock_reset</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="NuevaContrasena" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field
+                    label="Confirmar Nueva Contraseña *"
+                    name="ConfirmarNuevaContrasena"
+                    type="password"
+                    required
+                    supporting-text="Debe coincidir con la nueva contraseña">
+                    <md-icon slot="leading-icon">verified_user</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="ConfirmarNuevaContrasena" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: 24px; max-width: 720px; background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index", "Home")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 220px;">
+            <md-icon slot="icon">save</md-icon>
+            Actualizar Contraseña
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

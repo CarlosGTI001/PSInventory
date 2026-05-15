@@ -6,6 +6,7 @@ namespace PSInventory.Web.Models.ViewModels;
 public class InfraestructuraIndexViewModel
 {
     public string Query { get; set; } = string.Empty;
+    public int? RegionFiltro { get; set; }
     public string? SucursalFiltro { get; set; }
     public int? DepartamentoFiltro { get; set; }
 
@@ -14,6 +15,7 @@ public class InfraestructuraIndexViewModel
     public int TotalServicios { get; set; }
     public int TotalAccesorios { get; set; }
 
+    public IEnumerable<SelectListItem> Regiones { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Departamentos { get; set; } = new List<SelectListItem>();
 
@@ -22,9 +24,38 @@ public class InfraestructuraIndexViewModel
     public List<InfraAccesorioListItemViewModel> Accesorios { get; set; } = new();
 }
 
+public class InfraSucursalResumenViewModel
+{
+    public string CodigoSucursal { get; set; } = string.Empty;
+    public string? Mensaje { get; set; }
+
+    public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
+    public InfraSucursalInfoViewModel? Sucursal { get; set; }
+
+    public int TotalEquipos { get; set; }
+    public int EquiposActivos { get; set; }
+    public int TotalServicios { get; set; }
+    public int TotalAccesorios { get; set; }
+
+    public List<string> DepartamentosRelacionados { get; set; } = new();
+    public List<InfraEquipoListItemViewModel> Equipos { get; set; } = new();
+    public List<InfraServicioListItemViewModel> Servicios { get; set; } = new();
+    public List<InfraAccesorioListItemViewModel> Accesorios { get; set; } = new();
+}
+
+public class InfraSucursalInfoViewModel
+{
+    public string Id { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string? Direccion { get; set; }
+    public string? Telefono { get; set; }
+}
+
 public class InfraEquipoListItemViewModel
 {
     public int Id { get; set; }
+    public string Region { get; set; } = string.Empty;
     public string Sucursal { get; set; } = string.Empty;
     public string NombreEquipo { get; set; } = string.Empty;
     public string Serial { get; set; } = string.Empty;
@@ -38,6 +69,7 @@ public class InfraEquipoListItemViewModel
 public class InfraServicioListItemViewModel
 {
     public int Id { get; set; }
+    public string Region { get; set; } = string.Empty;
     public string Sucursal { get; set; } = string.Empty;
     public string TipoServicio { get; set; } = string.Empty;
     public string Operador { get; set; } = string.Empty;
@@ -50,6 +82,7 @@ public class InfraServicioListItemViewModel
 public class InfraAccesorioListItemViewModel
 {
     public int Id { get; set; }
+    public string Region { get; set; } = string.Empty;
     public string Sucursal { get; set; } = string.Empty;
     public string TipoAccesorio { get; set; } = string.Empty;
     public int Cantidad { get; set; }
@@ -60,6 +93,8 @@ public class InfraAccesorioListItemViewModel
 public class InfraEquipoFormViewModel
 {
     public int? Id { get; set; }
+
+    public int? RegionId { get; set; }
 
     [StringLength(50, ErrorMessage = "El código no puede exceder 50 caracteres")]
     public string? CodigoActivo { get; set; }
@@ -105,6 +140,7 @@ public class InfraEquipoFormViewModel
 
     public List<int> DepartamentosSeleccionados { get; set; } = new();
 
+    public IEnumerable<SelectListItem> Regiones { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> SistemasOperativos { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> TiposProcesador { get; set; } = new List<SelectListItem>();
@@ -115,6 +151,8 @@ public class InfraEquipoFormViewModel
 public class InfraServicioFormViewModel
 {
     public int? Id { get; set; }
+
+    public int? RegionId { get; set; }
 
     [Required(ErrorMessage = "Debe seleccionar una sucursal")]
     public string SucursalId { get; set; } = string.Empty;
@@ -139,6 +177,7 @@ public class InfraServicioFormViewModel
 
     public bool Activo { get; set; } = true;
 
+    public IEnumerable<SelectListItem> Regiones { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> TiposServicio { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Operadores { get; set; } = new List<SelectListItem>();
@@ -147,6 +186,8 @@ public class InfraServicioFormViewModel
 public class InfraAccesorioFormViewModel
 {
     public int? Id { get; set; }
+
+    public int? RegionId { get; set; }
 
     [Required(ErrorMessage = "Debe seleccionar una sucursal")]
     public string SucursalId { get; set; } = string.Empty;
@@ -162,6 +203,7 @@ public class InfraAccesorioFormViewModel
 
     public bool Activo { get; set; } = true;
 
+    public IEnumerable<SelectListItem> Regiones { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> TiposAccesorio { get; set; } = new List<SelectListItem>();
 }

@@ -1,0 +1,148 @@
+@model PSInventory.Web.Models.ViewModels.InfraestructuraIndexViewModel
+
+@{
+    ViewData["Title"] = "Infraestructura - Accesorios";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Infraestructura</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Accesorios</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Accesorios por Sucursal</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            UPS, DVR, cámaras y otros elementos por zona y sucursal
+        </p>
+    </div>
+    <md-filled-button onclick="window.location.href='@Url.Action("CreateAccesorio")'">
+        <md-icon slot="icon">add</md-icon>
+        Nuevo Accesorio
+    </md-filled-button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@Model.TotalAccesorios</div>
+                <div class="stat-card-label">Accesorios registrados</div>
+            </div>
+            <div class="stat-card-icon"><md-icon>camera_alt</md-icon></div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <form method="get" action="@Url.Action("Accesorios")" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+        <md-filled-text-field name="q" label="Buscar tipo o especificación" value="@Model.Query">
+            <md-icon slot="leading-icon">search</md-icon>
+        </md-filled-text-field>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">public</md-icon>
+            <select name="regionId" class="md3-select">
+                <option value="">Todas las zonas</option>
+                @foreach (var region in Model.Regiones)
+                {
+                    <option value="@region.Value" selected="@(Model.RegionFiltro?.ToString() == region.Value)">@region.Text</option>
+                }
+            </select>
+            <label class="md3-select-label">Zona</label>
+        </div>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">store</md-icon>
+            <select name="sucursalId" class="md3-select">
+                <option value="">Todas las sucursales</option>
+                @foreach (var sucursal in Model.Sucursales)
+                {
+                    <option value="@sucursal.Value" selected="@(Model.SucursalFiltro == sucursal.Value)">@sucursal.Text</option>
+                }
+            </select>
+            <label class="md3-select-label">Sucursal</label>
+        </div>
+        <div style="display:flex; gap:8px; align-items:end;">
+            <md-filled-button type="submit"><md-icon slot="icon">filter_alt</md-icon>Filtrar</md-filled-button>
+            <md-text-button onclick="window.location.href='@Url.Action("Accesorios")'; return false;">Limpiar</md-text-button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Zona / Sucursal</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Especificaciones</th>
+                    <th>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Accesorios)
+                {
+                    <tr>
+                        <td>
+                            <div>@item.Region</div>
+                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Sucursal</div>
+                        </td>
+                        <td>@item.TipoAccesorio</td>
+                        <td>@item.Cantidad</td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Especificaciones) ? "—" : item.Especificaciones)</td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge">Inactivo</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("EditAccesorio", new { id = item.Id })'"><md-icon>edit</md-icon></md-icon-button>
+                            <md-icon-button onclick="confirmDeleteAccesorio(@item.Id)"><md-icon>delete</md-icon></md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Model.Accesorios.Any())
+    {
+        <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:12px 0 0;">No hay accesorios registrados.</p>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        async function confirmDeleteAccesorio(id) {
+            if (await showConfirmDialog('Eliminar Accesorio', '¿Deseas eliminar este accesorio?', 'Eliminar')) {
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                const response = await fetch(`@Url.Action("DeleteAccesorio")/` + id, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.success) {
+                    showSnackbar(result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showSnackbar(result.message || 'No se pudo eliminar el accesorio.', 'error');
+                }
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PSData.Datos;
+using PSInventory.Web.Filters;
+using PSInventory.Web.Models.ViewModels;
 using System.Linq;
 
 namespace PSInventory.Web.Controllers
@@ -52,6 +55,78 @@ namespace PSInventory.Web.Controllers
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
+        }
+
+        [HttpGet]
+        [RequireAuth]
+        public async Task<IActionResult> CambiarContrasena()
+        {
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _context.Usuarios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId && !u.Eliminado);
+
+            if (user == null)
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction(nameof(Login));
+            }
+
+            ViewBag.UserName = user.Nombre;
+            return View(new CambiarContrasenaViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequireAuth]
+        public async Task<IActionResult> CambiarContrasena(CambiarContrasenaViewModel model)
+        {
+            var userId = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Id == userId && !u.Eliminado);
+
+            if (user == null)
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction(nameof(Login));
+            }
+
+            ViewBag.UserName = user.Nombre;
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            if (!VerifyPassword(model.ContrasenaActual, user.Password))
+            {
+                ModelState.AddModelError(nameof(CambiarContrasenaViewModel.ContrasenaActual), "La contraseña actual es incorrecta.");
+                return View(model);
+            }
+
+            if (VerifyPassword(model.NuevaContrasena, user.Password))
+            {
+                ModelState.AddModelError(nameof(CambiarContrasenaViewModel.NuevaContrasena), "La nueva contraseña debe ser diferente a la actual.");
+                return View(model);
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(model.NuevaContrasena);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Tu contraseña fue actualizada correctamente.";
+            return RedirectToAction(nameof(CambiarContrasena));
         }
 
         private static bool VerifyPassword(string password, string hash)

@@ -2,6 +2,7 @@
 
 ## Índice
 - [Inicio de Sesión](#inicio-de-sesión)
+- [Cambiar mi Contraseña](#cambiar-mi-contraseña)
 - [Dashboard Principal](#dashboard-principal)
 - [Gestión de Items](#gestión-de-items)
 - [Gestión de Compras](#gestión-de-compras)
@@ -24,6 +25,15 @@
 - **Administrador**: Acceso completo al sistema
 - **Jefe**: Gestión de inventario, compras y reportes
 - **Usuario**: Consulta de información (futuro)
+
+---
+
+## Cambiar mi Contraseña
+
+1. En la barra superior, haz click en el ícono de **candado**.
+2. Ingresa tu **contraseña actual**.
+3. Ingresa y confirma la **nueva contraseña**.
+4. Guarda los cambios.
 
 ---
 

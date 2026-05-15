@@ -29,8 +29,22 @@
         <div class="form-row">
             <div class="form-field">
                 <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">public</md-icon>
+                    <select name="RegionId" id="RegionId" class="md3-select">
+                        <option value="">Seleccione una zona</option>
+                        @foreach (var region in Model.Regiones)
+                        {
+                            <option value="@region.Value" selected="@(Model.RegionId?.ToString() == region.Value)">@region.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Zona</label>
+                </div>
+                <span asp-validation-for="RegionId" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
                     <md-icon class="md3-select-leading-icon">store</md-icon>
-                    <select name="SucursalId" id="SucursalId" class="md3-select" required>
+                    <select name="SucursalId" id="SucursalId" class="md3-select" data-region-source="RegionId" required>
                         <option value="">Seleccione una sucursal</option>
                         @foreach (var sucursal in Model.Sucursales)
                         {
@@ -127,5 +141,45 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    <script>
+        async function cargarSucursalesPorZona(selectedValue = '') {
+            const regionSelect = document.getElementById('RegionId');
+            const sucursalSelect = document.getElementById('SucursalId');
+            if (!regionSelect || !sucursalSelect) return;
 
+            const regionId = regionSelect.value;
+            sucursalSelect.innerHTML = '<option value="">Seleccione una sucursal</option>';
+
+            if (!regionId) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/Infraestructura/SucursalesPorRegion?regionId=${regionId}`);
+                const data = await resp.json();
+                data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.value;
+                    opt.textContent = s.text;
+                    sucursalSelect.appendChild(opt);
+                });
+
+                if (selectedValue) {
+                    sucursalSelect.value = selectedValue;
+                }
+            } catch {
+                showSnackbar('No se pudieron cargar las sucursales de la zona seleccionada.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            const regionSelect = document.getElementById('RegionId');
+            if (regionSelect) {
+                regionSelect.addEventListener('change', () => cargarSucursalesPorZona(''));
+                if (regionSelect.value) {
+                    await cargarSucursalesPorZona('@Model.SucursalId');
+                }
+            }
+        });
+    </script>
+}

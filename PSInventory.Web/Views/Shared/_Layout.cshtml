@@ -88,6 +88,7 @@
             <nav class="drawer-content">
                 @{
                     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString() ?? string.Empty;
+                    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString() ?? string.Empty;
                     var inventarioControllers = new[] { "Categorias", "Articulos", "Compras", "Lotes", "Items" };
                     var ubicacionesControllers = new[] { "Regiones", "Sucursales", "Departamentos" };
                     var operacionesControllers = new[] { "Movimientos", "Despacho", "SalidaSinRegistro", "Solicitudes" };
@@ -202,10 +203,33 @@
                     </a>
                 </div>
 
-                <a href="/Infraestructura/Index" class="nav-item @(infraestructuraOpen ? "active" : "")">
+                <button type="button" class="nav-item nav-parent @(infraestructuraOpen ? "expanded active" : "")" data-submenu-target="submenu-infraestructura">
                     <md-icon>devices</md-icon>
                     <span>Infraestructura</span>
-                </a>
+                    <md-icon class="submenu-arrow">expand_more</md-icon>
+                </button>
+                <div id="submenu-infraestructura" class="nav-submenu @(infraestructuraOpen ? "open" : "")">
+                    <a href="/Infraestructura/Index" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Index" ? "active" : "")">
+                        <md-icon>dashboard</md-icon>
+                        <span>Resumen General</span>
+                    </a>
+                    <a href="/Infraestructura/Equipos" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Equipos" ? "active" : "")">
+                        <md-icon>computer</md-icon>
+                        <span>Equipos</span>
+                    </a>
+                    <a href="/Infraestructura/Servicios" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Servicios" ? "active" : "")">
+                        <md-icon>wifi</md-icon>
+                        <span>Servicios</span>
+                    </a>
+                    <a href="/Infraestructura/Accesorios" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Accesorios" ? "active" : "")">
+                        <md-icon>camera_alt</md-icon>
+                        <span>Accesorios</span>
+                    </a>
+                    <a href="/Infraestructura/Sucursal" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Sucursal" ? "active" : "")">
+                        <md-icon>storefront</md-icon>
+                        <span>Vista Sucursal</span>
+                    </a>
+                </div>
                 
                 @if (Context.Session.GetString("UserRole") == "Administrador")
                 {

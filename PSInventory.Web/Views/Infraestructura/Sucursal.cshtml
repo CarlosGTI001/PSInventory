@@ -1,0 +1,184 @@
+@model PSInventory.Web.Models.ViewModels.InfraSucursalResumenViewModel
+
+@{
+    ViewData["Title"] = "Infraestructura - Vista Sucursal";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Infraestructura</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Vista Sucursal</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Vista Holística por Sucursal</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Filtra por código de sucursal (ej. SUC-001 o número) para ver todos sus datos de infraestructura
+        </p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <form method="get" action="@Url.Action("Sucursal")" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+        <md-filled-text-field id="codigoSucursalInput" name="codigoSucursal" label="Código/Número de sucursal" value="@Model.CodigoSucursal">
+            <md-icon slot="leading-icon">tag</md-icon>
+        </md-filled-text-field>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">store</md-icon>
+            <select id="codigoSucursalSelect" class="md3-select">
+                <option value="">Seleccionar sucursal</option>
+                @foreach (var sucursal in Model.Sucursales)
+                {
+                    <option value="@sucursal.Value" selected="@(Model.CodigoSucursal == sucursal.Value)">@sucursal.Value - @sucursal.Text</option>
+                }
+            </select>
+            <label class="md3-select-label">Sucursal registrada</label>
+        </div>
+        <div style="display:flex; gap:8px; align-items:end;">
+            <md-filled-button type="submit"><md-icon slot="icon">search</md-icon>Buscar</md-filled-button>
+            <md-text-button onclick="window.location.href='@Url.Action("Sucursal")'; return false;">Limpiar</md-text-button>
+        </div>
+    </form>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+{
+    <div class="alert alert-warning">
+        <md-icon>warning</md-icon>
+        <span>@Model.Mensaje</span>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('codigoSucursalSelect');
+            const input = document.getElementById('codigoSucursalInput');
+            if (!select || !input) return;
+            select.addEventListener('change', function () {
+                if (select.value) {
+                    input.value = select.value;
+                }
+            });
+        });
+    </script>
+}
+
+@if (Model.Sucursal != null)
+{
+    <div class="card" style="margin-bottom:24px;">
+        <h3 class="md-typescale-title-large" style="margin:0 0 12px 0;">@Model.Sucursal.Id - @Model.Sucursal.Nombre</h3>
+        <p class="md-typescale-body-medium" style="margin:0; color:var(--md-sys-color-on-surface-variant);">
+            Zona: <strong>@Model.Sucursal.Region</strong>
+            @if (!string.IsNullOrWhiteSpace(Model.Sucursal.Direccion))
+            {
+                <span> | Dirección: @Model.Sucursal.Direccion</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Sucursal.Telefono))
+            {
+                <span> | Teléfono: @Model.Sucursal.Telefono</span>
+            }
+        </p>
+        @if (Model.DepartamentosRelacionados.Any())
+        {
+            <p class="md-typescale-body-medium" style="margin:12px 0 0;">
+                Departamentos con equipos asignados: @string.Join(", ", Model.DepartamentosRelacionados)
+            </p>
+        }
+    </div>
+
+    <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div><div class="stat-card-value">@Model.TotalEquipos</div><div class="stat-card-label">Equipos</div></div>
+                <div class="stat-card-icon"><md-icon>computer</md-icon></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div><div class="stat-card-value" style="color: var(--md-sys-color-success);">@Model.EquiposActivos</div><div class="stat-card-label">Equipos activos</div></div>
+                <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);"><md-icon style="color: var(--md-sys-color-success);">check_circle</md-icon></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div><div class="stat-card-value">@Model.TotalServicios</div><div class="stat-card-label">Servicios</div></div>
+                <div class="stat-card-icon"><md-icon>wifi</md-icon></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div><div class="stat-card-value">@Model.TotalAccesorios</div><div class="stat-card-label">Accesorios</div></div>
+                <div class="stat-card-icon"><md-icon>camera_alt</md-icon></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Equipos</h3>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead><tr><th>Equipo</th><th>Serial</th><th>Especificaciones</th><th>Departamentos</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.Equipos)
+                    {
+                        <tr>
+                            <td><strong>@item.NombreEquipo</strong></td>
+                            <td>@item.Serial</td>
+                            <td>
+                                <div>@item.SistemaOperativo</div>
+                                <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Procesador</div>
+                                <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Ram</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
+                            <td>@(item.Activo ? "Activo" : "Inactivo")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Servicios</h3>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead><tr><th>Tipo</th><th>Operador</th><th>Número</th><th>Velocidad</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.Servicios)
+                    {
+                        <tr>
+                            <td>@item.TipoServicio</td>
+                            <td>@item.Operador</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.NumeroServicio) ? "—" : item.NumeroServicio)</td>
+                            <td>@(item.VelocidadBajadaMbps?.ToString("0.##") ?? "0") ↓ / @(item.VelocidadSubidaMbps?.ToString("0.##") ?? "0") ↑ Mbps</td>
+                            <td>@(item.Activo ? "Activo" : "Inactivo")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Accesorios</h3>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead><tr><th>Tipo</th><th>Cantidad</th><th>Especificaciones</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.Accesorios)
+                    {
+                        <tr>
+                            <td>@item.TipoAccesorio</td>
+                            <td>@item.Cantidad</td>
+                            <td>@(string.IsNullOrWhiteSpace(item.Especificaciones) ? "—" : item.Especificaciones)</td>
+                            <td>@(item.Activo ? "Activo" : "Inactivo")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -19,17 +19,23 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura
-        public async Task<IActionResult> Index(string q = "", string? sucursalId = null, int? departamentoId = null)
+        public async Task<IActionResult> Index(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
         {
             var equiposQuery = _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
                 .Include(e => e.Sucursal)
+                    .ThenInclude(s => s.Region)
                 .Include(e => e.SistemaOperativo)
                 .Include(e => e.TipoProcesador)
                 .Include(e => e.TipoRam)
                 .Include(e => e.EquiposDepartamentos)
                     .ThenInclude(ed => ed.Departamento)
                 .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                equiposQuery = equiposQuery.Where(e => e.Sucursal != null && e.Sucursal.RegionId == regionId.Value);
+            }
 
             if (!string.IsNullOrWhiteSpace(sucursalId))
             {
@@ -50,6 +56,7 @@ namespace PSInventory.Web.Controllers
                     (e.CodigoActivo != null && e.CodigoActivo.ToLower().Contains(term)) ||
                     (e.Marca != null && e.Marca.ToLower().Contains(term)) ||
                     (e.Modelo != null && e.Modelo.ToLower().Contains(term)) ||
+                    (e.Sucursal != null && e.Sucursal.Region != null && e.Sucursal.Region.Nombre.ToLower().Contains(term)) ||
                     (e.Sucursal != null && e.Sucursal.Nombre.ToLower().Contains(term)) ||
                     e.EquiposDepartamentos.Any(ed => ed.Departamento != null && ed.Departamento.Nombre.ToLower().Contains(term)));
             }
@@ -60,8 +67,11 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             var servicios = await _context.InfraServiciosSucursal
-                .Where(s => !s.Eliminado && (string.IsNullOrWhiteSpace(sucursalId) || s.SucursalId == sucursalId))
+                .Where(s => !s.Eliminado
+                            && (string.IsNullOrWhiteSpace(sucursalId) || s.SucursalId == sucursalId)
+                            && (!regionId.HasValue || regionId.Value <= 0 || (s.Sucursal != null && s.Sucursal.RegionId == regionId.Value)))
                 .Include(s => s.Sucursal)
+                    .ThenInclude(su => su.Region)
                 .Include(s => s.TipoServicio)
                 .Include(s => s.OperadorServicio)
                 .OrderBy(s => s.Sucursal!.Nombre)
@@ -70,8 +80,11 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             var accesorios = await _context.InfraSucursalesAccesorio
-                .Where(a => !a.Eliminado && (string.IsNullOrWhiteSpace(sucursalId) || a.SucursalId == sucursalId))
+                .Where(a => !a.Eliminado
+                            && (string.IsNullOrWhiteSpace(sucursalId) || a.SucursalId == sucursalId)
+                            && (!regionId.HasValue || regionId.Value <= 0 || (a.Sucursal != null && a.Sucursal.RegionId == regionId.Value)))
                 .Include(a => a.Sucursal)
+                    .ThenInclude(su => su.Region)
                 .Include(a => a.TipoAccesorio)
                 .OrderBy(a => a.Sucursal!.Nombre)
                 .ThenBy(a => a.TipoAccesorio!.Nombre)
@@ -81,17 +94,20 @@ namespace PSInventory.Web.Controllers
             var vm = new InfraestructuraIndexViewModel
             {
                 Query = q,
+                RegionFiltro = regionId,
                 SucursalFiltro = sucursalId,
                 DepartamentoFiltro = departamentoId,
                 TotalEquipos = equipos.Count,
                 EquiposActivos = equipos.Count(e => e.Activo),
                 TotalServicios = servicios.Count,
                 TotalAccesorios = accesorios.Count,
-                Sucursales = await ObtenerSucursalesSelect(),
+                Regiones = await ObtenerRegionesSelect(),
+                Sucursales = await ObtenerSucursalesSelect(regionId),
                 Departamentos = await ObtenerDepartamentosSelect(),
                 Equipos = equipos.Select(e => new InfraEquipoListItemViewModel
                 {
                     Id = e.Id,
+                    Region = e.Sucursal?.Region?.Nombre ?? "N/D",
                     Sucursal = e.Sucursal?.Nombre ?? "N/D",
                     NombreEquipo = e.NombreEquipo,
                     Serial = e.Serial,
@@ -111,6 +127,7 @@ namespace PSInventory.Web.Controllers
                 Servicios = servicios.Select(s => new InfraServicioListItemViewModel
                 {
                     Id = s.Id,
+                    Region = s.Sucursal?.Region?.Nombre ?? "N/D",
                     Sucursal = s.Sucursal?.Nombre ?? "N/D",
                     TipoServicio = s.TipoServicio?.Nombre ?? "N/D",
                     Operador = s.OperadorServicio?.Nombre ?? "N/D",
@@ -122,6 +139,7 @@ namespace PSInventory.Web.Controllers
                 Accesorios = accesorios.Select(a => new InfraAccesorioListItemViewModel
                 {
                     Id = a.Id,
+                    Region = a.Sucursal?.Region?.Nombre ?? "N/D",
                     Sucursal = a.Sucursal?.Nombre ?? "N/D",
                     TipoAccesorio = a.TipoAccesorio?.Nombre ?? "N/D",
                     Cantidad = a.Cantidad,
@@ -131,6 +149,263 @@ namespace PSInventory.Web.Controllers
             };
 
             return View(vm);
+        }
+
+        // GET: Infraestructura/Equipos
+        public async Task<IActionResult> Equipos(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        {
+            var equiposQuery = _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .Include(e => e.Sucursal)
+                    .ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos)
+                    .ThenInclude(ed => ed.Departamento)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                equiposQuery = equiposQuery.Where(e => e.Sucursal != null && e.Sucursal.RegionId == regionId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+            {
+                equiposQuery = equiposQuery.Where(e => e.SucursalId == sucursalId);
+            }
+
+            if (departamentoId.HasValue && departamentoId.Value > 0)
+            {
+                equiposQuery = equiposQuery.Where(e => e.EquiposDepartamentos.Any(ed => ed.DepartamentoId == departamentoId.Value));
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                equiposQuery = equiposQuery.Where(e =>
+                    e.NombreEquipo.ToLower().Contains(term) ||
+                    e.Serial.ToLower().Contains(term) ||
+                    (e.CodigoActivo != null && e.CodigoActivo.ToLower().Contains(term)) ||
+                    (e.Marca != null && e.Marca.ToLower().Contains(term)) ||
+                    (e.Modelo != null && e.Modelo.ToLower().Contains(term)) ||
+                    (e.Sucursal != null && e.Sucursal.Region != null && e.Sucursal.Region.Nombre.ToLower().Contains(term)) ||
+                    (e.Sucursal != null && e.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    e.EquiposDepartamentos.Any(ed => ed.Departamento != null && ed.Departamento.Nombre.ToLower().Contains(term)));
+            }
+
+            var equipos = await equiposQuery
+                .OrderBy(e => e.Sucursal!.Nombre)
+                .ThenBy(e => e.NombreEquipo)
+                .ToListAsync();
+
+            var vm = new InfraestructuraIndexViewModel
+            {
+                Query = q,
+                RegionFiltro = regionId,
+                SucursalFiltro = sucursalId,
+                DepartamentoFiltro = departamentoId,
+                TotalEquipos = equipos.Count,
+                EquiposActivos = equipos.Count(e => e.Activo),
+                Regiones = await ObtenerRegionesSelect(),
+                Sucursales = await ObtenerSucursalesSelect(regionId),
+                Departamentos = await ObtenerDepartamentosSelect(),
+                Equipos = equipos.Select(MapEquipoListItem).ToList()
+            };
+
+            return View(vm);
+        }
+
+        // GET: Infraestructura/Servicios
+        public async Task<IActionResult> Servicios(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var serviciosQuery = _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado)
+                .Include(s => s.Sucursal)
+                    .ThenInclude(su => su.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                serviciosQuery = serviciosQuery.Where(s => s.Sucursal != null && s.Sucursal.RegionId == regionId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+            {
+                serviciosQuery = serviciosQuery.Where(s => s.SucursalId == sucursalId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                serviciosQuery = serviciosQuery.Where(s =>
+                    (s.Sucursal != null && s.Sucursal.Region != null && s.Sucursal.Region.Nombre.ToLower().Contains(term)) ||
+                    (s.Sucursal != null && s.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    (s.TipoServicio != null && s.TipoServicio.Nombre.ToLower().Contains(term)) ||
+                    (s.OperadorServicio != null && s.OperadorServicio.Nombre.ToLower().Contains(term)) ||
+                    (s.NumeroServicio != null && s.NumeroServicio.ToLower().Contains(term)));
+            }
+
+            var servicios = await serviciosQuery
+                .OrderBy(s => s.Sucursal!.Nombre)
+                .ThenBy(s => s.TipoServicio!.Nombre)
+                .ToListAsync();
+
+            var vm = new InfraestructuraIndexViewModel
+            {
+                Query = q,
+                RegionFiltro = regionId,
+                SucursalFiltro = sucursalId,
+                TotalServicios = servicios.Count,
+                Regiones = await ObtenerRegionesSelect(),
+                Sucursales = await ObtenerSucursalesSelect(regionId),
+                Servicios = servicios.Select(MapServicioListItem).ToList()
+            };
+
+            return View(vm);
+        }
+
+        // GET: Infraestructura/Accesorios
+        public async Task<IActionResult> Accesorios(string q = "", int? regionId = null, string? sucursalId = null)
+        {
+            var accesoriosQuery = _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado)
+                .Include(a => a.Sucursal)
+                    .ThenInclude(su => su.Region)
+                .Include(a => a.TipoAccesorio)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                accesoriosQuery = accesoriosQuery.Where(a => a.Sucursal != null && a.Sucursal.RegionId == regionId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(sucursalId))
+            {
+                accesoriosQuery = accesoriosQuery.Where(a => a.SucursalId == sucursalId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var term = q.Trim().ToLower();
+                accesoriosQuery = accesoriosQuery.Where(a =>
+                    (a.Sucursal != null && a.Sucursal.Region != null && a.Sucursal.Region.Nombre.ToLower().Contains(term)) ||
+                    (a.Sucursal != null && a.Sucursal.Nombre.ToLower().Contains(term)) ||
+                    (a.TipoAccesorio != null && a.TipoAccesorio.Nombre.ToLower().Contains(term)) ||
+                    (a.Especificaciones != null && a.Especificaciones.ToLower().Contains(term)));
+            }
+
+            var accesorios = await accesoriosQuery
+                .OrderBy(a => a.Sucursal!.Nombre)
+                .ThenBy(a => a.TipoAccesorio!.Nombre)
+                .ToListAsync();
+
+            var vm = new InfraestructuraIndexViewModel
+            {
+                Query = q,
+                RegionFiltro = regionId,
+                SucursalFiltro = sucursalId,
+                TotalAccesorios = accesorios.Count,
+                Regiones = await ObtenerRegionesSelect(),
+                Sucursales = await ObtenerSucursalesSelect(regionId),
+                Accesorios = accesorios.Select(MapAccesorioListItem).ToList()
+            };
+
+            return View(vm);
+        }
+
+        // GET: Infraestructura/Sucursal
+        public async Task<IActionResult> Sucursal(string codigoSucursal = "")
+        {
+            var vm = new InfraSucursalResumenViewModel
+            {
+                CodigoSucursal = codigoSucursal ?? string.Empty,
+                Sucursales = await ObtenerSucursalesSelect()
+            };
+
+            if (string.IsNullOrWhiteSpace(codigoSucursal))
+            {
+                return View(vm);
+            }
+
+            var codigoNormalizado = NormalizarCodigoSucursal(codigoSucursal.Trim());
+
+            var sucursal = await _context.Sucursales
+                .Where(s => !s.Eliminado && s.Activo &&
+                            (s.Id.ToLower() == codigoNormalizado.ToLower() || s.Id.ToLower() == codigoSucursal.Trim().ToLower()))
+                .Include(s => s.Region)
+                .FirstOrDefaultAsync();
+
+            if (sucursal == null)
+            {
+                vm.Mensaje = "No se encontró una sucursal con ese código.";
+                return View(vm);
+            }
+
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.SucursalId == sucursal.Id)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .OrderBy(e => e.NombreEquipo)
+                .ToListAsync();
+
+            var servicios = await _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado && s.SucursalId == sucursal.Id)
+                .Include(s => s.Sucursal).ThenInclude(su => su.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .OrderBy(s => s.TipoServicio!.Nombre)
+                .ToListAsync();
+
+            var accesorios = await _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado && a.SucursalId == sucursal.Id)
+                .Include(a => a.Sucursal).ThenInclude(su => su.Region)
+                .Include(a => a.TipoAccesorio)
+                .OrderBy(a => a.TipoAccesorio!.Nombre)
+                .ToListAsync();
+
+            vm.Sucursal = new InfraSucursalInfoViewModel
+            {
+                Id = sucursal.Id,
+                Nombre = sucursal.Nombre,
+                Region = sucursal.Region?.Nombre ?? "N/D",
+                Direccion = sucursal.Direccion,
+                Telefono = sucursal.Telefono
+            };
+            vm.TotalEquipos = equipos.Count;
+            vm.EquiposActivos = equipos.Count(e => e.Activo);
+            vm.TotalServicios = servicios.Count;
+            vm.TotalAccesorios = accesorios.Count;
+            vm.Equipos = equipos.Select(MapEquipoListItem).ToList();
+            vm.Servicios = servicios.Select(MapServicioListItem).ToList();
+            vm.Accesorios = accesorios.Select(MapAccesorioListItem).ToList();
+            vm.DepartamentosRelacionados = equipos
+                .SelectMany(e => e.EquiposDepartamentos)
+                .Where(ed => ed.Departamento != null && !ed.Departamento.Eliminado)
+                .Select(ed => ed.Departamento!.Nombre)
+                .Distinct()
+                .OrderBy(n => n)
+                .ToList();
+
+            return View(vm);
+        }
+
+        // GET: Infraestructura/SucursalesPorRegion?regionId=3
+        [HttpGet]
+        public async Task<IActionResult> SucursalesPorRegion(int regionId)
+        {
+            var sucursales = await _context.Sucursales
+                .Where(s => !s.Eliminado && s.Activo && s.RegionId == regionId)
+                .OrderBy(s => s.Nombre)
+                .Select(s => new { value = s.Id, text = s.Nombre })
+                .ToListAsync();
+
+            return Json(sucursales);
         }
 
         // GET: Infraestructura/CreateEquipo
@@ -181,7 +456,7 @@ namespace PSInventory.Web.Controllers
             await ReemplazarDepartamentosEquipo(equipo.Id, vm.DepartamentosSeleccionados);
 
             TempData["Success"] = "Equipo registrado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Equipos));
         }
 
         // GET: Infraestructura/EditEquipo/5
@@ -189,6 +464,7 @@ namespace PSInventory.Web.Controllers
         {
             var equipo = await _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado && e.Id == id)
+                .Include(e => e.Sucursal)
                 .Include(e => e.EquiposDepartamentos)
                 .FirstOrDefaultAsync();
 
@@ -200,6 +476,7 @@ namespace PSInventory.Web.Controllers
             var vm = new InfraEquipoFormViewModel
             {
                 Id = equipo.Id,
+                RegionId = equipo.Sucursal?.RegionId,
                 CodigoActivo = equipo.CodigoActivo,
                 SucursalId = equipo.SucursalId,
                 NombreEquipo = equipo.NombreEquipo,
@@ -270,7 +547,7 @@ namespace PSInventory.Web.Controllers
             await ReemplazarDepartamentosEquipo(equipo.Id, vm.DepartamentosSeleccionados);
 
             TempData["Success"] = "Equipo actualizado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Equipos));
         }
 
         // POST: Infraestructura/DeleteEquipo/5
@@ -337,7 +614,7 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Servicio registrado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Servicios));
         }
 
         // GET: Infraestructura/EditServicio/5
@@ -345,6 +622,7 @@ namespace PSInventory.Web.Controllers
         {
             var servicio = await _context.InfraServiciosSucursal
                 .Where(s => !s.Eliminado && s.Id == id)
+                .Include(s => s.Sucursal)
                 .FirstOrDefaultAsync();
 
             if (servicio == null)
@@ -355,6 +633,7 @@ namespace PSInventory.Web.Controllers
             var vm = new InfraServicioFormViewModel
             {
                 Id = servicio.Id,
+                RegionId = servicio.Sucursal?.RegionId,
                 SucursalId = servicio.SucursalId,
                 TipoServicioId = servicio.TipoServicioId,
                 OperadorServicioId = servicio.OperadorServicioId,
@@ -409,7 +688,7 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Servicio actualizado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Servicios));
         }
 
         // POST: Infraestructura/DeleteServicio/5
@@ -474,7 +753,7 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Accesorio registrado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Accesorios));
         }
 
         // GET: Infraestructura/EditAccesorio/5
@@ -482,6 +761,7 @@ namespace PSInventory.Web.Controllers
         {
             var accesorio = await _context.InfraSucursalesAccesorio
                 .Where(a => !a.Eliminado && a.Id == id)
+                .Include(a => a.Sucursal)
                 .FirstOrDefaultAsync();
 
             if (accesorio == null)
@@ -492,6 +772,7 @@ namespace PSInventory.Web.Controllers
             var vm = new InfraAccesorioFormViewModel
             {
                 Id = accesorio.Id,
+                RegionId = accesorio.Sucursal?.RegionId,
                 SucursalId = accesorio.SucursalId,
                 TipoAccesorioId = accesorio.TipoAccesorioId,
                 Cantidad = accesorio.Cantidad,
@@ -540,7 +821,7 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Accesorio actualizado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Accesorios));
         }
 
         // POST: Infraestructura/DeleteAccesorio/5
@@ -713,10 +994,25 @@ namespace PSInventory.Web.Controllers
 
         private async Task ValidarEquipo(InfraEquipoFormViewModel vm, int? equipoId = null)
         {
+            if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+            {
+                ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
+            }
+
             if (string.IsNullOrWhiteSpace(vm.SucursalId) ||
                 !await _context.Sucursales.AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId))
             {
                 ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no es válida.");
+            }
+            else if (vm.RegionId.HasValue && vm.RegionId.Value > 0)
+            {
+                var sucursalEnRegion = await _context.Sucursales
+                    .AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId && s.RegionId == vm.RegionId.Value);
+                if (!sucursalEnRegion)
+                {
+                    ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no pertenece a la zona indicada.");
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(vm.Serial))
@@ -763,10 +1059,25 @@ namespace PSInventory.Web.Controllers
 
         private async Task ValidarServicio(InfraServicioFormViewModel vm)
         {
+            if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+            {
+                ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
+            }
+
             if (string.IsNullOrWhiteSpace(vm.SucursalId) ||
                 !await _context.Sucursales.AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId))
             {
                 ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no es válida.");
+            }
+            else if (vm.RegionId.HasValue && vm.RegionId.Value > 0)
+            {
+                var sucursalEnRegion = await _context.Sucursales
+                    .AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId && s.RegionId == vm.RegionId.Value);
+                if (!sucursalEnRegion)
+                {
+                    ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no pertenece a la zona indicada.");
+                }
             }
 
             if (!await _context.InfraTiposServicio.AnyAsync(t => !t.Eliminado && t.Id == vm.TipoServicioId))
@@ -782,10 +1093,25 @@ namespace PSInventory.Web.Controllers
 
         private async Task ValidarAccesorio(InfraAccesorioFormViewModel vm)
         {
+            if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+            {
+                ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
+            }
+
             if (string.IsNullOrWhiteSpace(vm.SucursalId) ||
                 !await _context.Sucursales.AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId))
             {
                 ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no es válida.");
+            }
+            else if (vm.RegionId.HasValue && vm.RegionId.Value > 0)
+            {
+                var sucursalEnRegion = await _context.Sucursales
+                    .AnyAsync(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId && s.RegionId == vm.RegionId.Value);
+                if (!sucursalEnRegion)
+                {
+                    ModelState.AddModelError(nameof(vm.SucursalId), "La sucursal seleccionada no pertenece a la zona indicada.");
+                }
             }
 
             if (!await _context.InfraTiposAccesorio.AnyAsync(t => !t.Eliminado && t.Id == vm.TipoAccesorioId))
@@ -796,7 +1122,16 @@ namespace PSInventory.Web.Controllers
 
         private async Task CargarCatalogosEquipo(InfraEquipoFormViewModel vm)
         {
-            vm.Sucursales = await ObtenerSucursalesSelect();
+            if (!vm.RegionId.HasValue && !string.IsNullOrWhiteSpace(vm.SucursalId))
+            {
+                vm.RegionId = await _context.Sucursales
+                    .Where(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId)
+                    .Select(s => (int?)s.RegionId)
+                    .FirstOrDefaultAsync();
+            }
+
+            vm.Regiones = await ObtenerRegionesSelect();
+            vm.Sucursales = await ObtenerSucursalesSelect(vm.RegionId);
             vm.SistemasOperativos = await _context.InfraSistemasOperativos
                 .Where(s => !s.Eliminado)
                 .OrderBy(s => s.Nombre)
@@ -817,7 +1152,16 @@ namespace PSInventory.Web.Controllers
 
         private async Task CargarCatalogosServicio(InfraServicioFormViewModel vm)
         {
-            vm.Sucursales = await ObtenerSucursalesSelect();
+            if (!vm.RegionId.HasValue && !string.IsNullOrWhiteSpace(vm.SucursalId))
+            {
+                vm.RegionId = await _context.Sucursales
+                    .Where(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId)
+                    .Select(s => (int?)s.RegionId)
+                    .FirstOrDefaultAsync();
+            }
+
+            vm.Regiones = await ObtenerRegionesSelect();
+            vm.Sucursales = await ObtenerSucursalesSelect(vm.RegionId);
             vm.TiposServicio = await _context.InfraTiposServicio
                 .Where(t => !t.Eliminado)
                 .OrderBy(t => t.Nombre)
@@ -832,7 +1176,16 @@ namespace PSInventory.Web.Controllers
 
         private async Task CargarCatalogosAccesorio(InfraAccesorioFormViewModel vm)
         {
-            vm.Sucursales = await ObtenerSucursalesSelect();
+            if (!vm.RegionId.HasValue && !string.IsNullOrWhiteSpace(vm.SucursalId))
+            {
+                vm.RegionId = await _context.Sucursales
+                    .Where(s => !s.Eliminado && s.Activo && s.Id == vm.SucursalId)
+                    .Select(s => (int?)s.RegionId)
+                    .FirstOrDefaultAsync();
+            }
+
+            vm.Regiones = await ObtenerRegionesSelect();
+            vm.Sucursales = await ObtenerSucursalesSelect(vm.RegionId);
             vm.TiposAccesorio = await _context.InfraTiposAccesorio
                 .Where(t => !t.Eliminado)
                 .OrderBy(t => t.Nombre)
@@ -864,12 +1217,29 @@ namespace PSInventory.Web.Controllers
             await _context.SaveChangesAsync();
         }
 
-        private async Task<List<SelectListItem>> ObtenerSucursalesSelect()
+        private async Task<List<SelectListItem>> ObtenerSucursalesSelect(int? regionId = null)
         {
-            return await _context.Sucursales
+            var query = _context.Sucursales
                 .Where(s => !s.Eliminado && s.Activo)
+                .AsQueryable();
+
+            if (regionId.HasValue && regionId.Value > 0)
+            {
+                query = query.Where(s => s.RegionId == regionId.Value);
+            }
+
+            return await query
                 .OrderBy(s => s.Nombre)
                 .Select(s => new SelectListItem { Value = s.Id, Text = s.Nombre })
+                .ToListAsync();
+        }
+
+        private async Task<List<SelectListItem>> ObtenerRegionesSelect()
+        {
+            return await _context.Regiones
+                .Where(r => !r.Eliminado && r.Activo)
+                .OrderBy(r => r.Nombre)
+                .Select(r => new SelectListItem { Value = r.RegionId.ToString(), Text = r.Nombre })
                 .ToListAsync();
         }
 
@@ -880,6 +1250,76 @@ namespace PSInventory.Web.Controllers
                 .OrderBy(d => d.Nombre)
                 .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Nombre })
                 .ToListAsync();
+        }
+
+        private static InfraEquipoListItemViewModel MapEquipoListItem(InfraEquipoComputo e)
+        {
+            return new InfraEquipoListItemViewModel
+            {
+                Id = e.Id,
+                Region = e.Sucursal?.Region?.Nombre ?? "N/D",
+                Sucursal = e.Sucursal?.Nombre ?? "N/D",
+                NombreEquipo = e.NombreEquipo,
+                Serial = e.Serial,
+                SistemaOperativo = e.SistemaOperativo?.Nombre,
+                Procesador = string.IsNullOrWhiteSpace(e.CpuDetalle)
+                    ? e.TipoProcesador?.Nombre
+                    : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}".Trim(),
+                Ram = e.RamCantidadGb.HasValue
+                    ? $"{e.RamCantidadGb} GB {(e.TipoRam?.Nombre ?? string.Empty)}".Trim()
+                    : e.TipoRam?.Nombre,
+                Departamentos = string.Join(", ", e.EquiposDepartamentos
+                    .Where(ed => ed.Departamento != null && !ed.Departamento.Eliminado)
+                    .Select(ed => ed.Departamento!.Nombre)
+                    .OrderBy(n => n)),
+                Activo = e.Activo
+            };
+        }
+
+        private static InfraServicioListItemViewModel MapServicioListItem(InfraServicioSucursal s)
+        {
+            return new InfraServicioListItemViewModel
+            {
+                Id = s.Id,
+                Region = s.Sucursal?.Region?.Nombre ?? "N/D",
+                Sucursal = s.Sucursal?.Nombre ?? "N/D",
+                TipoServicio = s.TipoServicio?.Nombre ?? "N/D",
+                Operador = s.OperadorServicio?.Nombre ?? "N/D",
+                NumeroServicio = s.NumeroServicio,
+                VelocidadBajadaMbps = s.VelocidadBajadaMbps,
+                VelocidadSubidaMbps = s.VelocidadSubidaMbps,
+                Activo = s.Activo
+            };
+        }
+
+        private static InfraAccesorioListItemViewModel MapAccesorioListItem(InfraSucursalAccesorio a)
+        {
+            return new InfraAccesorioListItemViewModel
+            {
+                Id = a.Id,
+                Region = a.Sucursal?.Region?.Nombre ?? "N/D",
+                Sucursal = a.Sucursal?.Nombre ?? "N/D",
+                TipoAccesorio = a.TipoAccesorio?.Nombre ?? "N/D",
+                Cantidad = a.Cantidad,
+                Especificaciones = a.Especificaciones,
+                Activo = a.Activo
+            };
+        }
+
+        private static string NormalizarCodigoSucursal(string codigo)
+        {
+            if (int.TryParse(codigo, out var numero) && numero > 0)
+            {
+                return $"SUC-{numero:D3}";
+            }
+
+            var limpio = codigo.ToUpperInvariant().Trim();
+            if (limpio.StartsWith("SUC-"))
+            {
+                return limpio;
+            }
+
+            return limpio;
         }
 
         private static string? NormalizarTexto(string? valor)

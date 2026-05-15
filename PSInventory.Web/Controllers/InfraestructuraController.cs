@@ -333,10 +333,13 @@ namespace PSInventory.Web.Controllers
             var codigoNormalizado = NormalizarCodigoSucursal(codigoSucursal.Trim());
 
             var sucursal = await _context.Sucursales
-                .Where(s => !s.Eliminado && s.Activo &&
-                            (s.Id.ToLower() == codigoNormalizado.ToLower() || s.Id.ToLower() == codigoSucursal.Trim().ToLower()))
+                .Where(s => !s.Eliminado && s.Activo)
                 .Include(s => s.Region)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(s => 
+                    s.Id.ToLower() == codigoNormalizado.ToLower() || 
+                    s.Id.ToLower() == codigoSucursal.Trim().ToLower() ||
+                    s.Id.ToLower().Contains(codigoSucursal.Trim().ToLower()) ||
+                    s.Nombre.ToLower().Contains(codigoSucursal.Trim().ToLower()));
 
             if (sucursal == null)
             {

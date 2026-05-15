@@ -197,9 +197,14 @@
                     <md-filled-text-field class="item-descripcion" label="Descripción" value="${data.descripcion ?? ''}"></md-filled-text-field>
                 </td>
                 <td>
-                    <div class="md3-select-field">
-                        <select class="md3-select item-categoria">${categoriaOptions(data.categoriaId)}</select>
-                        <label class="md3-select-label">Categoría *</label>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <div class="md3-select-field" style="flex:1;">
+                            <select class="md3-select item-categoria">${categoriaOptions(data.categoriaId)}</select>
+                            <label class="md3-select-label">Categoría *</label>
+                        </div>
+                        <md-icon-button type="button" onclick="crearCategoriaRapida(this)" title="Agregar categoría">
+                            <md-icon>add</md-icon>
+                        </md-icon-button>
                     </div>
                 </td>
                 <td class="salida-table-field">
@@ -434,6 +439,50 @@
             document.getElementById('btnCrearSucursal').disabled = false;
             upsertSelectOption(sel, data.option.value, data.option.text, true);
             showSnackbar('Sucursal agregada.', 'success');
+        }
+
+        async function crearCategoriaRapida(btnElement) {
+            const nombre = await showTextInputDialog('Nueva Categoría', 'Nombre de la categoría');
+            if (!nombre) return;
+
+            const resp = await fetch('/SalidaSinRegistro/CrearCategoriaRapida', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getRequestToken()
+                },
+                body: JSON.stringify({ nombre })
+            });
+            const data = await resp.json();
+            if (!data.success) {
+                showSnackbar(data.message || 'No se pudo crear la categoría.', 'error');
+                return;
+            }
+
+            // 1. Actualizar el array global para futuras filas
+            categorias.push({ value: data.option.value, text: data.option.text });
+            categorias.sort((a, b) => a.text.localeCompare(b.text));
+
+            // 2. Actualizar todos los selects de categorías en la tabla
+            const allCategorySelects = document.querySelectorAll('.item-categoria');
+            allCategorySelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = categoriaOptions(currentValue);
+                // Si este es el select donde se hizo click, seleccionar la nueva categoría
+                if (btnElement && select.contains(btnElement.previousElementSibling)) {
+                   select.value = data.option.value;
+                }
+            });
+            
+            // Caso especial: si el btnElement existe, buscar el select hermano y seleccionarlo
+            if (btnElement) {
+                const rowSelect = btnElement.closest('div').querySelector('.item-categoria');
+                if (rowSelect) {
+                    rowSelect.value = data.option.value;
+                }
+            }
+
+            showSnackbar('Categoría agregada y actualizada.', 'success');
         }
 
         function setModoEntregaDepartamento(activo) {

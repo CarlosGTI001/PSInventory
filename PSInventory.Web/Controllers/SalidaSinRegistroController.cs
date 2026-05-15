@@ -69,6 +69,34 @@ namespace PSInventory.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearCategoriaRapida([FromBody] QuickCreateLocationInput input)
+        {
+            if (input == null || string.IsNullOrWhiteSpace(input.Nombre))
+            {
+                return Json(new { success = false, message = "Debe ingresar el nombre de la categoría." });
+            }
+
+            var nombre = input.Nombre.Trim();
+            var existe = await _context.Categorias
+                .AnyAsync(c => !c.Eliminado && c.Nombre.ToLower() == nombre.ToLower());
+            if (existe)
+            {
+                return Json(new { success = false, message = "Ya existe una categoría con ese nombre." });
+            }
+
+            var categoria = new Categoria
+            {
+                Nombre = nombre,
+                Activo = true
+            };
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, option = new { value = categoria.Id.ToString(), text = categoria.Nombre } });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearDepartamentoRapido([FromBody] QuickCreateLocationInput input)
         {
             if (input == null || string.IsNullOrWhiteSpace(input.Nombre))

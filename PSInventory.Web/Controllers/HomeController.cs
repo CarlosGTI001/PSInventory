@@ -35,6 +35,11 @@ namespace PSInventory.Web.Controllers
             ViewBag.TotalArticulos    = _context.Articulos.Count();
             ViewBag.ComprasPendientes = _context.Compras.Count(c => c.Estado == "Pendiente");
             
+            // Infraestructura stats
+            ViewBag.TotalEquipos      = _context.InfraEquiposComputo.Count(e => !e.Eliminado);
+            ViewBag.TotalServicios    = _context.InfraServiciosSucursal.Count(s => !s.Eliminado);
+            ViewBag.TotalAccesorios   = _context.InfraSucursalesAccesorio.Count(a => !a.Eliminado);
+            
             // Items con stock bajo (comparar suma de cantidades contra stock mínimo)
             var articulosStockBajo = _context.Articulos
                 .Where(a => a.StockMinimo > 0)
@@ -209,6 +214,29 @@ namespace PSInventory.Web.Controllers
                         tension = 0.4,
                         fill = true,
                         yAxisID = "y1"
+                    }
+                }
+            });
+        }
+
+        // API para Chart.js - Resumen Infraestructura
+        [HttpGet]
+        public IActionResult GetInfraestructuraResumen()
+        {
+            var equipos = _context.InfraEquiposComputo.Count(e => !e.Eliminado);
+            var servicios = _context.InfraServiciosSucursal.Count(s => !s.Eliminado);
+            var accesorios = _context.InfraSucursalesAccesorio.Count(a => !a.Eliminado);
+
+            return Json(new
+            {
+                labels = new[] { "Equipos", "Servicios", "Accesorios" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        data = new[] { equipos, servicios, accesorios },
+                        backgroundColor = new[] { "#047394", "#ff5c00", "#10b981" },
+                        borderWidth = 0
                     }
                 }
             });

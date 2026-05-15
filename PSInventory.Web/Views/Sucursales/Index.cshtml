@@ -188,6 +188,9 @@
                             }
                         </td>
                         <td class="actions-cell">
+                            <md-icon-button title="Ver Infraestructura" onclick="window.location.href='@Url.Action("Sucursal", "Infraestructura", new { codigoSucursal = item.Id })'">
+                                <md-icon>devices</md-icon>
+                            </md-icon-button>
                             <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.Id })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>

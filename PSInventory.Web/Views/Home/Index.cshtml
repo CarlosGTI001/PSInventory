@@ -95,6 +95,49 @@
         </div>
     </div>
 
+    <!-- Estadísticas de Infraestructura -->
+    <div style="margin-bottom: 32px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <md-icon style="color: var(--md-sys-color-primary);">devices</md-icon>
+            <h2 class="md-typescale-title-large" style="margin: 0;">Resumen de Infraestructura</h2>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" style="border-bottom: 3px solid var(--md-sys-color-primary);">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-card-value">@ViewBag.TotalEquipos</div>
+                        <div class="stat-card-label">Equipos de Cómputo</div>
+                    </div>
+                    <div class="stat-card-icon" style="background: rgba(4, 115, 148, 0.1);">
+                        <md-icon style="color: var(--md-sys-color-primary);">computer</md-icon>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--md-sys-color-secondary);">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-card-value">@ViewBag.TotalServicios</div>
+                        <div class="stat-card-label">Servicios (Internet/Tel)</div>
+                    </div>
+                    <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.1);">
+                        <md-icon style="color: var(--md-sys-color-secondary);">wifi</md-icon>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card" style="border-bottom: 3px solid var(--md-sys-color-success);">
+                <div class="stat-card-header">
+                    <div>
+                        <div class="stat-card-value">@ViewBag.TotalAccesorios</div>
+                        <div class="stat-card-label">Accesorios / Otros</div>
+                    </div>
+                    <div class="stat-card-icon" style="background: rgba(16, 185, 129, 0.1);">
+                        <md-icon style="color: var(--md-sys-color-success);">camera_alt</md-icon>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Acciones Rápidas -->
     <div class="card" style="margin-bottom: 24px;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
@@ -178,6 +221,16 @@
                 </div>
                 <div class="chart-container">
                     <canvas id="chartComprasPorMes"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfica 5: Resumen Infraestructura (Pie Chart) -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <h3 class="md-typescale-title-medium">Composición de Infraestructura</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chartInfraestructura"></canvas>
                 </div>
             </div>
         </div>

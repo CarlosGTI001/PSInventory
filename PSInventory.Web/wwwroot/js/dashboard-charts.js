@@ -253,6 +253,39 @@ async function cargarComprasPorMes() {
     }
 }
 
+// 5. Gráfica de Resumen de Infraestructura (Doughnut Chart)
+async function cargarInfraestructuraResumen() {
+    try {
+        const response = await fetch('/Home/GetInfraestructuraResumen');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('chartInfraestructura');
+        if (!ctx) return;
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error al cargar Resumen de Infraestructura:', error);
+    }
+}
+
 // Inicializar todas las gráficas cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar que Chart.js esté cargado
@@ -266,4 +299,5 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarItemsPorCategoria();
     cargarItemsPorSucursal();
     cargarComprasPorMes();
+    cargarInfraestructuraResumen();
 });

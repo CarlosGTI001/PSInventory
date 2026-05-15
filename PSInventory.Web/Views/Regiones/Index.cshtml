@@ -156,6 +156,9 @@
                         </td>
                         <td>@item.Descripcion</td>
                         <td class="actions-cell">
+                            <md-icon-button title="Ver Infraestructura" onclick="window.location.href='@Url.Action("Index", "Infraestructura", new { regionId = item.RegionId })'">
+                                <md-icon>devices</md-icon>
+                            </md-icon-button>
                             <md-icon-button onclick="window.location.href='@Url.Action("Edit", new { id = item.RegionId })'">
                                 <md-icon>edit</md-icon>
                             </md-icon-button>

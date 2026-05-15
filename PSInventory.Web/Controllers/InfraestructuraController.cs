@@ -412,12 +412,23 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura/CreateEquipo
-        public async Task<IActionResult> CreateEquipo()
+        public async Task<IActionResult> CreateEquipo(string? sucursalId = null)
         {
             var vm = new InfraEquipoFormViewModel
             {
                 Activo = true
             };
+
+            if (!string.IsNullOrEmpty(sucursalId))
+            {
+                var sucursal = await _context.Sucursales.FindAsync(sucursalId);
+                if (sucursal != null)
+                {
+                    vm.SucursalId = sucursal.Id;
+                    vm.RegionId = sucursal.RegionId;
+                }
+            }
+
             await CargarCatalogosEquipo(vm);
             return View(vm);
         }
@@ -442,7 +453,7 @@ namespace PSInventory.Web.Controllers
                 NombreEquipo = vm.NombreEquipo.Trim(),
                 Marca = NormalizarTexto(vm.Marca),
                 Modelo = NormalizarTexto(vm.Modelo),
-                Serial = vm.Serial.Trim(),
+                Serial = vm.Serial.Trim().ToUpperInvariant(),
                 SistemaOperativoId = vm.SistemaOperativoId,
                 TipoProcesadorId = vm.TipoProcesadorId,
                 CpuDetalle = NormalizarTexto(vm.CpuDetalle),
@@ -719,13 +730,24 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura/CreateAccesorio
-        public async Task<IActionResult> CreateAccesorio()
+        public async Task<IActionResult> CreateAccesorio(string? sucursalId = null)
         {
             var vm = new InfraAccesorioFormViewModel
             {
                 Activo = true,
                 Cantidad = 1
             };
+
+            if (!string.IsNullOrEmpty(sucursalId))
+            {
+                var sucursal = await _context.Sucursales.FindAsync(sucursalId);
+                if (sucursal != null)
+                {
+                    vm.SucursalId = sucursal.Id;
+                    vm.RegionId = sucursal.RegionId;
+                }
+            }
+
             await CargarCatalogosAccesorio(vm);
             return View(vm);
         }

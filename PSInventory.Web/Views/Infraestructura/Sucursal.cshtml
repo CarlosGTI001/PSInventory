@@ -117,7 +117,12 @@
     </div>
 
     <div class="card" style="margin-bottom:24px;">
-        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Equipos</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="md-typescale-title-medium" style="margin:0;">Equipos</h3>
+            <md-filled-button href="@Url.Action("CreateEquipo", new { sucursalId = Model.Sucursal.Id })">
+                <md-icon slot="icon">add</md-icon> Agregar Equipo
+            </md-filled-button>
+        </div>
         <div class="data-table-container">
             <table class="data-table">
                 <thead><tr><th>Equipo</th><th>Serial</th><th>Especificaciones</th><th>Departamentos</th><th>Estado</th></tr></thead>
@@ -142,7 +147,12 @@
     </div>
 
     <div class="card" style="margin-bottom:24px;">
-        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Servicios</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="md-typescale-title-medium" style="margin:0;">Servicios</h3>
+            <md-filled-button href="@Url.Action("CreateServicio", new { sucursalId = Model.Sucursal.Id })">
+                <md-icon slot="icon">add</md-icon> Agregar Servicio
+            </md-filled-button>
+        </div>
         <div class="data-table-container">
             <table class="data-table">
                 <thead><tr><th>Tipo</th><th>Operador</th><th>Número</th><th>Velocidad</th><th>Estado</th></tr></thead>
@@ -163,7 +173,12 @@
     </div>
 
     <div class="card">
-        <h3 class="md-typescale-title-medium" style="margin:0 0 12px 0;">Accesorios</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="md-typescale-title-medium" style="margin:0;">Accesorios</h3>
+            <md-filled-button href="@Url.Action("CreateAccesorio", new { sucursalId = Model.Sucursal.Id })">
+                <md-icon slot="icon">add</md-icon> Agregar Accesorio
+            </md-filled-button>
+        </div>
         <div class="data-table-container">
             <table class="data-table">
                 <thead><tr><th>Tipo</th><th>Cantidad</th><th>Especificaciones</th><th>Estado</th></tr></thead>

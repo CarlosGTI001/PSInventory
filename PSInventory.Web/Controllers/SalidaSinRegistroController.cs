@@ -86,8 +86,7 @@ namespace PSInventory.Web.Controllers
 
             var categoria = new Categoria
             {
-                Nombre = nombre,
-                Activo = true
+                Nombre = nombre
             };
             _context.Categorias.Add(categoria);
             await _context.SaveChangesAsync();

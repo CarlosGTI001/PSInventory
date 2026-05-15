@@ -1326,5 +1326,83 @@ namespace PSInventory.Web.Controllers
         {
             return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearSistemaOperativoRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var so = new InfraSistemaOperativo { Nombre = nombre, Activo = true };
+            _context.InfraSistemasOperativos.Add(so);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = so.Id, text = so.Nombre } });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearProcesadorRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var p = new InfraTipoProcesador { Nombre = nombre, Activo = true };
+            _context.InfraTiposProcesador.Add(p);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = p.Id, text = p.Nombre } });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearTipoRamRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var r = new InfraTipoRam { Nombre = nombre, Activo = true };
+            _context.InfraTiposRam.Add(r);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = r.Id, text = r.Nombre } });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearTipoServicioRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var s = new InfraTipoServicio { Nombre = nombre, Activo = true };
+            _context.InfraTiposServicio.Add(s);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = s.Id, text = s.Nombre } });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearOperadorRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var o = new InfraOperadorServicio { Nombre = nombre, Activo = true };
+            _context.InfraOperadoresServicio.Add(o);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = o.Id, text = o.Nombre } });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CrearTipoAccesorioRapido([FromBody] System.Text.Json.JsonElement data)
+        {
+            if (!data.TryGetProperty("nombre", out var prop)) return Json(new { success = false, message = "Nombre requerido" });
+            string nombre = prop.GetString() ?? "";
+            if (string.IsNullOrWhiteSpace(nombre)) return Json(new { success = false, message = "Nombre requerido" });
+
+            var a = new InfraTipoAccesorio { Nombre = nombre, Activo = true };
+            _context.InfraTiposAccesorio.Add(a);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, option = new { value = a.Id, text = a.Nombre } });
+        }
     }
 }

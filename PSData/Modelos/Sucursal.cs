@@ -41,6 +41,8 @@ namespace PSData.Modelos
         public virtual ICollection<Item> Items { get; set; }
         public virtual ICollection<MovimientoItem> MovimientosOrigen { get; set; }
         public virtual ICollection<MovimientoItem> MovimientosDestino { get; set; }
+        public virtual ICollection<InfraEquipoComputo> InfraEquiposComputo { get; set; } = new List<InfraEquipoComputo>();
+        public virtual ICollection<InfraServicioSucursal> InfraServiciosSucursal { get; set; } = new List<InfraServicioSucursal>();
+        public virtual ICollection<InfraSucursalAccesorio> InfraSucursalesAccesorio { get; set; } = new List<InfraSucursalAccesorio>();
     }
 }
-

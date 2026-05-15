@@ -1,0 +1,345 @@
+@model PSInventory.Web.Models.ViewModels.InfraestructuraIndexViewModel
+
+@{
+    ViewData["Title"] = "Infraestructura";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Módulos</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Infraestructura</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Infraestructura de Sucursales</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Equipos de cómputo, servicios y accesorios por sucursal
+        </p>
+    </div>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value">@Model.TotalEquipos</div>
+                <div class="stat-card-label">Equipos registrados</div>
+            </div>
+            <div class="stat-card-icon">
+                <md-icon>computer</md-icon>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-success);">@Model.EquiposActivos</div>
+                <div class="stat-card-label">Equipos activos</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(76, 175, 80, 0.15);">
+                <md-icon style="color: var(--md-sys-color-success);">check_circle</md-icon>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-secondary);">@Model.TotalServicios</div>
+                <div class="stat-card-label">Servicios</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(255, 92, 0, 0.15);">
+                <md-icon style="color: var(--md-sys-color-secondary);">wifi</md-icon>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-value" style="color: var(--md-sys-color-primary);">@Model.TotalAccesorios</div>
+                <div class="stat-card-label">Accesorios</div>
+            </div>
+            <div class="stat-card-icon" style="background: rgba(4, 115, 148, 0.15);">
+                <md-icon style="color: var(--md-sys-color-primary);">camera_alt</md-icon>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        <md-icon>check_circle</md-icon>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+<div class="card" style="margin-bottom: 24px;">
+    <form method="get" action="@Url.Action("Index")" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">
+        <md-filled-text-field name="q" label="Buscar equipo o serial" value="@Model.Query">
+            <md-icon slot="leading-icon">search</md-icon>
+        </md-filled-text-field>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">store</md-icon>
+            <select name="sucursalId" class="md3-select">
+                <option value="">Todas las sucursales</option>
+                @foreach (var sucursal in Model.Sucursales)
+                {
+                    <option value="@sucursal.Value" selected="@(Model.SucursalFiltro == sucursal.Value)">@sucursal.Text</option>
+                }
+            </select>
+            <label class="md3-select-label">Sucursal</label>
+        </div>
+        <div class="md3-select-field has-leading-icon">
+            <md-icon class="md3-select-leading-icon">business_center</md-icon>
+            <select name="departamentoId" class="md3-select">
+                <option value="">Todos los departamentos</option>
+                @foreach (var dep in Model.Departamentos)
+                {
+                    <option value="@dep.Value" selected="@(Model.DepartamentoFiltro?.ToString() == dep.Value)">@dep.Text</option>
+                }
+            </select>
+            <label class="md3-select-label">Departamento</label>
+        </div>
+        <div style="display:flex; gap:8px; align-items:end;">
+            <md-filled-button type="submit"><md-icon slot="icon">filter_alt</md-icon>Filtrar</md-filled-button>
+            <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">Limpiar</md-text-button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <md-icon style="color: var(--md-sys-color-primary);">computer</md-icon>
+            <h3 class="md-typescale-title-medium" style="margin: 0;">Equipos de cómputo</h3>
+        </div>
+        <md-filled-button onclick="window.location.href='@Url.Action("CreateEquipo")'">
+            <md-icon slot="icon">add</md-icon>
+            Nuevo Equipo
+        </md-filled-button>
+    </div>
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th>Equipo</th>
+                    <th>Serial</th>
+                    <th>Especificaciones</th>
+                    <th>Departamentos</th>
+                    <th>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Equipos)
+                {
+                    <tr>
+                        <td>@item.Sucursal</td>
+                        <td>
+                            <strong>@item.NombreEquipo</strong>
+                        </td>
+                        <td>@item.Serial</td>
+                        <td>
+                            <div>@item.SistemaOperativo</div>
+                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Procesador</div>
+                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Ram</div>
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge">Inactivo</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("EditEquipo", new { id = item.Id })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDeleteEquipo(@item.Id)">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Model.Equipos.Any())
+    {
+        <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:12px 0 0;">No hay equipos registrados.</p>
+    }
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <md-icon style="color: var(--md-sys-color-secondary);">wifi</md-icon>
+            <h3 class="md-typescale-title-medium" style="margin: 0;">Servicios por sucursal</h3>
+        </div>
+        <md-filled-tonal-button onclick="window.location.href='@Url.Action("CreateServicio")'">
+            <md-icon slot="icon">add</md-icon>
+            Nuevo Servicio
+        </md-filled-tonal-button>
+    </div>
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th>Tipo</th>
+                    <th>Operador</th>
+                    <th>Número de servicio</th>
+                    <th>Velocidad</th>
+                    <th>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Servicios)
+                {
+                    <tr>
+                        <td>@item.Sucursal</td>
+                        <td>@item.TipoServicio</td>
+                        <td>@item.Operador</td>
+                        <td>@(string.IsNullOrWhiteSpace(item.NumeroServicio) ? "—" : item.NumeroServicio)</td>
+                        <td>
+                            @if (item.VelocidadBajadaMbps.HasValue || item.VelocidadSubidaMbps.HasValue)
+                            {
+                                <span>@(item.VelocidadBajadaMbps?.ToString("0.##") ?? "0") ↓ / @(item.VelocidadSubidaMbps?.ToString("0.##") ?? "0") ↑ Mbps</span>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge">Inactivo</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("EditServicio", new { id = item.Id })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDeleteServicio(@item.Id)">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Model.Servicios.Any())
+    {
+        <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:12px 0 0;">No hay servicios registrados.</p>
+    }
+</div>
+
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <md-icon style="color: var(--md-sys-color-primary);">camera_alt</md-icon>
+            <h3 class="md-typescale-title-medium" style="margin: 0;">Accesorios (opcional)</h3>
+        </div>
+        <md-outlined-button onclick="window.location.href='@Url.Action("CreateAccesorio")'">
+            <md-icon slot="icon">add</md-icon>
+            Nuevo Accesorio
+        </md-outlined-button>
+    </div>
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Especificaciones</th>
+                    <th>Estado</th>
+                    <th class="actions-column">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Accesorios)
+                {
+                    <tr>
+                        <td>@item.Sucursal</td>
+                        <td>@item.TipoAccesorio</td>
+                        <td>@item.Cantidad</td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Especificaciones) ? "—" : item.Especificaciones)</td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="badge badge-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge">Inactivo</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <md-icon-button onclick="window.location.href='@Url.Action("EditAccesorio", new { id = item.Id })'">
+                                <md-icon>edit</md-icon>
+                            </md-icon-button>
+                            <md-icon-button onclick="confirmDeleteAccesorio(@item.Id)">
+                                <md-icon>delete</md-icon>
+                            </md-icon-button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Model.Accesorios.Any())
+    {
+        <p class="md-typescale-body-medium" style="color:var(--md-sys-color-on-surface-variant); margin:12px 0 0;">No hay accesorios registrados.</p>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        async function postDelete(url) {
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+            const response = await fetch(url, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.success) {
+                showSnackbar(result.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showSnackbar(result.message || 'No se pudo eliminar el registro.', 'error');
+            }
+        }
+
+        async function confirmDeleteEquipo(id) {
+            if (await showConfirmDialog('Eliminar Equipo', '¿Deseas eliminar este equipo?', 'Eliminar')) {
+                await postDelete(`@Url.Action("DeleteEquipo")/` + id);
+            }
+        }
+
+        async function confirmDeleteServicio(id) {
+            if (await showConfirmDialog('Eliminar Servicio', '¿Deseas eliminar este servicio?', 'Eliminar')) {
+                await postDelete(`@Url.Action("DeleteServicio")/` + id);
+            }
+        }
+
+        async function confirmDeleteAccesorio(id) {
+            if (await showConfirmDialog('Eliminar Accesorio', '¿Deseas eliminar este accesorio?', 'Eliminar')) {
+                await postDelete(`@Url.Action("DeleteAccesorio")/` + id);
+            }
+        }
+    </script>
+    @Html.AntiForgeryToken()
+}

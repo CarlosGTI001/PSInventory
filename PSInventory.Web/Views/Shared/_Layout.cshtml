@@ -69,6 +69,9 @@
                         <span class="badge" style="margin-left: 8px;">@Context.Session.GetString("UserRole")</span>
                     }
                 </span>
+                <md-icon-button href="/Auth/CambiarContrasena" title="Cambiar contraseña">
+                    <md-icon>lock_reset</md-icon>
+                </md-icon-button>
                 <md-icon-button href="/Auth/Logout">
                     <md-icon>logout</md-icon>
                 </md-icon-button>
@@ -89,11 +92,13 @@
                     var ubicacionesControllers = new[] { "Regiones", "Sucursales", "Departamentos" };
                     var operacionesControllers = new[] { "Movimientos", "Despacho", "SalidaSinRegistro", "Solicitudes" };
                     var reportesControllers = new[] { "Reportes" };
+                    var infraestructuraControllers = new[] { "Infraestructura" };
 
                     var inventarioOpen = Array.IndexOf(inventarioControllers, currentController) >= 0;
                     var ubicacionesOpen = Array.IndexOf(ubicacionesControllers, currentController) >= 0;
                     var operacionesOpen = Array.IndexOf(operacionesControllers, currentController) >= 0;
                     var reportesOpen = Array.IndexOf(reportesControllers, currentController) >= 0;
+                    var infraestructuraOpen = Array.IndexOf(infraestructuraControllers, currentController) >= 0;
                 }
 
                 <a href="/Home/Index" class="nav-item @(currentController == "Home" ? "active" : "")">
@@ -196,6 +201,11 @@
                         <span>Consulta Sucursales</span>
                     </a>
                 </div>
+
+                <a href="/Infraestructura/Index" class="nav-item @(infraestructuraOpen ? "active" : "")">
+                    <md-icon>devices</md-icon>
+                    <span>Infraestructura</span>
+                </a>
                 
                 @if (Context.Session.GetString("UserRole") == "Administrador")
                 {

@@ -1,0 +1,131 @@
+@model PSInventory.Web.Models.ViewModels.InfraServicioFormViewModel
+
+@{
+    ViewData["Title"] = "Nuevo Servicio";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Módulos</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Infraestructura</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Nuevo Servicio</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Registrar Servicio de Sucursal</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Operador, número de servicio y velocidad de internet
+        </p>
+    </div>
+</div>
+
+<form asp-action="CreateServicio" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select name="SucursalId" id="SucursalId" class="md3-select" required>
+                        <option value="">Seleccione una sucursal</option>
+                        @foreach (var sucursal in Model.Sucursales)
+                        {
+                            <option value="@sucursal.Value" selected="@(Model.SucursalId == sucursal.Value)">@sucursal.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sucursal *</label>
+                </div>
+                <span asp-validation-for="SucursalId" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">cable</md-icon>
+                    <select name="TipoServicioId" id="TipoServicioId" class="md3-select" required>
+                        <option value="">Seleccione tipo de servicio</option>
+                        @foreach (var tipo in Model.TiposServicio)
+                        {
+                            <option value="@tipo.Value" selected="@(Model.TipoServicioId.ToString() == tipo.Value)">@tipo.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Tipo de servicio *</label>
+                </div>
+                <span asp-validation-for="TipoServicioId" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">router</md-icon>
+                    <select name="OperadorServicioId" id="OperadorServicioId" class="md3-select" required>
+                        <option value="">Seleccione operador</option>
+                        @foreach (var operador in Model.Operadores)
+                        {
+                            <option value="@operador.Value" selected="@(Model.OperadorServicioId.ToString() == operador.Value)">@operador.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Operador *</label>
+                </div>
+                <span asp-validation-for="OperadorServicioId" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Número de servicio" name="NumeroServicio" value="@Model.NumeroServicio">
+                    <md-icon slot="leading-icon">tag</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="NumeroServicio" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Velocidad bajada (Mbps)" name="VelocidadBajadaMbps" type="number" value="@Model.VelocidadBajadaMbps">
+                    <md-icon slot="leading-icon">download</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="VelocidadBajadaMbps" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Velocidad subida (Mbps)" name="VelocidadSubidaMbps" type="number" value="@Model.VelocidadSubidaMbps">
+                    <md-icon slot="leading-icon">upload</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="VelocidadSubidaMbps" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Observaciones" name="Observaciones" type="textarea" rows="4" value="@Model.Observaciones">
+                    <md-icon slot="leading-icon">note</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Observaciones" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="display:flex; align-items:center; gap:12px;">
+                <input type="checkbox" name="Activo" value="true" @(Model.Activo ? "checked" : "") style="width: 20px; height: 20px; cursor: pointer;" />
+                <input type="hidden" name="Activo" value="false" />
+                <label class="md-typescale-body-large">Servicio activo</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Servicio
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

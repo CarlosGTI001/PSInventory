@@ -26,4 +26,5 @@ public class Departamento
 
     // Relaciones
     public ICollection<Compra> Compras { get; set; } = new List<Compra>();
+    public ICollection<InfraEquipoDepartamento> InfraEquiposDepartamentos { get; set; } = new List<InfraEquipoDepartamento>();
 }

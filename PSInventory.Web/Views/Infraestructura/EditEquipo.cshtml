@@ -1,0 +1,239 @@
+@model PSInventory.Web.Models.ViewModels.InfraEquipoFormViewModel
+
+@{
+    ViewData["Title"] = "Editar Equipo";
+}
+
+<div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
+    <md-icon style="font-size: 18px;">home</md-icon>
+    <span>Módulos</span>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <a href="@Url.Action("Index")" style="color: var(--md-sys-color-on-surface-variant); text-decoration: none;">Infraestructura</a>
+    <md-icon style="font-size: 18px;">chevron_right</md-icon>
+    <span style="color: var(--md-sys-color-primary);">Editar Equipo</span>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Editar Equipo de Cómputo</h1>
+        <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
+            Actualiza especificaciones, asignación y datos de inventario
+        </p>
+    </div>
+</div>
+
+<form asp-action="EditEquipo" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model.Id" />
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-primary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(4, 115, 148, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-primary); font-size: 28px;">computer</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Información General</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Identificación y ubicación del equipo</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Nombre del equipo *" name="NombreEquipo" required value="@Model.NombreEquipo">
+                    <md-icon slot="leading-icon">desktop_windows</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="NombreEquipo" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Código activo" name="CodigoActivo" value="@Model.CodigoActivo">
+                    <md-icon slot="leading-icon">badge</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="CodigoActivo" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">store</md-icon>
+                    <select name="SucursalId" id="SucursalId" class="md3-select" required>
+                        <option value="">Seleccione una sucursal</option>
+                        @foreach (var sucursal in Model.Sucursales)
+                        {
+                            <option value="@sucursal.Value" selected="@(Model.SucursalId == sucursal.Value)">@sucursal.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sucursal *</label>
+                </div>
+                <span asp-validation-for="SucursalId" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Serial *" name="Serial" required value="@Model.Serial">
+                    <md-icon slot="leading-icon">qr_code</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Serial" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--md-sys-color-secondary);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 92, 0, 0.15); display: flex; align-items: center; justify-content: center;">
+                <md-icon style="color: var(--md-sys-color-secondary); font-size: 28px;">memory</md-icon>
+            </div>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Especificaciones</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Hardware y sistema operativo</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">settings_applications</md-icon>
+                    <select name="SistemaOperativoId" id="SistemaOperativoId" class="md3-select">
+                        <option value="">Seleccione sistema operativo</option>
+                        @foreach (var sistema in Model.SistemasOperativos)
+                        {
+                            <option value="@sistema.Value" selected="@(Model.SistemaOperativoId?.ToString() == sistema.Value)">@sistema.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Sistema Operativo</label>
+                </div>
+                <span asp-validation-for="SistemaOperativoId" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">developer_board</md-icon>
+                    <select name="TipoProcesadorId" id="TipoProcesadorId" class="md3-select">
+                        <option value="">Seleccione procesador</option>
+                        @foreach (var proc in Model.TiposProcesador)
+                        {
+                            <option value="@proc.Value" selected="@(Model.TipoProcesadorId?.ToString() == proc.Value)">@proc.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Procesador</label>
+                </div>
+                <span asp-validation-for="TipoProcesadorId" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Detalle CPU" name="CpuDetalle" value="@Model.CpuDetalle">
+                    <md-icon slot="leading-icon">speed</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="CpuDetalle" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">memory</md-icon>
+                    <select name="TipoRamId" id="TipoRamId" class="md3-select">
+                        <option value="">Seleccione tipo RAM</option>
+                        @foreach (var ram in Model.TiposRam)
+                        {
+                            <option value="@ram.Value" selected="@(Model.TipoRamId?.ToString() == ram.Value)">@ram.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Tipo de RAM</label>
+                </div>
+                <span asp-validation-for="TipoRamId" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="RAM (GB)" name="RamCantidadGb" type="number" value="@Model.RamCantidadGb">
+                    <md-icon slot="leading-icon">numbers</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="RamCantidadGb" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Almacenamiento" name="Almacenamiento" value="@Model.Almacenamiento">
+                    <md-icon slot="leading-icon">hard_drive</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Almacenamiento" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Marca" name="Marca" value="@Model.Marca">
+                    <md-icon slot="leading-icon">branding_watermark</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Marca" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Modelo" name="Modelo" value="@Model.Modelo">
+                    <md-icon slot="leading-icon">inventory_2</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Modelo" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+            <md-icon style="color: var(--md-sys-color-on-surface-variant); font-size: 28px;">groups</md-icon>
+            <div>
+                <h2 class="md-typescale-title-large" style="margin: 0;">Asignación</h2>
+                <p class="md-typescale-body-small" style="margin: 4px 0 0; color: var(--md-sys-color-on-surface-variant);">Puede asignarse a uno o varios departamentos</p>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <div class="md3-select-field has-leading-icon">
+                    <md-icon class="md3-select-leading-icon">business_center</md-icon>
+                    <select name="DepartamentosSeleccionados" id="DepartamentosSeleccionados" class="md3-select" multiple size="6">
+                        @foreach (var dep in Model.Departamentos)
+                        {
+                            <option value="@dep.Value" selected="@Model.DepartamentosSeleccionados.Contains(int.Parse(dep.Value!))">@dep.Text</option>
+                        }
+                    </select>
+                    <label class="md3-select-label">Departamentos</label>
+                </div>
+                <p class="md3-select-supporting">Mantén Ctrl/Cmd para seleccionar múltiples opciones</p>
+                <span asp-validation-for="DepartamentosSeleccionados" class="field-error"></span>
+            </div>
+            <div class="form-field">
+                <md-filled-text-field label="Dirección IP" name="DireccionIp" value="@Model.DireccionIp">
+                    <md-icon slot="leading-icon">lan</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="DireccionIp" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field">
+                <md-filled-text-field label="Observaciones" name="Observaciones" type="textarea" rows="4" value="@Model.Observaciones">
+                    <md-icon slot="leading-icon">note</md-icon>
+                </md-filled-text-field>
+                <span asp-validation-for="Observaciones" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-field" style="display:flex; align-items:center; gap:12px;">
+                <input type="checkbox" name="Activo" value="true" @(Model.Activo ? "checked" : "") style="width: 20px; height: 20px; cursor: pointer;" />
+                <input type="hidden" name="Activo" value="false" />
+                <label class="md-typescale-body-large">Equipo activo</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions" style="background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 16px; box-shadow: var(--md-sys-elevation-level2);">
+        <md-text-button onclick="window.location.href='@Url.Action("Index")'; return false;">
+            <md-icon slot="icon">cancel</md-icon>
+            Cancelar
+        </md-text-button>
+        <md-filled-button type="submit" style="height: 48px; min-width: 160px;">
+            <md-icon slot="icon">save</md-icon>
+            Guardar Cambios
+        </md-filled-button>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

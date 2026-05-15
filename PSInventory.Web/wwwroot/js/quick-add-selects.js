@@ -8,6 +8,14 @@
         const path = (window.location.pathname || '').toLowerCase();
         if (path.startsWith('/despacho')) return `/Despacho/Crear${entity}Rapida`;
         if (path.startsWith('/salidasinregistro')) return `/SalidaSinRegistro/Crear${entity}Rapida`;
+        if (path.startsWith('/infraestructura')) {
+            if (entity === 'SistemaOperativo') return '/Infraestructura/CrearSistemaOperativoRapido';
+            if (entity === 'TipoProcesador') return '/Infraestructura/CrearProcesadorRapido';
+            if (entity === 'TipoRam') return '/Infraestructura/CrearTipoRamRapido';
+            if (entity === 'TipoServicio') return '/Infraestructura/CrearTipoServicioRapido';
+            if (entity === 'OperadorServicio') return '/Infraestructura/CrearOperadorRapido';
+            if (entity === 'TipoAccesorio') return '/Infraestructura/CrearTipoAccesorioRapido';
+        }
         if (entity === 'Categoria') return '/Categorias/CrearRapido';
         if (entity === 'Departamento') return '/Departamentos/CrearRapido';
         if (entity === 'Region') return '/Regiones/CrearRapido';
@@ -23,6 +31,16 @@
     }
 
     function resolveConfig(select) {
+        const customEntity = select.getAttribute('data-quick-add-entity');
+        if (customEntity) {
+            return {
+                entity: customEntity,
+                title: select.getAttribute('data-quick-add-title') || `Nuevo ${customEntity}`,
+                label: select.getAttribute('data-quick-add-label') || 'Nombre',
+                icon: select.getAttribute('data-quick-add-icon') || 'add'
+            };
+        }
+
         const idn = `${select.id || ''} ${select.name || ''}`.toLowerCase();
         if (idn.includes('categoria')) {
             return { entity: 'Categoria', title: 'Nueva Categoría', label: 'Nombre de la categoría', icon: 'category' };
@@ -35,6 +53,24 @@
         }
         if (idn.includes('sucursal')) {
             return { entity: 'Sucursal', title: 'Nueva Sucursal', label: 'Nombre de la sucursal', icon: 'store' };
+        }
+        if (idn.includes('sistemaoperativo')) {
+            return { entity: 'SistemaOperativo', title: 'Nuevo Sistema Operativo', label: 'Nombre del sistema operativo', icon: 'settings_applications' };
+        }
+        if (idn.includes('tipoprocesador') || idn.includes('procesador')) {
+            return { entity: 'TipoProcesador', title: 'Nuevo Procesador', label: 'Nombre del procesador', icon: 'developer_board' };
+        }
+        if (idn.includes('tiporam') || idn.includes('ramid')) {
+            return { entity: 'TipoRam', title: 'Nuevo Tipo de RAM', label: 'Nombre del tipo de RAM', icon: 'memory' };
+        }
+        if (idn.includes('tiposervicio')) {
+            return { entity: 'TipoServicio', title: 'Nuevo Tipo de Servicio', label: 'Nombre del tipo de servicio', icon: 'cable' };
+        }
+        if (idn.includes('operadorservicio')) {
+            return { entity: 'OperadorServicio', title: 'Nuevo Operador', label: 'Nombre del operador', icon: 'router' };
+        }
+        if (idn.includes('tipoaccesorio')) {
+            return { entity: 'TipoAccesorio', title: 'Nuevo Tipo de Accesorio', label: 'Nombre del tipo de accesorio', icon: 'category' };
         }
         return null;
     }
@@ -67,7 +103,11 @@
         } else {
             opt.textContent = text;
         }
-        select.value = String(value);
+        if (select.multiple) {
+            opt.selected = true;
+        } else {
+            select.value = String(value);
+        }
         select.disabled = false;
         select.dispatchEvent(new Event('change', { bubbles: true }));
     }

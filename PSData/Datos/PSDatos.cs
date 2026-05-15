@@ -58,6 +58,16 @@ namespace PSData.Datos
         public DbSet<Departamento> Departamentos { get; set; }
         public DbSet<SolicitudCompra> SolicitudesCompra { get; set; }
         public DbSet<DetalleSolicitudCompra> DetallesSolicitudCompra { get; set; }
+        public DbSet<InfraSistemaOperativo> InfraSistemasOperativos { get; set; }
+        public DbSet<InfraTipoProcesador> InfraTiposProcesador { get; set; }
+        public DbSet<InfraTipoRam> InfraTiposRam { get; set; }
+        public DbSet<InfraEquipoComputo> InfraEquiposComputo { get; set; }
+        public DbSet<InfraEquipoDepartamento> InfraEquiposDepartamentos { get; set; }
+        public DbSet<InfraTipoServicio> InfraTiposServicio { get; set; }
+        public DbSet<InfraOperadorServicio> InfraOperadoresServicio { get; set; }
+        public DbSet<InfraServicioSucursal> InfraServiciosSucursal { get; set; }
+        public DbSet<InfraTipoAccesorio> InfraTiposAccesorio { get; set; }
+        public DbSet<InfraSucursalAccesorio> InfraSucursalesAccesorio { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -109,6 +119,46 @@ namespace PSData.Datos
             modelBuilder.Entity<Departamento>()
                 .HasIndex(d => d.Nombre)
                 .HasDatabaseName("IX_Departamento_Nombre");
+            
+            modelBuilder.Entity<InfraSistemaOperativo>()
+                .HasIndex(s => s.Nombre)
+                .HasDatabaseName("IX_InfraSistemaOperativo_Nombre");
+
+            modelBuilder.Entity<InfraTipoProcesador>()
+                .HasIndex(p => p.Nombre)
+                .HasDatabaseName("IX_InfraTipoProcesador_Nombre");
+
+            modelBuilder.Entity<InfraTipoRam>()
+                .HasIndex(r => r.Nombre)
+                .HasDatabaseName("IX_InfraTipoRam_Nombre");
+
+            modelBuilder.Entity<InfraTipoServicio>()
+                .HasIndex(s => s.Nombre)
+                .HasDatabaseName("IX_InfraTipoServicio_Nombre");
+
+            modelBuilder.Entity<InfraOperadorServicio>()
+                .HasIndex(o => o.Nombre)
+                .HasDatabaseName("IX_InfraOperadorServicio_Nombre");
+
+            modelBuilder.Entity<InfraTipoAccesorio>()
+                .HasIndex(a => a.Nombre)
+                .HasDatabaseName("IX_InfraTipoAccesorio_Nombre");
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasIndex(e => e.Serial)
+                .HasDatabaseName("IX_InfraEquipoComputo_Serial");
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasIndex(e => e.SucursalId)
+                .HasDatabaseName("IX_InfraEquipoComputo_SucursalId");
+
+            modelBuilder.Entity<InfraServicioSucursal>()
+                .HasIndex(s => s.SucursalId)
+                .HasDatabaseName("IX_InfraServicioSucursal_SucursalId");
+
+            modelBuilder.Entity<InfraSucursalAccesorio>()
+                .HasIndex(a => a.SucursalId)
+                .HasDatabaseName("IX_InfraSucursalAccesorio_SucursalId");
 
             // Configurar relaciones de Sucursal con MovimientoItem
             modelBuilder.Entity<MovimientoItem>()
@@ -146,6 +196,75 @@ namespace PSData.Datos
                 .HasOne(l => l.Compra)
                 .WithMany(c => c.Lotes)
                 .HasForeignKey(l => l.CompraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraEquipoDepartamento>()
+                .HasKey(ed => new { ed.InfraEquipoComputoId, ed.DepartamentoId });
+
+            modelBuilder.Entity<InfraEquipoDepartamento>()
+                .HasOne(ed => ed.InfraEquipoComputo)
+                .WithMany(e => e.EquiposDepartamentos)
+                .HasForeignKey(ed => ed.InfraEquipoComputoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<InfraEquipoDepartamento>()
+                .HasOne(ed => ed.Departamento)
+                .WithMany(d => d.InfraEquiposDepartamentos)
+                .HasForeignKey(ed => ed.DepartamentoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasOne(e => e.Sucursal)
+                .WithMany(s => s.InfraEquiposComputo)
+                .HasForeignKey(e => e.SucursalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasOne(e => e.SistemaOperativo)
+                .WithMany(s => s.EquiposComputo)
+                .HasForeignKey(e => e.SistemaOperativoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasOne(e => e.TipoProcesador)
+                .WithMany(p => p.EquiposComputo)
+                .HasForeignKey(e => e.TipoProcesadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraEquipoComputo>()
+                .HasOne(e => e.TipoRam)
+                .WithMany(r => r.EquiposComputo)
+                .HasForeignKey(e => e.TipoRamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraServicioSucursal>()
+                .HasOne(s => s.Sucursal)
+                .WithMany(su => su.InfraServiciosSucursal)
+                .HasForeignKey(s => s.SucursalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraServicioSucursal>()
+                .HasOne(s => s.TipoServicio)
+                .WithMany(t => t.ServiciosSucursal)
+                .HasForeignKey(s => s.TipoServicioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraServicioSucursal>()
+                .HasOne(s => s.OperadorServicio)
+                .WithMany(o => o.ServiciosSucursal)
+                .HasForeignKey(s => s.OperadorServicioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraSucursalAccesorio>()
+                .HasOne(a => a.Sucursal)
+                .WithMany(s => s.InfraSucursalesAccesorio)
+                .HasForeignKey(a => a.SucursalId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InfraSucursalAccesorio>()
+                .HasOne(a => a.TipoAccesorio)
+                .WithMany(t => t.SucursalesAccesorio)
+                .HasForeignKey(a => a.TipoAccesorioId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);

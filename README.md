@@ -13,6 +13,7 @@ PSInventory es un sistema completo de gestión de inventario desarrollado en **A
 ✅ **Sistema de Solicitudes de Compra con Departamentos**
 ✅ **Movimientos entre Sucursales**
 ✅ **Reportes y Estadísticas**
+✅ **Módulo de Infraestructura** (Equipos, Servicios y Accesorios)
 ✅ **Borrado Lógico (Soft Delete)** - Nueva funcionalidad ⭐
 ✅ **Sistema de Auditoría Completa**
 ✅ **Interfaz Material Design 3 Estandarizada**

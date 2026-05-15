@@ -86,8 +86,20 @@ body {
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    height: 100%;
     min-height: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    scrollbar-width: thin;
+    scrollbar-color: var(--md-sys-color-outline-variant) transparent;
+}
+
+.drawer::-webkit-scrollbar {
+    width: 6px;
+}
+
+.drawer::-webkit-scrollbar-thumb {
+    background-color: var(--md-sys-color-outline-variant);
+    border-radius: 10px;
 }
 
 .drawer-header {

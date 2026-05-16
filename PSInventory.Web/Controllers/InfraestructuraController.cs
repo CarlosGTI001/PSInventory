@@ -760,6 +760,113 @@ namespace PSInventory.Web.Controllers
             return View(vm);
         }
 
+        // GET: Infraestructura/ExportarSucursalPdf
+        public async Task<IActionResult> ExportarSucursalPdf(string codigoSucursal, string layout = "vertical")
+        {
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+            if (string.IsNullOrWhiteSpace(codigoSucursal)) return BadRequest("Código de sucursal requerido.");
+
+            var codigoNormalizado = NormalizarCodigoSucursal(codigoSucursal.Trim());
+            var sucursal = await _context.Sucursales
+                .Where(s => !s.Eliminado && s.Activo)
+                .Include(s => s.Region)
+                .FirstOrDefaultAsync(s => s.Id.ToLower() == codigoNormalizado.ToLower() || s.Id.ToLower() == codigoSucursal.Trim().ToLower() || s.Nombre.ToLower().Contains(codigoSucursal.Trim().ToLower()));
+
+            if (sucursal == null) return NotFound("Sucursal no encontrada.");
+
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.SucursalId == sucursal.Id)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .OrderBy(e => e.NombreEquipo)
+                .ToListAsync();
+
+            var servicios = await _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado && s.SucursalId == sucursal.Id)
+                .Include(s => s.Sucursal).ThenInclude(su => su.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .OrderBy(s => s.TipoServicio!.Nombre)
+                .ToListAsync();
+
+            var accesorios = await _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado && a.SucursalId == sucursal.Id)
+                .Include(a => a.Sucursal).ThenInclude(su => su.Region)
+                .Include(a => a.TipoAccesorio)
+                .OrderBy(a => a.TipoAccesorio!.Nombre)
+                .ToListAsync();
+
+            var pdf = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(layout == "horizontal" ? PageSizes.Letter.Landscape() : PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(c => PdfReportService.GenerarHeader(c, $"Vista Holística: {sucursal.Nombre}", usuario));
+
+                    page.Content().PaddingVertical(10).Column(col =>
+                    {
+                        // Info Sucursal
+                        col.Item().PaddingBottom(10).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(sCol => {
+                            sCol.Item().Text($"Sucursal: {sucursal.Nombre} ({sucursal.Id})").Bold().FontSize(12);
+                            sCol.Item().Text($"Zona: {sucursal.Region?.Nombre ?? "N/D"}");
+                            if (!string.IsNullOrEmpty(sucursal.Direccion)) sCol.Item().Text($"Dirección: {sucursal.Direccion}");
+                        });
+
+                        // Equipos
+                        col.Item().PaddingTop(10).PaddingBottom(5).Text("EQUIPOS DE CÓMPUTO").Bold().FontColor(Colors.Blue.Darken3);
+                        if (layout == "horizontal")
+                        {
+                            var hHeaders = new List<string> { "Sucursal", "Zona", "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
+                            var hFilas = equipos.Select(e => new List<string> {
+                                sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", e.NombreEquipo, $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
+                                e.SistemaOperativo?.Nombre ?? "—", (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
+                                (e.RamCantidadGb?.ToString() ?? "0") + " GB", e.Almacenamiento ?? "—", e.Activo ? "Activo" : "Inactivo"
+                            }).ToList();
+                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, hHeaders, hFilas));
+                        }
+                        else
+                        {
+                            var vHeaders = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Especificaciones", "Estado" };
+                            var vFilas = equipos.Select(e => new List<string> {
+                                sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", e.NombreEquipo, e.Serial,
+                                $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
+                                e.Activo ? "Activo" : "Inactivo"
+                            }).ToList();
+                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, vHeaders, vFilas));
+                        }
+
+                        // Servicios
+                        col.Item().PaddingTop(20).PaddingBottom(5).Text("SERVICIOS DE RED/INTERNET").Bold().FontColor(Colors.Blue.Darken3);
+                        var sHeaders = new List<string> { "Sucursal", "Zona", "Tipo", "Operador", "Número", "Velocidad", "Estado" };
+                        var sFilas = servicios.Select(s => new List<string> {
+                            sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", s.TipoServicio?.Nombre ?? "N/D", s.OperadorServicio?.Nombre ?? "N/D",
+                            s.NumeroServicio ?? "—", $"{s.VelocidadBajadaMbps}/{s.VelocidadSubidaMbps} Mbps", s.Activo ? "Activo" : "Inactivo"
+                        }).ToList();
+                        col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, sHeaders, sFilas));
+
+                        // Accesorios
+                        col.Item().PaddingTop(20).PaddingBottom(5).Text("ACCESORIOS Y PERIFÉRICOS").Bold().FontColor(Colors.Blue.Darken3);
+                        var aHeaders = new List<string> { "Sucursal", "Zona", "Tipo", "Cantidad", "Especificaciones", "Estado" };
+                        var aFilas = accesorios.Select(a => new List<string> {
+                            sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", a.TipoAccesorio?.Nombre ?? "N/D", a.Cantidad.ToString(),
+                            a.Especificaciones ?? "—", a.Activo ? "Activo" : "Inactivo"
+                        }).ToList();
+                        col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, aHeaders, aFilas));
+                    });
+
+                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
+                });
+            });
+
+            return File(pdf.GeneratePdf(), "application/pdf", $"holistico_{sucursal.Nombre}_{DateTime.Now:yyyyMMdd}.pdf");
+        }
+
         // GET: Infraestructura/SucursalesPorRegion?regionId=3
         [HttpGet]
         public async Task<IActionResult> SucursalesPorRegion(int regionId)

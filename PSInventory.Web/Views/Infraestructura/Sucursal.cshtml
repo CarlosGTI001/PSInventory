@@ -126,8 +126,11 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <h3 class="md-typescale-title-medium" style="margin:0;">Equipos</h3>
             <div style="display:flex; gap:12px; align-items:center;">
-                <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { sucursalId = Model.Sucursal.Id, layout = "horizontal" })'">
-                    <md-icon slot="icon">picture_as_pdf</md-icon> PDF Extendido
+                <md-outlined-button onclick="window.location.href='@Url.Action("ExportarSucursalPdf", new { codigoSucursal = Model.Sucursal.Id, layout = "vertical" })'">
+                    <md-icon slot="icon">picture_as_pdf</md-icon> PDF Normal
+                </md-outlined-button>
+                <md-outlined-button onclick="window.location.href='@Url.Action("ExportarSucursalPdf", new { codigoSucursal = Model.Sucursal.Id, layout = "horizontal" })'">
+                    <md-icon slot="icon">view_column</md-icon> PDF Extendido
                 </md-outlined-button>
                 <md-filled-button href="@Url.Action("CreateEquipo", new { sucursalId = Model.Sucursal.Id })">
                     <md-icon slot="icon">add</md-icon Agregar Equipo

@@ -324,7 +324,7 @@ namespace PSInventory.Web.Controllers
 
             if (layout == "horizontal")
             {
-                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
+                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco" };
                 filas = items.Select(e => new List<string> {
                     e.Sucursal?.Nombre ?? "N/D",
                     e.Sucursal?.Region?.Nombre ?? "N/D",
@@ -334,12 +334,11 @@ namespace PSInventory.Web.Controllers
                     e.SistemaOperativo?.Nombre ?? "—",
                     (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
                     (e.RamCantidadGb?.ToString() ?? "0") + " GB",
-                    e.Almacenamiento ?? "—",
-                    e.Activo ? "Activo" : "Inactivo"
+                    e.Almacenamiento ?? "—"
                 }).ToList();
 
-                // Sucursal(80), Zona(70), Equipo(90), Serial(80), Marca/Modelo(100), S.O(70), CPU(100), RAM(50), Disco(70), Estado(50) = ~760 total (Landscape Letter es ~792)
-                var widths = new List<int> { 80, 70, 90, 80, 100, 70, 100, 50, 70, 50 };
+                // Sucursal(80), Zona(70), Equipo(90), Serial(100), Marca/Modelo(120), S.O(80), CPU(120), RAM(40), Disco(80) = ~780 total (Landscape Letter es ~792)
+                var widths = new List<int> { 80, 70, 90, 100, 120, 80, 120, 40, 80 };
                 var pdfBytesH = PdfReportService.GenerarPdfDinamico("Reporte de Equipos", usuario, filtros, headers, filas, true, widths);
                 return File(pdfBytesH, "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
             }
@@ -828,13 +827,15 @@ namespace PSInventory.Web.Controllers
                         col.Item().PaddingTop(10).PaddingBottom(5).Text("EQUIPOS DE CÓMPUTO").Bold().FontColor(Colors.Blue.Darken3);
                         if (layout == "horizontal")
                         {
-                            var hHeaders = new List<string> { "Sucursal", "Zona", "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
-                            var hFilas = equipos.Select(e => new List<string> {
-                                sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", e.NombreEquipo, $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
+                            headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco" };
+                            filas = equipos.Select(e => new List<string> {
+                                sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", e.NombreEquipo, e.Serial ?? "—", $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
                                 e.SistemaOperativo?.Nombre ?? "—", (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
-                                (e.RamCantidadGb?.ToString() ?? "0") + " GB", e.Almacenamiento ?? "—", e.Activo ? "Activo" : "Inactivo"
+                                (e.RamCantidadGb?.ToString() ?? "0") + " GB", e.Almacenamiento ?? "—"
                             }).ToList();
-                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, hHeaders, hFilas));
+                            
+                            var hWidths = new List<int> { 80, 70, 90, 100, 120, 80, 120, 40, 80 };
+                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas, hWidths));
                         }
                         else
                         {

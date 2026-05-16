@@ -228,11 +228,11 @@ namespace PSInventory.Web.Controllers
                 query = query.Where(s => s.SucursalId == sucursalId);
 
             var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Zona", "Sucursal", "Tipo de Servicio", "Operador", "Número de Servicio", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Tipo de Servicio", "Operador", "Número de Servicio", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
             
             var rows = items.Select(s => new string?[] {
-                s.Sucursal?.Region?.Nombre,
                 s.Sucursal?.Nombre,
+                s.Sucursal?.Region?.Nombre,
                 s.TipoServicio?.Nombre,
                 s.OperadorServicio?.Nombre,
                 s.NumeroServicio,

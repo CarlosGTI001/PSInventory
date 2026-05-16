@@ -55,13 +55,19 @@ public class InfraSucursalInfoViewModel
 public class InfraEquipoListItemViewModel
 {
     public int Id { get; set; }
+    public string? CodigoActivo { get; set; }
     public string Region { get; set; } = string.Empty;
     public string Sucursal { get; set; } = string.Empty;
     public string NombreEquipo { get; set; } = string.Empty;
     public string Serial { get; set; } = string.Empty;
+    public string? Marca { get; set; }
+    public string? Modelo { get; set; }
     public string? SistemaOperativo { get; set; }
     public string? Procesador { get; set; }
     public string? Ram { get; set; }
+    public string? Almacenamiento { get; set; }
+    public string? DireccionIp { get; set; }
+    public string? Observaciones { get; set; }
     public string Departamentos { get; set; } = string.Empty;
     public bool Activo { get; set; }
 }

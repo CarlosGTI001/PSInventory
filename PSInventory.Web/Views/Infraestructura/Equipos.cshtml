@@ -128,12 +128,33 @@
                             <div>@item.Region</div>
                             <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Sucursal</div>
                         </td>
-                        <td><strong>@item.NombreEquipo</strong></td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.CodigoActivo))
+                            {
+                                <div style="font-size:11px; color:var(--md-sys-color-primary); font-weight:bold; margin-bottom:2px;">@item.CodigoActivo</div>
+                            }
+                            <strong>@item.NombreEquipo</strong>
+                        </td>
                         <td>@item.Serial</td>
                         <td>
+                            @if (!string.IsNullOrWhiteSpace(item.Marca) || !string.IsNullOrWhiteSpace(item.Modelo))
+                            {
+                                <div style="font-weight:500;">@(item.Marca) @(item.Modelo)</div>
+                            }
                             <div>@item.SistemaOperativo</div>
-                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Procesador</div>
-                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Ram</div>
+                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">
+                                @item.Procesador | @item.Ram
+                                @if (!string.IsNullOrWhiteSpace(item.Almacenamiento))
+                                {
+                                    <span> | @item.Almacenamiento</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(item.Observaciones))
+                            {
+                                <div style="font-size:11px; color:var(--md-sys-color-secondary); font-style:italic; margin-top:4px; border-top:1px dashed #ccc; padding-top:2px;">
+                                    <md-icon style="font-size:12px; vertical-align:middle;">info</md-icon> @item.Observaciones
+                                </div>
+                            }
                         </td>
                         <td>@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
                         <td>

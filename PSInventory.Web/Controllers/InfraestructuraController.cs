@@ -108,48 +108,9 @@ namespace PSInventory.Web.Controllers
                 Regiones = await ObtenerRegionesSelect(),
                 Sucursales = await ObtenerSucursalesSelect(regionId),
                 Departamentos = await ObtenerDepartamentosSelect(),
-                Equipos = equipos.Select(e => new InfraEquipoListItemViewModel
-                {
-                    Id = e.Id,
-                    Region = e.Sucursal?.Region?.Nombre ?? "N/D",
-                    Sucursal = e.Sucursal?.Nombre ?? "N/D",
-                    NombreEquipo = e.NombreEquipo,
-                    Serial = e.Serial,
-                    SistemaOperativo = e.SistemaOperativo?.Nombre,
-                    Procesador = string.IsNullOrWhiteSpace(e.CpuDetalle)
-                        ? e.TipoProcesador?.Nombre
-                        : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}".Trim(),
-                    Ram = e.RamCantidadGb.HasValue
-                        ? $"{e.RamCantidadGb} GB {(e.TipoRam?.Nombre ?? string.Empty)}".Trim()
-                        : e.TipoRam?.Nombre,
-                    Departamentos = string.Join(", ", e.EquiposDepartamentos
-                        .Where(ed => ed.Departamento != null && !ed.Departamento.Eliminado)
-                        .Select(ed => ed.Departamento!.Nombre)
-                        .OrderBy(n => n)),
-                    Activo = e.Activo
-                }).ToList(),
-                Servicios = servicios.Select(s => new InfraServicioListItemViewModel
-                {
-                    Id = s.Id,
-                    Region = s.Sucursal?.Region?.Nombre ?? "N/D",
-                    Sucursal = s.Sucursal?.Nombre ?? "N/D",
-                    TipoServicio = s.TipoServicio?.Nombre ?? "N/D",
-                    Operador = s.OperadorServicio?.Nombre ?? "N/D",
-                    NumeroServicio = s.NumeroServicio,
-                    VelocidadBajadaMbps = s.VelocidadBajadaMbps,
-                    VelocidadSubidaMbps = s.VelocidadSubidaMbps,
-                    Activo = s.Activo
-                }).ToList(),
-                Accesorios = accesorios.Select(a => new InfraAccesorioListItemViewModel
-                {
-                    Id = a.Id,
-                    Region = a.Sucursal?.Region?.Nombre ?? "N/D",
-                    Sucursal = a.Sucursal?.Nombre ?? "N/D",
-                    TipoAccesorio = a.TipoAccesorio?.Nombre ?? "N/D",
-                    Cantidad = a.Cantidad,
-                    Especificaciones = a.Especificaciones,
-                    Activo = a.Activo
-                }).ToList()
+                Equipos = equipos.Select(MapEquipoListItem).ToList(),
+                Servicios = servicios.Select(MapServicioListItem).ToList(),
+                Accesorios = accesorios.Select(MapAccesorioListItem).ToList()
             };
 
             return View(vm);
@@ -186,7 +147,7 @@ namespace PSInventory.Web.Controllers
             }
 
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "Detalle CPU", "RAM (GB)", "Tipo RAM", "Almacenamiento", "IP", "Departamentos", "Estado" };
+            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "Detalle CPU", "RAM (GB)", "Tipo RAM", "Almacenamiento", "Departamentos", "Estado" };
             
             var rows = items.Select(e => new string?[] {
                 e.NombreEquipo,
@@ -202,7 +163,6 @@ namespace PSInventory.Web.Controllers
                 e.RamCantidadGb?.ToString(),
                 e.TipoRam?.Nombre,
                 e.Almacenamiento,
-                e.DireccionIp,
                 string.Join(", ", e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre ?? "")),
                 e.Activo ? "Activo" : "Inactivo"
             });
@@ -307,16 +267,19 @@ namespace PSInventory.Web.Controllers
             }
 
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "S.O.", "Procesador", "RAM", "Departamentos", "Estado" };
+            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "RAM", "Almacenamiento", "Departamentos", "Estado" };
             var rows = items.Select(e => new[] {
                 e.NombreEquipo,
                 e.Serial,
                 e.CodigoActivo ?? "",
                 e.Sucursal?.Region?.Nombre ?? "N/D",
                 e.Sucursal?.Nombre ?? "N/D",
+                e.Marca ?? "",
+                e.Modelo ?? "",
                 e.SistemaOperativo?.Nombre ?? "",
                 e.TipoProcesador?.Nombre ?? "",
                 e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "",
+                e.Almacenamiento ?? "",
                 string.Join("|", e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre ?? "")),
                 e.Activo ? "Activo" : "Inactivo"
             });
@@ -355,7 +318,7 @@ namespace PSInventory.Web.Controllers
                 e.NombreEquipo,
                 e.Serial,
                 e.Sucursal?.Nombre ?? "N/D",
-                $"• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• IP: {e.DireccionIp ?? "N/D"}",
+                $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
                 e.Activo ? "Activo" : "Inactivo"
             }).ToList();
 
@@ -1656,10 +1619,13 @@ namespace PSInventory.Web.Controllers
             return new InfraEquipoListItemViewModel
             {
                 Id = e.Id,
+                CodigoActivo = e.CodigoActivo,
                 Region = e.Sucursal?.Region?.Nombre ?? "N/D",
                 Sucursal = e.Sucursal?.Nombre ?? "N/D",
                 NombreEquipo = e.NombreEquipo,
                 Serial = e.Serial,
+                Marca = e.Marca,
+                Modelo = e.Modelo,
                 SistemaOperativo = e.SistemaOperativo?.Nombre,
                 Procesador = string.IsNullOrWhiteSpace(e.CpuDetalle)
                     ? e.TipoProcesador?.Nombre
@@ -1667,6 +1633,9 @@ namespace PSInventory.Web.Controllers
                 Ram = e.RamCantidadGb.HasValue
                     ? $"{e.RamCantidadGb} GB {(e.TipoRam?.Nombre ?? string.Empty)}".Trim()
                     : e.TipoRam?.Nombre,
+                Almacenamiento = e.Almacenamiento,
+                DireccionIp = e.DireccionIp,
+                Observaciones = e.Observaciones,
                 Departamentos = string.Join(", ", e.EquiposDepartamentos
                     .Where(ed => ed.Departamento != null && !ed.Departamento.Eliminado)
                     .Select(ed => ed.Departamento!.Nombre)

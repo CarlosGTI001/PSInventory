@@ -1,9 +1,26 @@
 /* MD3 Select Component - Estilo idéntico a md-filled-text-field */
 
+.select-with-search {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.select-with-search .md3-select-field {
+    flex: 1;
+}
+
+.select-with-search md-icon-button {
+    --md-icon-button-icon-color: var(--md-sys-color-primary);
+    margin-top: -4px; /* Alinear con el campo */
+}
+
 .md3-select-field {
     position: relative;
     width: 100%;
     margin-bottom: 4px;
+    overflow: visible; /* Cambiado de hidden para evitar ocultar sombras o bordes de componentes adyacentes */
 }
 
 .md3-select {
@@ -184,7 +201,7 @@
 
 /* Ripple Effect on Click */
 .md3-select-field {
-    overflow: hidden;
+    /* overflow: hidden; */ /* Removido para permitir que botones de búsqueda y agregación rápida sean visibles */
 }
 
 .md3-select-field::after {

@@ -10,6 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Configurar Anti-Forgery para soportar encabezado AJAX
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 // Configure Entity Framework
 builder.Services.AddDbContext<PSDatos>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));

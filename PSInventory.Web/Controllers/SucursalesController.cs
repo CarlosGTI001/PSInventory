@@ -9,7 +9,7 @@ using PSInventory.Web.Services;
 
 namespace PSInventory.Web.Controllers
 {
-    [AuthorizeRole("Administrador")]
+    [AuthorizeRole("Administrador", "Jefe")]
     public class SucursalesController : Controller
     {
         private readonly PSDatos _context;

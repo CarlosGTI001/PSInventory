@@ -117,36 +117,48 @@
         if (!nombre) return;
 
         const endpoint = routeByContext(config.entity);
-        if (!endpoint) return;
+        if (!endpoint) {
+            console.error(`No se pudo resolver el endpoint para la entidad: ${config.entity}`);
+            return;
+        }
 
         const body = { nombre };
         if (config.entity === 'Sucursal') {
             const regionId = findRegionValueForSucursal(select);
-            if (!regionId) {
-                window.showSnackbar?.('Primero selecciona una región.', 'warning');
+            if (!regionId || regionId === "0") {
+                window.showSnackbar?.('Primero selecciona una zona/región válida.', 'warning');
                 return;
             }
             body.regionId = Number(regionId);
         }
 
-        const resp = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': getRequestToken()
-            },
-            body: JSON.stringify(body)
-        });
+        try {
+            const resp = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getRequestToken()
+                },
+                body: JSON.stringify(body)
+            });
 
-        let data = {};
-        try { data = await resp.json(); } catch { }
-        if (!resp.ok || !data.success) {
-            window.showSnackbar?.(data.message || 'No se pudo crear el registro.', 'error');
-            return;
+            let data = {};
+            try { data = await resp.json(); } catch { }
+            
+            if (!resp.ok || !data.success) {
+                console.error('Error en la respuesta del servidor:', data);
+                window.showSnackbar?.(data.message || `No se pudo crear ${config.entity.toLowerCase()}.`, 'error');
+                return;
+            }
+
+            if (data.option) {
+                upsertOption(select, data.option.value, data.option.text);
+                window.showSnackbar?.(`${config.title.replace('Nuevo ', '').replace('Nueva ', '')} agregada correctamente.`, 'success');
+            }
+        } catch (err) {
+            console.error('Error al realizar la petición AJAX:', err);
+            window.showSnackbar?.('Error de red o de servidor al intentar crear el registro.', 'error');
         }
-
-        upsertOption(select, data.option.value, data.option.text);
-        window.showSnackbar?.(`${config.title.replace('Nuevo ', '').replace('Nueva ', '')} agregada correctamente.`, 'success');
     }
 
     function buildButton(icon, title) {

@@ -1727,7 +1727,3 @@ namespace PSInventory.Web.Controllers
         }
     }
 }
-teSpace(valor) ? null : valor.Trim();
-        }
-    }
-}

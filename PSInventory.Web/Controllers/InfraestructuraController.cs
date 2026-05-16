@@ -290,7 +290,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura/ExportarEquiposPdf
-        public async Task<IActionResult> ExportarEquiposPdf(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        public async Task<IActionResult> ExportarEquiposPdf(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null, string layout = "vertical")
         {
             var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
             var query = _context.InfraEquiposComputo
@@ -314,14 +314,43 @@ namespace PSInventory.Web.Controllers
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
             if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Equipos", "No hay equipos"), "application/pdf", "equipos.pdf");
 
-            var headers = new List<string> { "Equipo", "Serial", "Sucursal", "Especificaciones", "Estado" };
-            var filas = items.Select(e => new List<string> {
-                e.NombreEquipo,
-                e.Serial,
-                e.Sucursal?.Nombre ?? "N/D",
-                $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
-                e.Activo ? "Activo" : "Inactivo"
-            }).ToList();
+            var filtros = new Dictionary<string, string>();
+            if (regionId.HasValue && regionId.Value > 0) filtros.Add("Zona", (await _context.Regiones.FindAsync(regionId))?.Nombre ?? "N/D");
+            if (!string.IsNullOrWhiteSpace(sucursalId)) filtros.Add("Sucursal", (await _context.Sucursales.FindAsync(sucursalId))?.Nombre ?? "N/D");
+            if (departamentoId.HasValue && departamentoId.Value > 0) filtros.Add("Departamento", (await _context.Departamentos.FindAsync(departamentoId))?.Nombre ?? "N/D");
+
+            List<string> headers;
+            List<List<string>> filas;
+
+            if (layout == "horizontal")
+            {
+                headers = new List<string> { "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Sucursal", "Estado" };
+                filas = items.Select(e => new List<string> {
+                    e.NombreEquipo,
+                    $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
+                    e.SistemaOperativo?.Nombre ?? "—",
+                    (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
+                    (e.RamCantidadGb?.ToString() ?? "0") + " GB",
+                    e.Almacenamiento ?? "—",
+                    e.Sucursal?.Nombre ?? "N/D",
+                    e.Activo ? "Activo" : "Inactivo"
+                }).ToList();
+            }
+            else
+            {
+                headers = new List<string> { "Equipo", "Serial", "Sucursal", "Especificaciones", "Estado" };
+                filas = items.Select(e => new List<string> {
+                    e.NombreEquipo,
+                    e.Serial,
+                    e.Sucursal?.Nombre ?? "N/D",
+                    $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
+                    e.Activo ? "Activo" : "Inactivo"
+                }).ToList();
+            }
+
+            var pdfBytes = PdfReportService.GenerarPdfDinamico("Reporte de Equipos", usuario, filtros, headers, filas, layout == "horizontal");
+            return File(pdfBytes, "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
+        }
 
             var document = Document.Create(container => {
                 container.Page(page => {

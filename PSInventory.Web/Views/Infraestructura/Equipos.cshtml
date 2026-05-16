@@ -23,21 +23,16 @@
             <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposExcel", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro })'">
                 <md-icon slot="icon">table_view</md-icon> Excel
             </md-outlined-button>
-            <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro })'">
-                <md-icon slot="icon">picture_as_pdf</md-icon> PDF
+            <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro, layout = "vertical" })'">
+                <md-icon slot="icon">picture_as_pdf</md-icon> PDF Normal
+            </md-outlined-button>
+            <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { q = Model.Query, regionId = Model.RegionFiltro, sucursalId = Model.SucursalFiltro, departamentoId = Model.DepartamentoFiltro, layout = "horizontal" })'">
+                <md-icon slot="icon">view_column</md-icon> PDF Extendido
             </md-outlined-button>
             <md-filled-button onclick="window.location.href='@Url.Action("CreateEquipo")'">
                 <md-icon slot="icon">add</md-icon>
                 Nuevo Equipo
             </md-filled-button>
-        </div>
-        <div style="display: flex; background: var(--md-sys-color-surface-container-high); padding: 4px; border-radius: 20px; gap: 4px;">
-            <md-filter-chip label="Vista Normal" @(Model.ViewLayout == "vertical" ? "selected" : "") onclick="cambiarLayout('vertical')">
-                <md-icon slot="icon">view_headline</md-icon>
-            </md-filter-chip>
-            <md-filter-chip label="Vista Extendida" @(Model.ViewLayout == "horizontal" ? "selected" : "") onclick="cambiarLayout('horizontal')">
-                <md-icon slot="icon">view_column</md-icon>
-            </md-filter-chip>
         </div>
     </div>
 </div>
@@ -121,28 +116,12 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    @if (Model.ViewLayout == "horizontal")
-                    {
-                        <th>Zona / Sucursal</th>
-                        <th>Equipo</th>
-                        <th>Serial</th>
-                        <th>Marca / Modelo</th>
-                        <th>S.O.</th>
-                        <th>CPU</th>
-                        <th>RAM</th>
-                        <th>Disco</th>
-                        <th>Dptos.</th>
-                        <th>Estado</th>
-                    }
-                    else
-                    {
-                        <th>Zona / Sucursal</th>
-                        <th>Equipo</th>
-                        <th>Serial</th>
-                        <th>Especificaciones</th>
-                        <th>Departamentos</th>
-                        <th>Estado</th>
-                    }
+                    <th>Zona / Sucursal</th>
+                    <th>Equipo</th>
+                    <th>Serial</th>
+                    <th>Especificaciones</th>
+                    <th>Departamentos</th>
+                    <th>Estado</th>
                     <th class="actions-column">Acciones</th>
                 </tr>
             </thead>
@@ -154,58 +133,35 @@
                             <div>@item.Region</div>
                             <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Sucursal</div>
                         </td>
-                        @if (Model.ViewLayout == "horizontal")
-                        {
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(item.CodigoActivo))
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.CodigoActivo))
+                            {
+                                <div style="font-size:11px; color:var(--md-sys-color-primary); font-weight:bold; margin-bottom:2px;">@item.CodigoActivo</div>
+                            }
+                            <strong>@item.NombreEquipo</strong>
+                        </td>
+                        <td>@item.Serial</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.Marca) || !string.IsNullOrWhiteSpace(item.Modelo))
+                            {
+                                <div style="font-weight:500;">@(item.Marca) @(item.Modelo)</div>
+                            }
+                            <div>@item.SistemaOperativo</div>
+                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">
+                                @item.Procesador | @item.Ram
+                                @if (!string.IsNullOrWhiteSpace(item.Almacenamiento))
                                 {
-                                    <div style="font-size:11px; color:var(--md-sys-color-primary); font-weight:bold;">@item.CodigoActivo</div>
+                                    <span> | @item.Almacenamiento</span>
                                 }
-                                <strong style="font-size:13px;">@item.NombreEquipo</strong>
-                            </td>
-                            <td style="font-size:12px;">@item.Serial</td>
-                            <td style="font-size:12px;">
-                                @if (!string.IsNullOrWhiteSpace(item.Marca)) { <span>@item.Marca</span> }
-                                @if (!string.IsNullOrWhiteSpace(item.Modelo)) { <span> @item.Modelo</span> }
-                            </td>
-                            <td style="font-size:12px;">@(item.SistemaOperativo ?? "—")</td>
-                            <td style="font-size:11px; max-width:150px;">@(item.Procesador ?? "—")</td>
-                            <td style="font-size:12px;">@(item.Ram ?? "—")</td>
-                            <td style="font-size:12px;">@(item.Almacenamiento ?? "—")</td>
-                            <td style="font-size:11px; max-width:120px;">@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
-                        }
-                        else
-                        {
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(item.CodigoActivo))
-                                {
-                                    <div style="font-size:11px; color:var(--md-sys-color-primary); font-weight:bold; margin-bottom:2px;">@item.CodigoActivo</div>
-                                }
-                                <strong>@item.NombreEquipo</strong>
-                            </td>
-                            <td>@item.Serial</td>
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(item.Marca) || !string.IsNullOrWhiteSpace(item.Modelo))
-                                {
-                                    <div style="font-weight:500;">@(item.Marca) @(item.Modelo)</div>
-                                }
-                                <div>@item.SistemaOperativo</div>
-                                <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">
-                                    @item.Procesador | @item.Ram
-                                    @if (!string.IsNullOrWhiteSpace(item.Almacenamiento))
-                                    {
-                                        <span> | @item.Almacenamiento</span>
-                                    }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(item.Observaciones))
+                            {
+                                <div style="font-size:11px; color:var(--md-sys-color-secondary); font-style:italic; margin-top:4px; border-top:1px dashed #ccc; padding-top:2px;">
+                                    <md-icon style="font-size:12px; vertical-align:middle;">info</md-icon> @item.Observaciones
                                 </div>
-                                @if (!string.IsNullOrWhiteSpace(item.Observaciones))
-                                {
-                                    <div style="font-size:11px; color:var(--md-sys-color-secondary); font-style:italic; margin-top:4px; border-top:1px dashed #ccc; padding-top:2px;">
-                                        <md-icon style="font-size:12px; vertical-align:middle;">info</md-icon> @item.Observaciones
-                                    </div>
-                                }
-                            </td>
-                            <td>@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
-                        }
+                            }
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(item.Departamentos) ? "—" : item.Departamentos)</td>
                         <td>
                             @if (item.Activo)
                             {
@@ -233,12 +189,6 @@
 
 @section Scripts {
     <script>
-        function cambiarLayout(layout) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('layout', layout);
-            window.location.href = url.toString();
-        }
-
         async function confirmDeleteEquipo(id) {
             if (await showConfirmDialog('Eliminar Equipo', '¿Deseas eliminar este equipo?', 'Eliminar')) {
                 const formData = new FormData();

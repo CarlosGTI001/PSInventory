@@ -223,6 +223,42 @@ namespace PSInventory.Web.Services
             });
         }
 
+        public static byte[] GenerarPdfDinamico(
+            string titulo, 
+            string usuario, 
+            Dictionary<string, string> filtros, 
+            List<string> headers, 
+            List<List<string>> filas, 
+            bool horizontal = false)
+        {
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(horizontal ? PageSizes.Letter.Landscape() : PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(c => GenerarHeader(c, titulo, usuario));
+
+                    page.Content().PaddingVertical(10).Column(column =>
+                    {
+                        if (filtros != null && filtros.Any())
+                        {
+                            column.Item().PaddingBottom(10).Element(c => GenerarFiltros(c, filtros));
+                        }
+
+                        column.Item().Element(c => GenerarTablaSimple(c, headers, filas));
+                    });
+
+                    page.Footer().Element(c => GenerarFooter(c, usuario));
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
         public static byte[] GenerarPdfVacio(string titulo, string mensaje)
         {
             var document = Document.Create(container =>

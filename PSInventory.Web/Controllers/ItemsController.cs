@@ -55,6 +55,7 @@ namespace PSInventory.Web.Controllers
                 .Include(i => i.Lote)
                 .ThenInclude(l => l.Compra)
                 .Include(i => i.Sucursal)
+                .ThenInclude(s => s.Region)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(estado))
@@ -91,6 +92,7 @@ namespace PSInventory.Web.Controllers
                 .Include(i => i.Lote)
                     .ThenInclude(l => l.Compra)
                 .Include(i => i.Sucursal)
+                    .ThenInclude(s => s.Region)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(q))
@@ -116,15 +118,16 @@ namespace PSInventory.Web.Controllers
 
             var headers = new[]
             {
-                "Serial", "Articulo", "Categoria", "Sucursal", "Estado", "Responsable", "Cantidad", "CostoUnitario", "Proveedor", "GarantiaInicio", "GarantiaVencimiento", "Observaciones"
+                "Sucursal", "Zona", "Serial", "Articulo", "Categoria", "Estado", "Responsable", "Cantidad", "CostoUnitario", "Proveedor", "GarantiaInicio", "GarantiaVencimiento", "Observaciones"
             };
 
             var rows = items.Select(i => new[]
             {
+                i.Sucursal?.Nombre ?? "Sin asignar",
+                i.Sucursal?.Region?.Nombre ?? "N/D",
                 i.Serial ?? $"Lote {i.LoteId}",
                 $"{i.Articulo?.Marca} {i.Articulo?.Modelo}".Trim(),
                 i.Articulo?.Categoria?.Nombre ?? string.Empty,
-                i.Sucursal?.Nombre ?? "Sin asignar",
                 i.Estado ?? string.Empty,
                 i.ResponsableEmpleado ?? "No asignado",
                 i.Cantidad.ToString(),
@@ -151,6 +154,7 @@ namespace PSInventory.Web.Controllers
                 .Include(i => i.Lote)
                     .ThenInclude(l => l.Compra)
                 .Include(i => i.Sucursal)
+                    .ThenInclude(s => s.Region)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(q))
@@ -195,7 +199,7 @@ namespace PSInventory.Web.Controllers
 
             var headers = new List<string>
             {
-                "Serial / ID", "Artículo", "Categoría", "Sucursal", "Estado", "Responsable", "Garantía", "Costo"
+                "Sucursal", "Zona", "Serial / ID", "Artículo", "Categoría", "Estado", "Responsable", "Garantía", "Costo"
             };
 
             var filas = items.Select(i =>
@@ -211,10 +215,11 @@ namespace PSInventory.Web.Controllers
 
                 return new List<string>
                 {
+                    i.Sucursal?.Nombre ?? "Sin asignar",
+                    i.Sucursal?.Region?.Nombre ?? "N/D",
                     i.Serial ?? $"Lote {i.LoteId}",
                     $"{i.Articulo?.Marca} {i.Articulo?.Modelo}".Trim(),
                     i.Articulo?.Categoria?.Nombre ?? "N/A",
-                    i.Sucursal?.Nombre ?? "Sin asignar",
                     i.Estado ?? string.Empty,
                     i.ResponsableEmpleado ?? "No asignado",
                     garantia,

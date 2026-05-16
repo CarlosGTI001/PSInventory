@@ -179,10 +179,11 @@ else
         <table class="data-table">
             <thead>
                 <tr>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">store</md-icon>Sucursal</th>
+                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">public</md-icon>Zona</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">qr_code</md-icon>Serial</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">devices</md-icon>Artículo</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">category</md-icon>Categoría</th>
-                    <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">store</md-icon>Sucursal</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">attach_money</md-icon>Costo</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">verified</md-icon>Garantía</th>
                     <th><md-icon style="vertical-align: middle; margin-right: 8px; font-size: 18px;">info</md-icon>Estado</th>
@@ -227,6 +228,20 @@ else
                      
                     <tr>
                         <td>
+                            @if (item.Sucursal != null)
+                            {
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <md-icon style="font-size: 18px; color: var(--md-sys-color-secondary);">store</md-icon>
+                                    <strong>@item.Sucursal.Nombre</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color: var(--md-sys-color-outline);">Sin asignar</span>
+                            }
+                        </td>
+                        <td>@(item.Sucursal?.Region?.Nombre ?? "N/D")</td>
+                        <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <md-icon style="color: var(--md-sys-color-primary); font-size: 20px;">qr_code_2</md-icon>
                                 <strong>@(item.Serial ?? $"[Lote {item.LoteId}]")</strong>
@@ -239,19 +254,6 @@ else
                         <td>@item.Articulo?.Marca @item.Articulo?.Modelo</td>
                         <td>
                             <span class="badge badge-info">@item.Articulo?.Categoria?.Nombre</span>
-                        </td>
-                        <td>
-                            @if (item.Sucursal != null)
-                            {
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <md-icon style="font-size: 18px; color: var(--md-sys-color-secondary);">store</md-icon>
-                                    <span>@item.Sucursal.Nombre</span>
-                                </div>
-                            }
-                            else
-                            {
-                                <span style="color: var(--md-sys-color-outline);">Sin asignar</span>
-                            }
                         </td>
                         <td>
                             <strong style="color: var(--md-sys-color-primary);">$@(item.Lote?.CostoUnitario.ToString("N2"))</strong>

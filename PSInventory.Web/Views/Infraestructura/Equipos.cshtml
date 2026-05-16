@@ -116,7 +116,8 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Zona / Sucursal</th>
+                    <th>Sucursal</th>
+                    <th>Zona</th>
                     <th>Equipo</th>
                     <th>Serial</th>
                     <th>Especificaciones</th>
@@ -129,10 +130,8 @@
                 @foreach (var item in Model.Equipos)
                 {
                     <tr>
-                        <td>
-                            <div>@item.Region</div>
-                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Sucursal</div>
-                        </td>
+                        <td><strong>@item.Sucursal</strong></td>
+                        <td>@item.Region</td>
                         <td>
                             @if (!string.IsNullOrWhiteSpace(item.CodigoActivo))
                             {

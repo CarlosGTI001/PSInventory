@@ -91,7 +91,8 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Zona / Sucursal</th>
+                    <th>Sucursal</th>
+                    <th>Zona</th>
                     <th>Tipo</th>
                     <th>Cantidad</th>
                     <th>Especificaciones</th>
@@ -103,10 +104,8 @@
                 @foreach (var item in Model.Accesorios)
                 {
                     <tr>
-                        <td>
-                            <div>@item.Region</div>
-                            <div style="font-size:12px; color:var(--md-sys-color-on-surface-variant);">@item.Sucursal</div>
-                        </td>
+                        <td><strong>@item.Sucursal</strong></td>
+                        <td>@item.Region</td>
                         <td>@item.TipoAccesorio</td>
                         <td>@item.Cantidad</td>
                         <td>@(string.IsNullOrWhiteSpace(item.Especificaciones) ? "—" : item.Especificaciones)</td>

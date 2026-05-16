@@ -77,6 +77,7 @@ namespace PSInventory.Web.Controllers
                     .Include(i => i.Lote)
                     .ThenInclude(l => l.Compra)
                     .Include(i => i.Sucursal)
+                    .ThenInclude(s => s.Region)
                     .Where(i => i.Articulo != null && !i.Articulo.Eliminado)
                     .AsQueryable();
 
@@ -137,7 +138,7 @@ namespace PSInventory.Web.Controllers
                 // Preparar datos para tabla
                 var headers = new List<string>
                 {
-                    "Serial / ID", "Artículo", "Categoría", "Cantidad", "Sucursal", "Estado", "Último Movimiento", "Responsable"
+                    "Sucursal", "Zona", "Serial / ID", "Artículo", "Categoría", "Cantidad", "Estado", "Último Movimiento", "Responsable"
                 };
                 if (includeCostos)
                 {
@@ -148,11 +149,12 @@ namespace PSInventory.Web.Controllers
                 {
                     var fila = new List<string>
                     {
+                        i.Sucursal?.Nombre ?? "Sin Sucursal",
+                        i.Sucursal?.Region?.Nombre ?? "N/D",
                         i.Serial ?? "N/A",
                         $"{i.Articulo.Marca} {i.Articulo.Modelo}",
                         i.Articulo.Categoria.Nombre,
                         i.Cantidad.ToString(),
-                        i.Sucursal?.Nombre ?? "Sin Sucursal",
                         i.Estado,
                         ultimoMovimientoPorItem.TryGetValue(i.Id, out var fechaMovimiento) && fechaMovimiento.HasValue
                             ? fechaMovimiento.Value.ToString("dd/MM/yyyy")
@@ -297,7 +299,7 @@ namespace PSInventory.Web.Controllers
                             // Tabla
                             var headers = new List<string>
                             {
-                                "Serial / ID", "Artículo", "Categoría", "Cantidad", "Estado", "Último Movimiento", "Responsable"
+                                "Zona", "Serial / ID", "Artículo", "Categoría", "Cantidad", "Estado", "Último Movimiento", "Responsable"
                             };
                             if (includeCostos)
                             {
@@ -308,6 +310,7 @@ namespace PSInventory.Web.Controllers
                             {
                                 var fila = new List<string>
                                 {
+                                    sucursal.Region?.Nombre ?? "N/D",
                                     i.Serial ?? "N/A",
                                     $"{i.Articulo.Marca} {i.Articulo.Modelo}",
                                     i.Articulo.Categoria.Nombre,
@@ -372,9 +375,11 @@ namespace PSInventory.Web.Controllers
                 // Query base con includes
                 var query = _context.MovimientosItem
                     .Include(m => m.Item)
-                    .ThenInclude(i => i.Articulo)
+                        .ThenInclude(i => i.Articulo)
                     .Include(m => m.SucursalOrigen)
+                        .ThenInclude(s => s.Region)
                     .Include(m => m.SucursalDestino)
+                        .ThenInclude(s => s.Region)
                     .AsQueryable();
 
                 query = query.Where(m =>
@@ -473,18 +478,20 @@ namespace PSInventory.Web.Controllers
                 // Preparar datos para tabla
                 var headers = new List<string>
                 {
-                    "Fecha", "Fecha Recepción", "Serial", "Artículo", "Cant.", "Origen", "Destino", "Motivo", "Responsable Recepción", "Usuario", "Observaciones"
+                    "Origen", "Zona Origen", "Destino", "Zona Destino", "Fecha", "Fecha Recepción", "Serial", "Artículo", "Cant.", "Motivo", "Responsable Recepción", "Usuario", "Observaciones"
                 };
 
                 var filas = movimientos.Select(m => new List<string>
                 {
+                    m.SucursalOrigen?.Nombre ?? "Almacén Central",
+                    m.SucursalOrigen?.Region?.Nombre ?? "N/D",
+                    resolverDestinoMovimiento(m),
+                    m.SucursalDestino?.Region?.Nombre ?? "N/D",
                     m.FechaMovimiento.ToString("dd/MM/yyyy HH:mm"),
                     m.FechaRecepcion.HasValue ? m.FechaRecepcion.Value.ToString("dd/MM/yyyy HH:mm") : "N/A",
                     m.Item?.Serial ?? $"ID: {m.ItemId}",
                     m.Item?.Articulo != null ? $"{m.Item.Articulo.Marca} {m.Item.Articulo.Modelo}" : "Artículo no disponible",
                     m.Cantidad.ToString(),
-                    m.SucursalOrigen?.Nombre ?? "Almacén Central",
-                    resolverDestinoMovimiento(m),
                     m.Motivo ?? "N/A",
                     string.IsNullOrWhiteSpace(m.ResponsableRecepcion) ? "N/A" : m.ResponsableRecepcion,
                     m.UsuarioResponsable ?? "N/A",
@@ -584,9 +591,11 @@ namespace PSInventory.Web.Controllers
                 var movimientos = await _context.MovimientosItem
                     .Where(m => contexto.MovimientoIds.Contains(m.Id))
                     .Include(m => m.Item)
-                    .ThenInclude(i => i.Articulo)
+                        .ThenInclude(i => i.Articulo)
                     .Include(m => m.SucursalOrigen)
+                        .ThenInclude(s => s.Region)
                     .Include(m => m.SucursalDestino)
+                        .ThenInclude(s => s.Region)
                     .OrderBy(m => m.FechaMovimiento)
                     .ToListAsync();
 
@@ -640,19 +649,21 @@ namespace PSInventory.Web.Controllers
 
                 var headers = new List<string>
                 {
-                    "Fecha", "Serial / ID", "Artículo", "Cant.", "Origen", "Destino", "Motivo", "Usuario"
+                    "Origen", "Zona Origen", "Destino", "Zona Destino", "Fecha", "Serial / ID", "Artículo", "Cant.", "Motivo", "Usuario"
                 };
 
                 var filas = movimientos.Select(m => new List<string>
                 {
+                    m.SucursalOrigen?.Nombre ?? "Almacén",
+                    m.SucursalOrigen?.Region?.Nombre ?? "N/D",
+                    contexto.EntregaDepartamento ? destino : (m.SucursalDestino?.Nombre ?? destino),
+                    m.SucursalDestino?.Region?.Nombre ?? (contexto.EntregaDepartamento ? "N/D" : "N/D"),
                     m.FechaMovimiento.ToString("dd/MM/yyyy HH:mm"),
                     m.Item?.Serial ?? $"ID: {m.ItemId}",
                     m.Item?.Articulo != null
                         ? $"{m.Item.Articulo.Marca} {m.Item.Articulo.Modelo}"
                         : "Artículo no disponible",
                     m.Cantidad.ToString(),
-                    m.SucursalOrigen?.Nombre ?? "Almacén",
-                    contexto.EntregaDepartamento ? destino : (m.SucursalDestino?.Nombre ?? destino),
                     m.Motivo ?? "N/A",
                     m.UsuarioResponsable ?? "N/A"
                 }).ToList();
@@ -801,7 +812,7 @@ namespace PSInventory.Web.Controllers
                             // Tabla
                             var headers = new List<string> 
                             { 
-                                "Serial", "Artículo", "Sucursal", "Estado", "Responsable", "Fecha Inicio", "Vencimiento", "Días Restantes" 
+                                "Sucursal", "Zona", "Serial", "Artículo", "Estado", "Responsable", "Fecha Inicio", "Vencimiento", "Días Restantes" 
                             };
 
                             var filas = items.Select(i => 
@@ -812,9 +823,10 @@ namespace PSInventory.Web.Controllers
 
                                 return new List<string>
                                 {
+                                    i.Sucursal?.Nombre ?? "Sin Sucursal",
+                                    i.Sucursal?.Region?.Nombre ?? "N/D",
                                     i.Serial ?? "N/A",
                                     $"{i.Articulo.Marca} {i.Articulo.Modelo}",
-                                    i.Sucursal?.Nombre ?? "Sin Sucursal",
                                     i.Estado,
                                     i.ResponsableEmpleado ?? "No asignado",
                                     i.FechaGarantiaInicio.HasValue ? i.FechaGarantiaInicio.Value.ToString("dd/MM/yyyy") : "N/A",

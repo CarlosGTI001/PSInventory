@@ -148,14 +148,14 @@ namespace PSInventory.Web.Controllers
             }
 
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "Detalle CPU", "RAM (GB)", "Tipo RAM", "Almacenamiento", "Departamentos", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Equipo", "Serial", "Código Activo", "Marca", "Modelo", "S.O.", "Procesador", "Detalle CPU", "RAM (GB)", "Tipo RAM", "Almacenamiento", "Departamentos", "Estado" };
             
             var rows = items.Select(e => new string?[] {
+                e.Sucursal?.Nombre,
+                e.Sucursal?.Region?.Nombre,
                 e.NombreEquipo,
                 e.Serial,
                 e.CodigoActivo,
-                e.Sucursal?.Region?.Nombre,
-                e.Sucursal?.Nombre,
                 e.Marca,
                 e.Modelo,
                 e.SistemaOperativo?.Nombre,
@@ -222,11 +222,11 @@ namespace PSInventory.Web.Controllers
                 query = query.Where(a => a.SucursalId == sucursalId);
 
             var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Zona", "Sucursal", "Tipo de Accesorio", "Cantidad", "Especificaciones", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Tipo de Accesorio", "Cantidad", "Especificaciones", "Estado" };
             
             var rows = items.Select(a => new string?[] {
-                a.Sucursal?.Region?.Nombre,
                 a.Sucursal?.Nombre,
+                a.Sucursal?.Region?.Nombre,
                 a.TipoAccesorio?.Nombre,
                 a.Cantidad.ToString(),
                 a.Especificaciones,
@@ -268,13 +268,13 @@ namespace PSInventory.Web.Controllers
             }
 
             var items = await query.OrderBy(e => e.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Equipo", "Serial", "Código Activo", "Zona", "Sucursal", "Marca", "Modelo", "S.O.", "Procesador", "RAM", "Almacenamiento", "Departamentos", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Equipo", "Serial", "Código Activo", "Marca", "Modelo", "S.O.", "Procesador", "RAM", "Almacenamiento", "Departamentos", "Estado" };
             var rows = items.Select(e => new[] {
+                e.Sucursal?.Nombre ?? "N/D",
+                e.Sucursal?.Region?.Nombre ?? "N/D",
                 e.NombreEquipo,
                 e.Serial,
                 e.CodigoActivo ?? "",
-                e.Sucursal?.Region?.Nombre ?? "N/D",
-                e.Sucursal?.Nombre ?? "N/D",
                 e.Marca ?? "",
                 e.Modelo ?? "",
                 e.SistemaOperativo?.Nombre ?? "",
@@ -324,25 +324,27 @@ namespace PSInventory.Web.Controllers
 
             if (layout == "horizontal")
             {
-                headers = new List<string> { "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Sucursal", "Estado" };
+                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
                 filas = items.Select(e => new List<string> {
+                    e.Sucursal?.Nombre ?? "N/D",
+                    e.Sucursal?.Region?.Nombre ?? "N/D",
                     e.NombreEquipo,
                     $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
                     e.SistemaOperativo?.Nombre ?? "—",
                     (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
                     (e.RamCantidadGb?.ToString() ?? "0") + " GB",
                     e.Almacenamiento ?? "—",
-                    e.Sucursal?.Nombre ?? "N/D",
                     e.Activo ? "Activo" : "Inactivo"
                 }).ToList();
             }
             else
             {
-                headers = new List<string> { "Equipo", "Serial", "Sucursal", "Especificaciones", "Estado" };
+                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Especificaciones", "Estado" };
                 filas = items.Select(e => new List<string> {
+                    e.Sucursal?.Nombre ?? "N/D",
+                    e.Sucursal?.Region?.Nombre ?? "N/D",
                     e.NombreEquipo,
                     e.Serial,
-                    e.Sucursal?.Nombre ?? "N/D",
                     $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
                     e.Activo ? "Activo" : "Inactivo"
                 }).ToList();
@@ -443,12 +445,13 @@ namespace PSInventory.Web.Controllers
             }
 
             var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Tipo", "Operador", "Número", "Sucursal", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Tipo de Servicio", "Operador", "Número", "Baja (Mbps)", "Subida (Mbps)", "Estado" };
             var rows = items.Select(s => new[] {
+                s.Sucursal?.Nombre ?? "N/D",
+                s.Sucursal?.Region?.Nombre ?? "N/D",
                 s.TipoServicio?.Nombre ?? "N/D",
                 s.OperadorServicio?.Nombre ?? "N/D",
                 s.NumeroServicio ?? "",
-                s.Sucursal?.Nombre ?? "N/D",
                 s.VelocidadBajadaMbps?.ToString() ?? "0",
                 s.VelocidadSubidaMbps?.ToString() ?? "0",
                 s.Activo ? "Activo" : "Inactivo"
@@ -464,7 +467,7 @@ namespace PSInventory.Web.Controllers
             var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
             var query = _context.InfraServiciosSucursal
                 .Where(s => !s.Eliminado)
-                .Include(s => s.Sucursal)
+                .Include(s => s.Sucursal).ThenInclude(su => su.Region)
                 .Include(s => s.TipoServicio)
                 .Include(s => s.OperadorServicio)
                 .AsQueryable();
@@ -478,12 +481,13 @@ namespace PSInventory.Web.Controllers
             var items = await query.OrderBy(s => s.Sucursal!.Nombre).ToListAsync();
             if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Servicios", "No hay servicios"), "application/pdf", "servicios.pdf");
 
-            var headers = new List<string> { "Tipo", "Operador", "Número", "Sucursal", "Velocidad", "Estado" };
+            var headers = new List<string> { "Sucursal", "Zona", "Tipo", "Operador", "Número", "Velocidad", "Estado" };
             var filas = items.Select(s => new List<string> {
+                s.Sucursal?.Nombre ?? "N/D",
+                s.Sucursal?.Region?.Nombre ?? "N/D",
                 s.TipoServicio?.Nombre ?? "N/D",
                 s.OperadorServicio?.Nombre ?? "N/D",
                 s.NumeroServicio ?? "—",
-                s.Sucursal?.Nombre ?? "N/D",
                 $"{s.VelocidadBajadaMbps}/{s.VelocidadSubidaMbps} Mbps",
                 s.Activo ? "Activo" : "Inactivo"
             }).ToList();
@@ -517,11 +521,12 @@ namespace PSInventory.Web.Controllers
                 query = query.Where(a => a.SucursalId == sucursalId);
 
             var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
-            var headers = new[] { "Tipo", "Cantidad", "Sucursal", "Especificaciones", "Estado" };
+            var headers = new[] { "Sucursal", "Zona", "Tipo de Accesorio", "Cantidad", "Especificaciones", "Estado" };
             var rows = items.Select(a => new[] {
+                a.Sucursal?.Nombre ?? "N/D",
+                a.Sucursal?.Region?.Nombre ?? "N/D",
                 a.TipoAccesorio?.Nombre ?? "N/D",
                 a.Cantidad.ToString(),
-                a.Sucursal?.Nombre ?? "N/D",
                 a.Especificaciones ?? "",
                 a.Activo ? "Activo" : "Inactivo"
             });
@@ -536,7 +541,7 @@ namespace PSInventory.Web.Controllers
             var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
             var query = _context.InfraSucursalesAccesorio
                 .Where(a => !a.Eliminado)
-                .Include(a => a.Sucursal)
+                .Include(a => a.Sucursal).ThenInclude(su => su.Region)
                 .Include(a => a.TipoAccesorio)
                 .AsQueryable();
 
@@ -549,9 +554,10 @@ namespace PSInventory.Web.Controllers
             var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
             if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Accesorios", "No hay accesorios"), "application/pdf", "accesorios.pdf");
 
-            var headers = new List<string> { "Sucursal", "Tipo", "Cantidad", "Especificaciones", "Estado" };
+            var headers = new List<string> { "Sucursal", "Zona", "Tipo", "Cantidad", "Especificaciones", "Estado" };
             var filas = items.Select(a => new List<string> {
                 a.Sucursal?.Nombre ?? "N/D",
+                a.Sucursal?.Region?.Nombre ?? "N/D",
                 a.TipoAccesorio?.Nombre ?? "N/D",
                 a.Cantidad.ToString(),
                 a.Especificaciones ?? "—",

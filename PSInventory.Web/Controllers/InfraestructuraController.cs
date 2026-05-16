@@ -568,11 +568,11 @@ namespace PSInventory.Web.Controllers
             var items = await query.OrderBy(a => a.Sucursal!.Nombre).ToListAsync();
             if (!items.Any()) return File(PdfReportService.GenerarPdfVacio("Reporte de Accesorios", "No hay accesorios"), "application/pdf", "accesorios.pdf");
 
-            var headers = new List<string> { "Tipo", "Cantidad", "Sucursal", "Especificaciones", "Estado" };
+            var headers = new List<string> { "Sucursal", "Tipo", "Cantidad", "Especificaciones", "Estado" };
             var filas = items.Select(a => new List<string> {
+                a.Sucursal?.Nombre ?? "N/D",
                 a.TipoAccesorio?.Nombre ?? "N/D",
                 a.Cantidad.ToString(),
-                a.Sucursal?.Nombre ?? "N/D",
                 a.Especificaciones ?? "—",
                 a.Activo ? "Activo" : "Inactivo"
             }).ToList();
@@ -1724,6 +1724,10 @@ namespace PSInventory.Web.Controllers
         private static string? NormalizarTexto(string? valor)
         {
             return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        }
+    }
+}
+teSpace(valor) ? null : valor.Trim();
         }
     }
 }

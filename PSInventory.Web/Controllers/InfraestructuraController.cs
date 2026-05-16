@@ -352,19 +352,6 @@ namespace PSInventory.Web.Controllers
             return File(pdfBytes, "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
         }
 
-            var document = Document.Create(container => {
-                container.Page(page => {
-                    page.Size(PageSizes.Letter);
-                    page.Margin(30);
-                    page.Header().Element(c => PdfReportService.GenerarHeader(c, "Equipos de Cómputo", usuario));
-                    page.Content().PaddingTop(10).Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
-                    page.Footer().Element(c => PdfReportService.GenerarFooter(c, usuario));
-                });
-            });
-
-            return File(document.GeneratePdf(), "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
-        }
-
         // GET: Infraestructura/Equipos
         public async Task<IActionResult> Equipos(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null, string layout = "vertical")
         {

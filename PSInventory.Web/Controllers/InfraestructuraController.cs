@@ -23,7 +23,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura
-        public async Task<IActionResult> Index(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        public async Task<IActionResult> Index(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null, string layout = "vertical")
         {
             var equiposQuery = _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
@@ -110,7 +110,8 @@ namespace PSInventory.Web.Controllers
                 Departamentos = await ObtenerDepartamentosSelect(),
                 Equipos = equipos.Select(MapEquipoListItem).ToList(),
                 Servicios = servicios.Select(MapServicioListItem).ToList(),
-                Accesorios = accesorios.Select(MapAccesorioListItem).ToList()
+                Accesorios = accesorios.Select(MapAccesorioListItem).ToList(),
+                ViewLayout = layout
             };
 
             return View(vm);
@@ -336,7 +337,7 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura/Equipos
-        public async Task<IActionResult> Equipos(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)
+        public async Task<IActionResult> Equipos(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null, string layout = "vertical")
         {
             var equiposQuery = _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
@@ -394,7 +395,8 @@ namespace PSInventory.Web.Controllers
                 Regiones = await ObtenerRegionesSelect(),
                 Sucursales = await ObtenerSucursalesSelect(regionId),
                 Departamentos = await ObtenerDepartamentosSelect(),
-                Equipos = equipos.Select(MapEquipoListItem).ToList()
+                Equipos = equipos.Select(MapEquipoListItem).ToList(),
+                ViewLayout = layout
             };
 
             return View(vm);
@@ -654,12 +656,13 @@ namespace PSInventory.Web.Controllers
         }
 
         // GET: Infraestructura/Sucursal
-        public async Task<IActionResult> Sucursal(string codigoSucursal = "")
+        public async Task<IActionResult> Sucursal(string codigoSucursal = "", string layout = "vertical")
         {
             var vm = new InfraSucursalResumenViewModel
             {
                 CodigoSucursal = codigoSucursal ?? string.Empty,
-                Sucursales = await ObtenerSucursalesSelect()
+                Sucursales = await ObtenerSucursalesSelect(),
+                ViewLayout = layout
             };
 
             if (string.IsNullOrWhiteSpace(codigoSucursal))

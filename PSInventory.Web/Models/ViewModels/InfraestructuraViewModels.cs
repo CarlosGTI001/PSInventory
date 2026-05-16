@@ -9,6 +9,7 @@ public class InfraestructuraIndexViewModel
     public int? RegionFiltro { get; set; }
     public string? SucursalFiltro { get; set; }
     public int? DepartamentoFiltro { get; set; }
+    public string ViewLayout { get; set; } = "vertical";
 
     public int TotalEquipos { get; set; }
     public int EquiposActivos { get; set; }
@@ -28,6 +29,7 @@ public class InfraSucursalResumenViewModel
 {
     public string CodigoSucursal { get; set; } = string.Empty;
     public string? Mensaje { get; set; }
+    public string ViewLayout { get; set; } = "vertical";
 
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public InfraSucursalInfoViewModel? Sucursal { get; set; }

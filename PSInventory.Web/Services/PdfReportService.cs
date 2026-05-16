@@ -229,7 +229,8 @@ namespace PSInventory.Web.Services
             Dictionary<string, string> filtros, 
             List<string> headers, 
             List<List<string>> filas, 
-            bool horizontal = false)
+            bool horizontal = false,
+            List<int>? customWidths = null)
         {
             var document = Document.Create(container =>
             {
@@ -249,7 +250,7 @@ namespace PSInventory.Web.Services
                             column.Item().PaddingBottom(10).Element(c => GenerarFiltros(c, filtros));
                         }
 
-                        column.Item().Element(c => GenerarTablaSimple(c, headers, filas));
+                        column.Item().Element(c => GenerarTablaSimple(c, headers, filas, customWidths));
                     });
 
                     page.Footer().Element(c => GenerarFooter(c, usuario));

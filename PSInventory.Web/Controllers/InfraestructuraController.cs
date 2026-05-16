@@ -324,11 +324,12 @@ namespace PSInventory.Web.Controllers
 
             if (layout == "horizontal")
             {
-                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
+                headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco", "Estado" };
                 filas = items.Select(e => new List<string> {
                     e.Sucursal?.Nombre ?? "N/D",
                     e.Sucursal?.Region?.Nombre ?? "N/D",
                     e.NombreEquipo,
+                    e.Serial ?? "—",
                     $"{e.Marca ?? "—"} {e.Modelo ?? ""}".Trim(),
                     e.SistemaOperativo?.Nombre ?? "—",
                     (string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}") ?? "—",
@@ -336,6 +337,11 @@ namespace PSInventory.Web.Controllers
                     e.Almacenamiento ?? "—",
                     e.Activo ? "Activo" : "Inactivo"
                 }).ToList();
+
+                // Sucursal(80), Zona(70), Equipo(90), Serial(80), Marca/Modelo(100), S.O(70), CPU(100), RAM(50), Disco(70), Estado(50) = ~760 total (Landscape Letter es ~792)
+                var widths = new List<int> { 80, 70, 90, 80, 100, 70, 100, 50, 70, 50 };
+                var pdfBytesH = PdfReportService.GenerarPdfDinamico("Reporte de Equipos", usuario, filtros, headers, filas, true, widths);
+                return File(pdfBytesH, "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
             }
             else
             {

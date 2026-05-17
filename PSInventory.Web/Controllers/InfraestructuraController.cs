@@ -825,6 +825,10 @@ namespace PSInventory.Web.Controllers
 
                         // Equipos
                         col.Item().PaddingTop(10).PaddingBottom(5).Text("EQUIPOS DE CÓMPUTO").Bold().FontColor(Colors.Blue.Darken3);
+                        
+                        List<string> headers;
+                        List<List<string>> filas;
+
                         if (layout == "horizontal")
                         {
                             headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Marca/Modelo", "S.O.", "CPU", "RAM", "Disco" };
@@ -839,13 +843,13 @@ namespace PSInventory.Web.Controllers
                         }
                         else
                         {
-                            var vHeaders = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Especificaciones", "Estado" };
-                            var vFilas = equipos.Select(e => new List<string> {
+                            headers = new List<string> { "Sucursal", "Zona", "Equipo", "Serial", "Especificaciones", "Estado" };
+                            filas = equipos.Select(e => new List<string> {
                                 sucursal.Nombre, sucursal.Region?.Nombre ?? "N/D", e.NombreEquipo, e.Serial,
                                 $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
                                 e.Activo ? "Activo" : "Inactivo"
                             }).ToList();
-                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, vHeaders, vFilas));
+                            col.Item().Element(c => PdfReportService.GenerarTablaSimple(c, headers, filas));
                         }
 
                         // Servicios

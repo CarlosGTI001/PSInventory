@@ -1500,7 +1500,7 @@ namespace PSInventory.Web.Controllers
         private async Task ValidarEquipo(InfraEquipoFormViewModel vm, int? equipoId = null)
         {
             if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
-                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.RegionId == vm.RegionId.Value))
             {
                 ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
             }
@@ -1565,7 +1565,7 @@ namespace PSInventory.Web.Controllers
         private async Task ValidarServicio(InfraServicioFormViewModel vm)
         {
             if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
-                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.RegionId == vm.RegionId.Value))
             {
                 ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
             }
@@ -1599,7 +1599,7 @@ namespace PSInventory.Web.Controllers
         private async Task ValidarAccesorio(InfraAccesorioFormViewModel vm)
         {
             if (vm.RegionId.HasValue && vm.RegionId.Value > 0 &&
-                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.Activo && r.RegionId == vm.RegionId.Value))
+                !await _context.Regiones.AnyAsync(r => !r.Eliminado && r.RegionId == vm.RegionId.Value))
             {
                 ModelState.AddModelError(nameof(vm.RegionId), "La zona seleccionada no es válida.");
             }
@@ -1742,7 +1742,7 @@ namespace PSInventory.Web.Controllers
         private async Task<List<SelectListItem>> ObtenerRegionesSelect()
         {
             return await _context.Regiones
-                .Where(r => !r.Eliminado && r.Activo)
+                .Where(r => !r.Eliminado)
                 .OrderBy(r => r.Nombre)
                 .Select(r => new SelectListItem { Value = r.RegionId.ToString(), Text = r.Nombre })
                 .ToListAsync();

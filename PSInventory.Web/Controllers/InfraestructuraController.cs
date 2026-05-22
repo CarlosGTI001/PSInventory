@@ -404,7 +404,7 @@ namespace PSInventory.Web.Controllers
             
             // Generar el prompt con datos reales para el análisis AI
             var promptData = await GenerarPromptInfraestructura();
-            data.AnalisisAi = await _openAiService.GenerarAnalisisInfraestructura(promptData);
+            data.AnalisisAi = await _cohereAiService.GenerarAnalisisInfraestructura(promptData);
 
             var pdfBytes = PdfReportService.GenerarPdfInfraestructuraGrafica(usuario, data);
             

@@ -298,7 +298,7 @@ namespace PSInventory.Web.Services
                         // Cuadrícula de Gráficos (2 por página o similar)
                         foreach (var grafico in data.Graficos)
                         {
-                            column.Item().KeepTogether().PaddingBottom(30).Column(gCol =>
+                            column.Item().ShowEntire().PaddingBottom(30).Column(gCol =>
                             {
                                 gCol.Item().PaddingBottom(10).BorderBottom(1).BorderColor(Colors.Grey.Lighten2)
                                     .Text(grafico.Titulo).Style(ReportStyles.SectionTitle);

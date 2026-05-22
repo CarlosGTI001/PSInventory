@@ -237,3 +237,15 @@ public class InfraNormalizacionVarianteViewModel
     public string Valor { get; set; } = string.Empty;
     public int Cantidad { get; set; }
 }
+
+public class InfraReporteGraficoExportViewModel
+{
+    public string? AnalisisAi { get; set; }
+    public List<InfraChartExportItem> Graficos { get; set; } = new();
+}
+
+public class InfraChartExportItem
+{
+    public string Titulo { get; set; } = string.Empty;
+    public string Base64Image { get; set; } = string.Empty;
+}

@@ -22,6 +22,9 @@
         <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposExcel")'">
             <md-icon slot="icon">table_chart</md-icon> Excel General
         </md-outlined-button>
+        <md-filled-tonal-button id="btn-export-grafico" onclick="exportarGraficosPdf()">
+            <md-icon slot="icon">auto_awesome</md-icon> Reporte Analítico (AI)
+        </md-filled-tonal-button>
         <md-filled-button onclick="window.location.href='@Url.Action("ExportarEquiposPdf", new { layout = "horizontal" })'">
             <md-icon slot="icon">picture_as_pdf</md-icon> PDF Completo
         </md-filled-button>
@@ -67,7 +70,7 @@
     <div class="card" style="padding: 24px;">
         <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
             <md-icon style="color: #6366f1;">memory</md-icon>
-            Capacidad de RAM
+            RAM (Capacidad y Tipo)
         </h3>
         <div style="height: 300px;">
             <canvas id="chartPorRam"></canvas>
@@ -85,11 +88,33 @@
         </div>
     </div>
 
-    @* Equipos por Almacenamiento *@
+    @* Almacenamiento por Tipo *@
     <div class="card" style="padding: 24px;">
         <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
-            <md-icon style="color: #f59e0b;">sd_storage</md-icon>
-            Distribución de Almacenamiento
+            <md-icon style="color: #f59e0b;">album</md-icon>
+            Tecnología de Disco
+        </h3>
+        <div style="height: 300px;">
+            <canvas id="chartPorTipoDisco"></canvas>
+        </div>
+    </div>
+
+    @* Almacenamiento por Capacidad *@
+    <div class="card" style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: #ff5c00;">sd_storage</md-icon>
+            Capacidad de Almacenamiento
+        </h3>
+        <div style="height: 300px;">
+            <canvas id="chartPorCapacidadDisco"></canvas>
+        </div>
+    </div>
+
+    @* Equipos por Almacenamiento (Original) *@
+    <div class="card" style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: #64748b;">inventory_2</md-icon>
+            Detalle de Almacenamiento
         </h3>
         <div style="height: 300px;">
             <canvas id="chartPorAlmacenamiento"></canvas>
@@ -141,6 +166,8 @@
             initChart('chartPorSO', '@Url.Action("GetEquiposPorSistemaOperativo")', 'bar', true);
             initChart('chartPorRam', '@Url.Action("GetEquiposPorRam")', 'bar', true);
             initChart('chartPorProcesador', '@Url.Action("GetEquiposPorProcesador")', 'bar', true);
+            initChart('chartPorTipoDisco', '@Url.Action("GetEquiposPorTipoDisco")', 'bar', true);
+            initChart('chartPorCapacidadDisco', '@Url.Action("GetEquiposPorCapacidadDisco")', 'bar', true);
             initChart('chartPorAlmacenamiento', '@Url.Action("GetEquiposPorAlmacenamiento")', 'bar', true);
             initChart('chartPorTipoServicio', '@Url.Action("GetServiciosPorTipo")', 'bar', true);
             initChart('chartPorTipoAccesorio', '@Url.Action("GetAccesoriosPorTipo")', 'bar', true);
@@ -159,6 +186,12 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: {
+                            onComplete: function() {
+                                // Marcamos que el gráfico está listo para ser capturado si es necesario
+                                document.getElementById(canvasId).dataset.ready = "true";
+                            }
+                        },
                         plugins: {
                             legend: {
                                 display: type === 'pie',
@@ -184,6 +217,74 @@
                 new Chart(ctx, config);
             } catch (error) {
                 console.error('Error cargando gráfico ' + canvasId, error);
+            }
+        }
+
+        async function exportarGraficosPdf() {
+            LoadingHelper.show('Generando análisis con IA y preparando PDF...');
+            
+            try {
+                const charts = [
+                    { id: 'chartResumen', titulo: 'Distribución de Activos' },
+                    { id: 'chartPorZona', titulo: 'Equipos por Zona' },
+                    { id: 'chartPorSO', titulo: 'Sistemas Operativos' },
+                    { id: 'chartPorRam', titulo: 'Capacidad de RAM' },
+                    { id: 'chartPorProcesador', titulo: 'Tipos de Procesador' },
+                    { id: 'chartPorTipoDisco', titulo: 'Tecnología de Disco' },
+                    { id: 'chartPorCapacidadDisco', titulo: 'Capacidad de Almacenamiento' }
+                ];
+
+                const exportData = {
+                    graficos: []
+                };
+
+                for (const chartInfo of charts) {
+                    const canvas = document.getElementById(chartInfo.id);
+                    if (canvas) {
+                        // Capturamos la imagen en alta resolución (usando el canvas actual)
+                        const base64 = canvas.toDataURL('image/png', 1.0);
+                        exportData.graficos.push({
+                            titulo: chartInfo.titulo,
+                            base64Image: base64
+                        });
+                    }
+                }
+
+                const response = await fetch('@Url.Action("ExportarReporteGrafico")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    },
+                    body: JsonSerializer.serialize(exportData) // Usamos el helper global si existe o JSON.stringify
+                });
+
+                // Si JsonSerializer no está definido en el layout, usamos JSON.stringify
+                const finalResponse = await fetch('@Url.Action("ExportarReporteGrafico")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    },
+                    body: JSON.stringify(exportData)
+                });
+
+                const result = await finalResponse.json();
+
+                if (result.success) {
+                    const link = document.createElement('a');
+                    link.href = 'data:application/pdf;base64,' + result.fileBase64;
+                    link.download = result.fileName;
+                    link.click();
+                    showSnackbar('Reporte generado exitosamente con análisis de IA.', 'success');
+                } else {
+                    showSnackbar('Error al generar el reporte.', 'error');
+                }
+            } catch (error) {
+                console.error('Error al exportar reporte gráfico:', error);
+                showSnackbar('Error crítico al procesar el reporte.', 'error');
+            } finally {
+                LoadingHelper.hide();
             }
         }
     </script>

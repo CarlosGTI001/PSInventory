@@ -260,6 +260,71 @@ namespace PSInventory.Web.Services
             return document.GeneratePdf();
         }
 
+        public static byte[] GenerarPdfInfraestructuraGrafica(
+            string usuario,
+            InfraReporteGraficoExportViewModel data)
+        {
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(c => GenerarHeader(c, "Reporte Gráfico de Infraestructura", usuario));
+
+                    page.Content().PaddingVertical(10).Column(column =>
+                    {
+                        // Sección de Análisis AI
+                        if (!string.IsNullOrWhiteSpace(data.AnalisisAi))
+                        {
+                            column.Item().PaddingBottom(20).Background(Colors.Grey.Lighten4).Padding(15).Column(aiCol =>
+                            {
+                                aiCol.Item().Row(row =>
+                                {
+                                    row.RelativeItem().Text(x =>
+                                    {
+                                        x.Span("✦ ").FontColor(ColorSecundario).FontSize(14).Bold();
+                                        x.Span("Análisis y Resumen Inteligente").Style(ReportStyles.SectionTitle).FontColor(ColorPrimario);
+                                    });
+                                });
+                                aiCol.Item().PaddingTop(10).Text(data.AnalisisAi).Style(ReportStyles.TableCell).FontSize(10).LineHeight(1.4f);
+                            });
+                        }
+
+                        // Cuadrícula de Gráficos (2 por página o similar)
+                        foreach (var grafico in data.Graficos)
+                        {
+                            column.Item().KeepTogether().PaddingBottom(30).Column(gCol =>
+                            {
+                                gCol.Item().PaddingBottom(10).BorderBottom(1).BorderColor(Colors.Grey.Lighten2)
+                                    .Text(grafico.Titulo).Style(ReportStyles.SectionTitle);
+
+                                try
+                                {
+                                    var base64Data = grafico.Base64Image;
+                                    if (base64Data.Contains(",")) base64Data = base64Data.Split(',')[1];
+                                    var imageBytes = Convert.FromBase64String(base64Data);
+                                    
+                                    gCol.Item().PaddingTop(10).AlignCenter().Height(250).Image(imageBytes).FitArea();
+                                }
+                                catch
+                                {
+                                    gCol.Item().Padding(20).AlignCenter().Text("[Error al procesar imagen del gráfico]").FontColor(Colors.Red.Medium);
+                                }
+                            });
+                        }
+                    });
+
+                    page.Footer().Element(c => GenerarFooter(c, usuario));
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
         public static byte[] GenerarPdfVacio(string titulo, string mensaje)
         {
             var document = Document.Create(container =>

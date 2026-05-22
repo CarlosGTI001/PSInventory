@@ -1,6 +1,7 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using PSInventory.Web.Models.ViewModels;
 
 namespace PSInventory.Web.Services
 {

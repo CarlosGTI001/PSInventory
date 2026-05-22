@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 using PSData.Datos;
 using PSData.Modelos;
 using PSInventory.Web.Filters;
@@ -115,6 +116,153 @@ namespace PSInventory.Web.Controllers
             };
 
             return View(vm);
+        }
+
+        // GET: Infraestructura/Normalizacion
+        public async Task<IActionResult> Normalizacion()
+        {
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var vm = new InfraNormalizacionViewModel
+            {
+                GruposAlmacenamiento = ConstruirGruposNormalizacion(equipos.Select(e => e.Almacenamiento)),
+                GruposCpu = ConstruirGruposNormalizacion(equipos.Select(e => e.CpuDetalle))
+            };
+
+            return View(vm);
+        }
+
+        // POST: Infraestructura/AplicarNormalizacion
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AplicarNormalizacion(string campo, string clave, string nuevoValor)
+        {
+            if (string.IsNullOrWhiteSpace(campo) || string.IsNullOrWhiteSpace(clave))
+            {
+                TempData["Error"] = "La solicitud de normalización es inválida.";
+                return RedirectToAction(nameof(Normalizacion));
+            }
+
+            var valorNormalizado = NormalizarTexto(nuevoValor);
+            if (string.IsNullOrWhiteSpace(valorNormalizado))
+            {
+                TempData["Error"] = "Debe indicar el nuevo valor normalizado.";
+                return RedirectToAction(nameof(Normalizacion));
+            }
+
+            var campoKey = campo.Trim().ToLowerInvariant();
+            if (campoKey != "almacenamiento" && campoKey != "cpu")
+            {
+                TempData["Error"] = "El campo seleccionado no es válido.";
+                return RedirectToAction(nameof(Normalizacion));
+            }
+
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .ToListAsync();
+
+            var afectados = equipos
+                .Where(e => NormalizarClave(ObtenerValorCampo(e, campoKey)) == clave)
+                .ToList();
+
+            if (!afectados.Any())
+            {
+                TempData["Error"] = "No se encontraron registros para normalizar.";
+                return RedirectToAction(nameof(Normalizacion));
+            }
+
+            foreach (var equipo in afectados)
+            {
+                AsignarValorCampo(equipo, campoKey, valorNormalizado);
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Se normalizaron {afectados.Count} equipos en {NombreCampo(campoKey)}.";
+            return RedirectToAction(nameof(Normalizacion));
+        }
+
+        // GET: Infraestructura/Reportes
+        public IActionResult Reportes()
+        {
+            return View();
+        }
+
+        // API para Reportes - Resumen Infraestructura
+        [HttpGet]
+        public IActionResult GetInfraestructuraResumen()
+        {
+            var equipos = _context.InfraEquiposComputo.Count(e => !e.Eliminado);
+            var servicios = _context.InfraServiciosSucursal.Count(s => !s.Eliminado);
+            var accesorios = _context.InfraSucursalesAccesorio.Count(a => !a.Eliminado);
+
+            return Json(new
+            {
+                labels = new[] { "Equipos", "Servicios", "Accesorios" },
+                datasets = new[]
+                {
+                    new
+                    {
+                        data = new[] { equipos, servicios, accesorios },
+                        backgroundColor = new[] { "#047394", "#ff5c00", "#10b981" },
+                        borderWidth = 0
+                    }
+                }
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorZona()
+        {
+            var data = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .GroupBy(e => e.Sucursal != null && e.Sucursal.Region != null ? e.Sucursal.Region.Nombre : "Sin zona")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 8));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorSistemaOperativo()
+        {
+            var data = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .GroupBy(e => e.SistemaOperativo != null ? e.SistemaOperativo.Nombre : "Sin sistema operativo")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 8));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetServiciosPorTipo()
+        {
+            var data = await _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado)
+                .AsNoTracking()
+                .GroupBy(s => s.TipoServicio != null ? s.TipoServicio.Nombre : "Sin tipo")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Servicios", data.Select(x => (x.Nombre, x.Cantidad)), 8));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAccesoriosPorTipo()
+        {
+            var data = await _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado)
+                .AsNoTracking()
+                .GroupBy(a => a.TipoAccesorio != null ? a.TipoAccesorio.Nombre : "Sin tipo")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Accesorios", data.Select(x => (x.Nombre, x.Cantidad)), 8));
         }
 
         // GET: Infraestructura/ExportarEquiposExcel
@@ -1815,6 +1963,151 @@ namespace PSInventory.Web.Controllers
                 Especificaciones = a.Especificaciones,
                 Activo = a.Activo
             };
+        }
+
+        private static readonly string[] InfraChartPalette =
+        {
+            "#047394",
+            "#ff5c00",
+            "#10b981",
+            "#6366f1",
+            "#f59e0b",
+            "#ef4444",
+            "#14b8a6",
+            "#64748b",
+            "#a855f7"
+        };
+
+        private static object ConstruirBarChartData(string etiqueta, IEnumerable<(string Label, int Count)> items, int top)
+        {
+            var ordenados = items
+                .OrderByDescending(i => i.Count)
+                .ThenBy(i => i.Label)
+                .ToList();
+
+            if (!ordenados.Any())
+            {
+                return new
+                {
+                    labels = new[] { "Sin datos" },
+                    datasets = new[]
+                    {
+                        new
+                        {
+                            label = etiqueta,
+                            data = new[] { 0 },
+                            backgroundColor = new[] { "#CBD5E1" },
+                            borderRadius = 6
+                        }
+                    }
+                };
+            }
+
+            if (ordenados.Count > top)
+            {
+                var topItems = ordenados.Take(top).ToList();
+                var otros = ordenados.Skip(top).Sum(i => i.Count);
+                if (otros > 0)
+                {
+                    topItems.Add(("Otros", otros));
+                }
+                ordenados = topItems;
+            }
+
+            var labels = ordenados.Select(i => i.Label).ToArray();
+            var data = ordenados.Select(i => i.Count).ToArray();
+            var colors = ConstruirPalette(labels.Length);
+
+            return new
+            {
+                labels,
+                datasets = new[]
+                {
+                    new
+                    {
+                        label = etiqueta,
+                        data,
+                        backgroundColor = colors,
+                        borderRadius = 6
+                    }
+                }
+            };
+        }
+
+        private static string[] ConstruirPalette(int count)
+        {
+            return Enumerable.Range(0, count)
+                .Select(i => InfraChartPalette[i % InfraChartPalette.Length])
+                .ToArray();
+        }
+
+        private static List<InfraNormalizacionGrupoViewModel> ConstruirGruposNormalizacion(IEnumerable<string?> valores)
+        {
+            var limpiados = valores
+                .Select(NormalizarTexto)
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .ToList();
+
+            var grupos = limpiados
+                .GroupBy(v => NormalizarClave(v))
+                .Select(g => new
+                {
+                    Clave = g.Key,
+                    Variantes = g.GroupBy(v => v!)
+                        .Select(vg => new InfraNormalizacionVarianteViewModel
+                        {
+                            Valor = vg.Key,
+                            Cantidad = vg.Count()
+                        })
+                        .OrderByDescending(v => v.Cantidad)
+                        .ThenBy(v => v.Valor)
+                        .ToList()
+                })
+                .Where(g => g.Variantes.Count > 1)
+                .OrderByDescending(g => g.Variantes.Sum(v => v.Cantidad))
+                .ThenBy(g => g.Variantes[0].Valor)
+                .Select(g => new InfraNormalizacionGrupoViewModel
+                {
+                    Clave = g.Clave,
+                    Variantes = g.Variantes,
+                    Sugerencia = g.Variantes.First().Valor,
+                    Total = g.Variantes.Sum(v => v.Cantidad)
+                })
+                .ToList();
+
+            return grupos;
+        }
+
+        private static string? ObtenerValorCampo(InfraEquipoComputo equipo, string campoKey)
+        {
+            return campoKey == "almacenamiento" ? equipo.Almacenamiento : equipo.CpuDetalle;
+        }
+
+        private static void AsignarValorCampo(InfraEquipoComputo equipo, string campoKey, string? valor)
+        {
+            if (campoKey == "almacenamiento")
+            {
+                equipo.Almacenamiento = valor;
+                return;
+            }
+
+            equipo.CpuDetalle = valor;
+        }
+
+        private static string NombreCampo(string campoKey)
+        {
+            return campoKey == "almacenamiento" ? "Almacenamiento" : "CPU";
+        }
+
+        private static string NormalizarClave(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return string.Empty;
+            }
+
+            var upper = valor.Trim().ToUpperInvariant();
+            return Regex.Replace(upper, @"[^A-Z0-9]+", "");
         }
 
         private static string NormalizarCodigoSucursal(string codigo)

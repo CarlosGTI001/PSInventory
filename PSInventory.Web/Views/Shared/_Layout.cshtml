@@ -229,6 +229,14 @@
                         <md-icon>storefront</md-icon>
                         <span>Vista Sucursal</span>
                     </a>
+                    <a href="/Infraestructura/Normalizacion" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Normalizacion" ? "active" : "")">
+                        <md-icon>auto_fix_high</md-icon>
+                        <span>Normalización</span>
+                    </a>
+                    <a href="/Infraestructura/Reportes" class="nav-item nav-subitem @(currentController == "Infraestructura" && currentAction == "Reportes" ? "active" : "")">
+                        <md-icon>analytics</md-icon>
+                        <span>Reportes Gráficos</span>
+                    </a>
                 </div>
                 
                 @if (Context.Session.GetString("UserRole") == "Administrador")

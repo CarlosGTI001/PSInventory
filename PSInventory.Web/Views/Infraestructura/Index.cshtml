@@ -11,12 +11,20 @@
     <span style="color: var(--md-sys-color-primary);">Infraestructura</span>
 </div>
 
-<div class="page-header">
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
     <div>
         <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Infraestructura de Sucursales</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
             Equipos de cómputo, servicios y accesorios por sucursal
         </p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <md-outlined-button onclick="window.location.href='@Url.Action("Normalizacion")'">
+            <md-icon slot="icon">auto_fix_high</md-icon> Normalizar Datos
+        </md-outlined-button>
+        <md-filled-tonal-button onclick="window.location.href='@Url.Action("Reportes")'">
+            <md-icon slot="icon">analytics</md-icon> Ver Reportes
+        </md-filled-tonal-button>
     </div>
 </div>
 

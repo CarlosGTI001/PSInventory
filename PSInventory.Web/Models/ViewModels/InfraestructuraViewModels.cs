@@ -215,3 +215,23 @@ public class InfraAccesorioFormViewModel
     public IEnumerable<SelectListItem> Sucursales { get; set; } = new List<SelectListItem>();
     public IEnumerable<SelectListItem> TiposAccesorio { get; set; } = new List<SelectListItem>();
 }
+
+public class InfraNormalizacionViewModel
+{
+    public List<InfraNormalizacionGrupoViewModel> GruposAlmacenamiento { get; set; } = new();
+    public List<InfraNormalizacionGrupoViewModel> GruposCpu { get; set; } = new();
+}
+
+public class InfraNormalizacionGrupoViewModel
+{
+    public string Clave { get; set; } = string.Empty;
+    public string Sugerencia { get; set; } = string.Empty;
+    public int Total { get; set; }
+    public List<InfraNormalizacionVarianteViewModel> Variantes { get; set; } = new();
+}
+
+public class InfraNormalizacionVarianteViewModel
+{
+    public string Valor { get; set; } = string.Empty;
+    public int Cantidad { get; set; }
+}

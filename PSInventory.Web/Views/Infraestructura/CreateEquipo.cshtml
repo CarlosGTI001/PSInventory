@@ -13,14 +13,65 @@
     <span style="color: var(--md-sys-color-primary);">Nuevo Equipo</span>
 </div>
 
-<div class="page-header">
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
     <div>
         <h1 class="md-typescale-display-small" style="margin: 0 0 8px 0;">Registrar Equipo de Cómputo</h1>
         <p class="md-typescale-body-large" style="color: var(--md-sys-color-on-surface-variant); margin: 0;">
             Datos de hardware, sistema, serial y asignación a departamentos
         </p>
     </div>
+    <md-filled-tonal-button id="btn-quick-fill">
+        <md-icon slot="icon">content_paste</md-icon>
+        Pegar Info de Sistema
+    </md-filled-tonal-button>
 </div>
+
+<!-- Modal para Pegar Información -->
+<md-dialog id="dialog-quick-fill">
+    <div slot="headline">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <md-icon style="color:var(--md-sys-color-primary);">content_paste</md-icon>
+            <span>Asistente de Autocompletado</span>
+        </div>
+    </div>
+    <div slot="content" style="min-width: 500px; max-width: 800px;">
+        <div id="step-paste">
+            <p class="md-typescale-body-medium" style="margin-bottom: 16px;">
+                Pegue el bloque de texto con la información del equipo para extraer los datos.
+            </p>
+            <md-filled-text-field
+                id="text-info-paste"
+                type="textarea"
+                rows="10"
+                label="Información del sistema"
+                placeholder="Ejemplo:&#10;Numero de Serial: 6QMPCV2&#10;Marca: Dell Inc.&#10;Modelo: Wyse 7040..."
+                style="width: 100%;">
+            </md-filled-text-field>
+        </div>
+
+        <div id="step-review" style="display: none;">
+            <p class="md-typescale-body-medium" style="margin-bottom: 16px; color: var(--md-sys-color-primary); font-weight: 500;">
+                Revise y edite la información extraída antes de cargarla:
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <md-outlined-text-field id="review-serial" label="Serial"></md-outlined-text-field>
+                <md-outlined-text-field id="review-marca" label="Marca"></md-outlined-text-field>
+                <md-outlined-text-field id="review-modelo" label="Modelo"></md-outlined-text-field>
+                <md-outlined-text-field id="review-procesador" label="Procesador (Detalle)"></md-outlined-text-field>
+                <md-outlined-text-field id="review-ram" label="RAM (GB)" type="number"></md-outlined-text-field>
+                <md-outlined-text-field id="review-almacenamiento" label="Almacenamiento"></md-outlined-text-field>
+                <md-outlined-text-field id="review-tipoRam" label="Tipo RAM (Texto)"></md-outlined-text-field>
+                <md-outlined-text-field id="review-os" label="S.O. (Texto)"></md-outlined-text-field>
+            </div>
+        </div>
+    </div>
+    <div slot="actions">
+        <md-text-button id="btn-cancel-quick-fill">Cancelar</md-text-button>
+        <md-filled-button id="btn-extract-data">Extraer Datos</md-filled-button>
+        <md-filled-button id="btn-back-to-paste" style="display: none;">Atrás</md-filled-button>
+        <md-filled-button id="btn-apply-reviewed-data" style="display: none;">Cargar en Formulario</md-filled-button>
+    </div>
+</md-dialog>
 
 <form asp-action="CreateEquipo" method="post">
     @Html.AntiForgeryToken()
@@ -288,6 +339,163 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function () {
+            const btnQuickFill = document.getElementById('btn-quick-fill');
+            const dialogQuickFill = document.getElementById('dialog-quick-fill');
+            const btnExtractData = document.getElementById('btn-extract-data');
+            const btnApplyReviewedData = document.getElementById('btn-apply-reviewed-data');
+            const btnBackToPaste = document.getElementById('btn-back-to-paste');
+            const btnCancelQuickFill = document.getElementById('btn-cancel-quick-fill');
+            const textPaste = document.getElementById('text-info-paste');
+            
+            const stepPaste = document.getElementById('step-paste');
+            const stepReview = document.getElementById('step-review');
+
+            if (btnQuickFill && dialogQuickFill) {
+                btnQuickFill.addEventListener('click', () => {
+                    resetQuickFill();
+                    dialogQuickFill.show();
+                });
+            }
+
+            if (btnCancelQuickFill) {
+                btnCancelQuickFill.addEventListener('click', () => dialogQuickFill.close());
+            }
+
+            if (btnExtractData && textPaste) {
+                btnExtractData.addEventListener('click', () => {
+                    const text = textPaste.value;
+                    if (!text) {
+                        showSnackbar('Por favor pegue información para procesar.', 'error');
+                        return;
+                    }
+
+                    const data = parseSystemInfo(text);
+                    populateReviewFields(data);
+                    
+                    stepPaste.style.display = 'none';
+                    stepReview.style.display = 'block';
+                    btnExtractData.style.display = 'none';
+                    btnBackToPaste.style.display = 'inline-flex';
+                    btnApplyReviewedData.style.display = 'inline-flex';
+                });
+            }
+
+            if (btnBackToPaste) {
+                btnBackToPaste.addEventListener('click', () => {
+                    stepPaste.style.display = 'block';
+                    stepReview.style.display = 'none';
+                    btnExtractData.style.display = 'inline-flex';
+                    btnBackToPaste.style.display = 'none';
+                    btnApplyReviewedData.style.display = 'none';
+                });
+            }
+
+            if (btnApplyReviewedData) {
+                btnApplyReviewedData.addEventListener('click', () => {
+                    const reviewedData = {
+                        serial: document.getElementById('review-serial').value,
+                        marca: document.getElementById('review-marca').value,
+                        modelo: document.getElementById('review-modelo').value,
+                        procesador: document.getElementById('review-procesador').value,
+                        ram: document.getElementById('review-ram').value,
+                        almacenamiento: document.getElementById('review-almacenamiento').value,
+                        tipoRam: document.getElementById('review-tipoRam').value,
+                        os: document.getElementById('review-os').value
+                    };
+
+                    applyToForm(reviewedData);
+                    dialogQuickFill.close();
+                });
+            }
+
+            function resetQuickFill() {
+                textPaste.value = '';
+                stepPaste.style.display = 'block';
+                stepReview.style.display = 'none';
+                btnExtractData.style.display = 'inline-flex';
+                btnBackToPaste.style.display = 'none';
+                btnApplyReviewedData.style.display = 'none';
+            }
+
+            function parseSystemInfo(text) {
+                const lines = text.split('\n');
+                const result = {};
+                const mappings = {
+                    'serial': [/serial|serie/i, 'Serial'],
+                    'marca': [/marca|manufacturer/i, 'Marca'],
+                    'modelo': [/modelo|model/i, 'Modelo'],
+                    'procesador': [/procesador|processor/i, 'Procesador'],
+                    'ram': [/ram total|memoria/i, 'Ram'],
+                    'tipoRam': [/tipo ram|memory type/i, 'TipoRam'],
+                    'os': [/sistema operativo|os name/i, 'OS'],
+                    'almacenamiento': [/almacenamiento|storage|disk/i, 'Almacenamiento']
+                };
+
+                lines.forEach(line => {
+                    const parts = line.split(':');
+                    if (parts.length < 2) return;
+                    const key = parts[0].trim().toLowerCase();
+                    const value = parts.slice(1).join(':').trim();
+                    for (const id in mappings) {
+                        if (mappings[id][0].test(key)) result[id] = value;
+                    }
+                });
+                return result;
+            }
+
+            function populateReviewFields(data) {
+                document.getElementById('review-serial').value = data.serial || '';
+                document.getElementById('review-marca').value = data.marca || '';
+                document.getElementById('review-modelo').value = data.modelo || '';
+                document.getElementById('review-procesador').value = data.procesador || '';
+                document.getElementById('review-almacenamiento').value = data.almacenamiento || '';
+                document.getElementById('review-tipoRam').value = data.tipoRam || '';
+                document.getElementById('review-os').value = data.os || '';
+
+                if (data.ram) {
+                    const ramMatch = data.ram.match(/(\d+(\.\d+)?)/);
+                    if (ramMatch) {
+                        document.getElementById('review-ram').value = Math.round(parseFloat(ramMatch[0]));
+                    }
+                } else {
+                    document.getElementById('review-ram').value = '';
+                }
+            }
+
+            function applyToForm(data) {
+                if (data.serial) document.querySelector('[name="Serial"]').value = data.serial;
+                if (data.marca) document.querySelector('[name="Marca"]').value = data.marca;
+                if (data.modelo) document.querySelector('[name="Modelo"]').value = data.modelo;
+                
+                if (data.procesador) {
+                    document.querySelector('[name="CpuDetalle"]').value = data.procesador;
+                    matchSelect('TipoProcesadorId', data.procesador);
+                }
+
+                if (data.ram) {
+                    document.querySelector('[name="RamCantidadGb"]').value = data.ram;
+                }
+
+                if (data.tipoRam) matchSelect('TipoRamId', data.tipoRam);
+                if (data.os) matchSelect('SistemaOperativoId', data.os);
+                if (data.almacenamiento) document.querySelector('[name="Almacenamiento"]').value = data.almacenamiento;
+
+                showSnackbar('Información cargada en el formulario correctamente.', 'success');
+            }
+
+            function matchSelect(id, text) {
+                const select = document.getElementById(id);
+                if (!select) return;
+                const options = Array.from(select.options);
+                const normalizedText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const bestMatch = options.find(opt => {
+                    if (!opt.value) return false;
+                    const optText = opt.textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return normalizedText.includes(optText) || optText.includes(normalizedText);
+                });
+                if (bestMatch) select.value = bestMatch.value;
+            }
+
             const regionSelect = document.getElementById('RegionId');
             if (regionSelect) {
                 regionSelect.addEventListener('change', () => cargarSucursalesPorZona(''));

@@ -2134,16 +2134,16 @@ namespace PSInventory.Web.Controllers
         {
             switch (campoKey)
             {
-                "almacenamiento":
+                case "almacenamiento":
                     equipo.Almacenamiento = valor;
                     break;
-                "cpu":
+                case "cpu":
                     equipo.CpuDetalle = valor;
                     break;
-                "marca":
+                case "marca":
                     equipo.Marca = valor;
                     break;
-                "tipo-ram":
+                case "tipo-ram":
                     if (!string.IsNullOrWhiteSpace(valor))
                     {
                         var tipoRam = await _context.InfraTiposRam

@@ -123,13 +123,16 @@ namespace PSInventory.Web.Controllers
         {
             var equipos = await _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
+                .Include(e => e.TipoRam)
                 .AsNoTracking()
                 .ToListAsync();
 
             var vm = new InfraNormalizacionViewModel
             {
-                GruposAlmacenamiento = ConstruirGruposNormalizacion(equipos.Select(e => e.Almacenamiento)),
-                GruposCpu = ConstruirGruposNormalizacion(equipos.Select(e => e.CpuDetalle))
+                GruposAlmacenamiento = ConstruirGruposNormalizacion(equipos.Select(e => e.Almacenamiento), "almacenamiento"),
+                GruposCpu = ConstruirGruposNormalizacion(equipos.Select(e => e.CpuDetalle), "cpu"),
+                GruposTipoRam = ConstruirGruposNormalizacion(equipos.Select(e => e.TipoRam?.Nombre), "tipo-ram"),
+                GruposMarca = ConstruirGruposNormalizacion(equipos.Select(e => e.Marca), "marca")
             };
 
             return View(vm);
@@ -147,21 +150,17 @@ namespace PSInventory.Web.Controllers
             }
 
             var valorNormalizado = NormalizarTexto(nuevoValor);
-            if (string.IsNullOrWhiteSpace(valorNormalizado))
+            if (string.IsNullOrWhiteSpace(valorNormalizado) && campo != "cpu") // CPU puede quedar vacío
             {
                 TempData["Error"] = "Debe indicar el nuevo valor normalizado.";
                 return RedirectToAction(nameof(Normalizacion));
             }
 
             var campoKey = campo.Trim().ToLowerInvariant();
-            if (campoKey != "almacenamiento" && campoKey != "cpu")
-            {
-                TempData["Error"] = "El campo seleccionado no es válido.";
-                return RedirectToAction(nameof(Normalizacion));
-            }
-
+            
             var equipos = await _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
+                .Include(e => e.TipoRam)
                 .ToListAsync();
 
             var afectados = equipos
@@ -176,7 +175,7 @@ namespace PSInventory.Web.Controllers
 
             foreach (var equipo in afectados)
             {
-                AsignarValorCampo(equipo, campoKey, valorNormalizado);
+                await AsignarValorCampo(equipo, campoKey, valorNormalizado);
             }
 
             await _context.SaveChangesAsync();
@@ -237,6 +236,46 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 8));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorRam()
+        {
+            var data = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .GroupBy(e => e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "Sin RAM")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .OrderBy(x => x.Nombre)
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorProcesador()
+        {
+            var data = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .GroupBy(e => e.TipoProcesador != null ? e.TipoProcesador.Nombre : "Sin procesador")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorAlmacenamiento()
+        {
+            var data = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .AsNoTracking()
+                .GroupBy(e => e.Almacenamiento ?? "Sin disco")
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
         }
 
         [HttpGet]
@@ -485,8 +524,9 @@ namespace PSInventory.Web.Controllers
                     e.Almacenamiento ?? "—"
                 }).ToList();
 
-                // Sucursal(80), Zona(70), Equipo(90), Serial(100), Marca/Modelo(120), S.O(80), CPU(120), RAM(40), Disco(80) = ~780 total (Landscape Letter es ~792)
-                var widths = new List<int> { 80, 70, 90, 100, 120, 80, 120, 40, 80 };
+                // Ajuste de anchos para que quepan en 732 pts (792 - 60 de márgenes)
+                // Sucursal(70), Zona(60), Equipo(80), Serial(80), Marca/Modelo(100), S.O(70), CPU(120), RAM(40), Disco(80) = 700 total
+                var widths = new List<int> { 70, 60, 80, 80, 100, 70, 120, 40, 80 };
                 var pdfBytesH = PdfReportService.GenerarPdfDinamico("Reporte de Equipos", usuario, filtros, headers, filas, true, widths);
                 return File(pdfBytesH, "application/pdf", $"equipos_{DateTime.Now:yyyyMMdd}.pdf");
             }
@@ -497,7 +537,7 @@ namespace PSInventory.Web.Controllers
                     e.Sucursal?.Nombre ?? "N/D",
                     e.Sucursal?.Region?.Nombre ?? "N/D",
                     e.NombreEquipo,
-                    e.Serial,
+                    e.Serial ?? "—",
                     $"• Marca/Modelo: {e.Marca ?? "N/D"} {e.Modelo ?? ""}\n• S.O: {e.SistemaOperativo?.Nombre ?? "N/D"}\n• CPU: {(string.IsNullOrWhiteSpace(e.CpuDetalle) ? e.TipoProcesador?.Nombre : $"{e.TipoProcesador?.Nombre} {e.CpuDetalle}")}\n• RAM: {e.RamCantidadGb?.ToString() ?? "0"} GB {e.TipoRam?.Nombre}\n• Disco: {e.Almacenamiento ?? "N/D"}",
                     e.Activo ? "Activo" : "Inactivo"
                 }).ToList();
@@ -2041,7 +2081,7 @@ namespace PSInventory.Web.Controllers
                 .ToArray();
         }
 
-        private static List<InfraNormalizacionGrupoViewModel> ConstruirGruposNormalizacion(IEnumerable<string?> valores)
+        private static List<InfraNormalizacionGrupoViewModel> ConstruirGruposNormalizacion(IEnumerable<string?> valores, string campo)
         {
             var limpiados = valores
                 .Select(NormalizarTexto)
@@ -2078,25 +2118,58 @@ namespace PSInventory.Web.Controllers
             return grupos;
         }
 
-        private static string? ObtenerValorCampo(InfraEquipoComputo equipo, string campoKey)
+        private async Task<string?> ObtenerValorCampo(InfraEquipoComputo equipo, string campoKey)
         {
-            return campoKey == "almacenamiento" ? equipo.Almacenamiento : equipo.CpuDetalle;
+            return campoKey switch
+            {
+                "almacenamiento" => equipo.Almacenamiento,
+                "cpu" => equipo.CpuDetalle,
+                "marca" => equipo.Marca,
+                "tipo-ram" => (await _context.InfraTiposRam.FindAsync(equipo.TipoRamId))?.Nombre,
+                _ => null
+            };
         }
 
-        private static void AsignarValorCampo(InfraEquipoComputo equipo, string campoKey, string? valor)
+        private async Task AsignarValorCampo(InfraEquipoComputo equipo, string campoKey, string? valor)
         {
-            if (campoKey == "almacenamiento")
+            switch (campoKey)
             {
-                equipo.Almacenamiento = valor;
-                return;
+                "almacenamiento":
+                    equipo.Almacenamiento = valor;
+                    break;
+                "cpu":
+                    equipo.CpuDetalle = valor;
+                    break;
+                "marca":
+                    equipo.Marca = valor;
+                    break;
+                "tipo-ram":
+                    if (!string.IsNullOrWhiteSpace(valor))
+                    {
+                        var tipoRam = await _context.InfraTiposRam
+                            .FirstOrDefaultAsync(tr => !tr.Eliminado && tr.Nombre.ToLower() == valor.Trim().ToLower());
+                        if (tipoRam == null)
+                        {
+                            tipoRam = new InfraTipoRam { Nombre = valor.Trim(), Activo = true };
+                            _context.InfraTiposRam.Add(tipoRam);
+                            await _context.SaveChangesAsync();
+                        }
+                        equipo.TipoRamId = tipoRam.Id;
+                    }
+                    break;
             }
-
-            equipo.CpuDetalle = valor;
         }
 
         private static string NombreCampo(string campoKey)
         {
-            return campoKey == "almacenamiento" ? "Almacenamiento" : "CPU";
+            return campoKey switch
+            {
+                "almacenamiento" => "Almacenamiento",
+                "cpu" => "CPU (Detalle)",
+                "marca" => "Marca",
+                "tipo-ram" => "Tipo de RAM",
+                _ => campoKey
+            };
         }
 
         private static string NormalizarClave(string? valor)

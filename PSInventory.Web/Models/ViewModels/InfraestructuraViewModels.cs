@@ -220,6 +220,8 @@ public class InfraNormalizacionViewModel
 {
     public List<InfraNormalizacionGrupoViewModel> GruposAlmacenamiento { get; set; } = new();
     public List<InfraNormalizacionGrupoViewModel> GruposCpu { get; set; } = new();
+    public List<InfraNormalizacionGrupoViewModel> GruposTipoRam { get; set; } = new();
+    public List<InfraNormalizacionGrupoViewModel> GruposMarca { get; set; } = new();
 }
 
 public class InfraNormalizacionGrupoViewModel

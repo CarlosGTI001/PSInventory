@@ -63,6 +63,39 @@
         </div>
     </div>
 
+    @* Equipos por RAM *@
+    <div class="card" style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: #6366f1;">memory</md-icon>
+            Capacidad de RAM
+        </h3>
+        <div style="height: 300px;">
+            <canvas id="chartPorRam"></canvas>
+        </div>
+    </div>
+
+    @* Equipos por Procesador *@
+    <div class="card" style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: #a855f7;">developer_board</md-icon>
+            Tipos de Procesador
+        </h3>
+        <div style="height: 300px;">
+            <canvas id="chartPorProcesador"></canvas>
+        </div>
+    </div>
+
+    @* Equipos por Almacenamiento *@
+    <div class="card" style="padding: 24px;">
+        <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+            <md-icon style="color: #f59e0b;">sd_storage</md-icon>
+            Distribución de Almacenamiento
+        </h3>
+        <div style="height: 300px;">
+            <canvas id="chartPorAlmacenamiento"></canvas>
+        </div>
+    </div>
+
     @* Servicios por Tipo *@
     <div class="card" style="padding: 24px;">
         <h3 class="md-typescale-title-medium" style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
@@ -106,6 +139,9 @@
             initChart('chartResumen', '@Url.Action("GetInfraestructuraResumen")', 'pie');
             initChart('chartPorZona', '@Url.Action("GetEquiposPorZona")', 'bar', true);
             initChart('chartPorSO', '@Url.Action("GetEquiposPorSistemaOperativo")', 'bar', true);
+            initChart('chartPorRam', '@Url.Action("GetEquiposPorRam")', 'bar', true);
+            initChart('chartPorProcesador', '@Url.Action("GetEquiposPorProcesador")', 'bar', true);
+            initChart('chartPorAlmacenamiento', '@Url.Action("GetEquiposPorAlmacenamiento")', 'bar', true);
             initChart('chartPorTipoServicio', '@Url.Action("GetServiciosPorTipo")', 'bar', true);
             initChart('chartPorTipoAccesorio', '@Url.Action("GetAccesoriosPorTipo")', 'bar', true);
         });

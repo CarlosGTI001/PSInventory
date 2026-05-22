@@ -17,10 +17,12 @@ namespace PSInventory.Web.Controllers
     public class InfraestructuraController : Controller
     {
         private readonly PSDatos _context;
+        private readonly CohereAiService _cohereAiService;
 
-        public InfraestructuraController(PSDatos context)
+        public InfraestructuraController(PSDatos context, CohereAiService cohereAiService)
         {
             _context = context;
+            _cohereAiService = cohereAiService;
         }
 
         // GET: Infraestructura
@@ -266,13 +268,21 @@ namespace PSInventory.Web.Controllers
         {
             var data = await _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
+                .Include(e => e.TipoRam)
                 .AsNoTracking()
-                .GroupBy(e => e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "Sin RAM")
-                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
-                .OrderBy(x => x.Nombre)
                 .ToListAsync();
 
-            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
+            var agrupados = data
+                .GroupBy(e => {
+                    var cant = e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "Sin RAM";
+                    var tipo = e.TipoRam?.Nombre ?? "";
+                    return $"{cant} {tipo}".Trim();
+                })
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .OrderByDescending(x => x.Cantidad)
+                .ToList();
+
+            return Json(ConstruirBarChartData("Equipos", agrupados.Select(x => (x.Nombre, x.Cantidad)), 10));
         }
 
         [HttpGet]
@@ -284,6 +294,60 @@ namespace PSInventory.Web.Controllers
                 .GroupBy(e => e.TipoProcesador != null ? e.TipoProcesador.Nombre : "Sin procesador")
                 .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
                 .ToListAsync();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorTipoDisco()
+        {
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.Almacenamiento != null)
+                .Select(e => e.Almacenamiento)
+                .ToListAsync();
+
+            var data = equipos
+                .Select(a => {
+                    var text = a!.ToUpperInvariant();
+                    if (text.Contains("SSD") || text.Contains("NVME") || text.Contains("M.2")) return "SSD / NVMe";
+                    if (text.Contains("HDD") || text.Contains("MECANICO")) return "HDD (Mecánico)";
+                    return "Otros / No especificado";
+                })
+                .GroupBy(t => t)
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .ToList();
+
+            return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 5));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetEquiposPorCapacidadDisco()
+        {
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.Almacenamiento != null)
+                .Select(e => e.Almacenamiento)
+                .ToListAsync();
+
+            var data = equipos
+                .Select(a => {
+                    var match = Regex.Match(a!, @"(\d+)\s*(GB|TB)", RegexOptions.IgnoreCase);
+                    if (match.Success)
+                    {
+                        var valor = match.Groups[1].Value;
+                        var unidad = match.Groups[2].Value.ToUpperInvariant();
+                        return unidad == "TB" ? $"{valor} TB" : $"{valor} GB";
+                    }
+                    return "No especificado";
+                })
+                .GroupBy(t => t)
+                .Select(g => new { Nombre = g.Key, Cantidad = g.Count() })
+                .OrderBy(g => {
+                    var m = Regex.Match(g.Nombre, @"(\d+)");
+                    if (!m.Success) return 0;
+                    var val = int.Parse(m.Groups[1].Value);
+                    return g.Nombre.Contains("TB") ? val * 1024 : val;
+                })
+                .ToList();
 
             return Json(ConstruirBarChartData("Equipos", data.Select(x => (x.Nombre, x.Cantidad)), 10));
         }
@@ -325,6 +389,63 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             return Json(ConstruirBarChartData("Accesorios", data.Select(x => (x.Nombre, x.Cantidad)), 8));
+        }
+
+        // POST: Infraestructura/ExportarReporteGrafico
+        [HttpPost]
+        public async Task<IActionResult> ExportarReporteGrafico([FromBody] InfraReporteGraficoExportViewModel data)
+        {
+            if (data == null || data.Graficos == null || !data.Graficos.Any())
+            {
+                return BadRequest("No se recibieron gráficos para exportar.");
+            }
+
+            var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
+            
+            // Generar el prompt con datos reales para el análisis AI
+            var promptData = await GenerarPromptInfraestructura();
+            data.AnalisisAi = await _openAiService.GenerarAnalisisInfraestructura(promptData);
+
+            var pdfBytes = PdfReportService.GenerarPdfInfraestructuraGrafica(usuario, data);
+            
+            return Json(new { 
+                success = true, 
+                fileName = $"reporte_grafico_{DateTime.Now:yyyyMMdd_HHmm}.pdf",
+                fileBase64 = Convert.ToBase64String(pdfBytes) 
+            });
+        }
+
+        private async Task<string> GenerarPromptInfraestructura()
+        {
+            var totalEquipos = await _context.InfraEquiposComputo.CountAsync(e => !e.Eliminado);
+            var totalServicios = await _context.InfraServiciosSucursal.CountAsync(s => !s.Eliminado);
+            var totalAccesorios = await _context.InfraSucursalesAccesorio.CountAsync(a => !a.Eliminado);
+
+            var distZonas = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .GroupBy(e => e.Sucursal != null && e.Sucursal.Region != null ? e.Sucursal.Region.Nombre : "N/D")
+                .Select(g => $"{g.Key}: {g.Count()}")
+                .ToListAsync();
+
+            var distOS = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .GroupBy(e => e.SistemaOperativo != null ? e.SistemaOperativo.Nombre : "N/D")
+                .Select(g => $"{g.Key}: {g.Count()}")
+                .ToListAsync();
+
+            var distRam = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado)
+                .GroupBy(e => e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "N/D")
+                .Select(g => $"{g.Key}: {g.Count()}")
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Resumen General: {totalEquipos} equipos, {totalServicios} servicios de red, {totalAccesorios} accesorios.");
+            sb.AppendLine($"Distribución por Zonas: {string.Join(", ", distZonas)}");
+            sb.AppendLine($"Sistemas Operativos: {string.Join(", ", distOS)}");
+            sb.AppendLine($"Capacidad de RAM: {string.Join(", ", distRam)}");
+
+            return sb.ToString();
         }
 
         // GET: Infraestructura/ExportarEquiposExcel

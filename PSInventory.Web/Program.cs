@@ -20,6 +20,10 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddDbContext<PSDatos>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register AI Service
+builder.Services.AddHttpClient<PSInventory.Web.Services.CohereAiService>();
+builder.Services.AddScoped<PSInventory.Web.Services.CohereAiService>();
+
 // Add session support
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>

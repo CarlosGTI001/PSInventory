@@ -164,7 +164,7 @@ namespace PSInventory.Web.Controllers
                 .ToListAsync();
 
             var afectados = equipos
-                .Where(e => NormalizarClave(ObtenerValorCampo(e, campoKey)) == clave)
+                .Where(e => NormalizarClave(ObtenerValorCampoSync(e, campoKey)) == clave)
                 .ToList();
 
             if (!afectados.Any())
@@ -173,9 +173,32 @@ namespace PSInventory.Web.Controllers
                 return RedirectToAction(nameof(Normalizacion));
             }
 
+            // Para tipo-ram, resolvemos el ID una sola vez
+            int? nuevoTipoRamId = null;
+            if (campoKey == "tipo-ram" && !string.IsNullOrWhiteSpace(valorNormalizado))
+            {
+                var tipoRam = await _context.InfraTiposRam
+                    .FirstOrDefaultAsync(tr => !tr.Eliminado && tr.Nombre.ToLower() == valorNormalizado.Trim().ToLower());
+                
+                if (tipoRam == null)
+                {
+                    tipoRam = new InfraTipoRam { Nombre = valorNormalizado.Trim(), Activo = true };
+                    _context.InfraTiposRam.Add(tipoRam);
+                    await _context.SaveChangesAsync();
+                }
+                nuevoTipoRamId = tipoRam.Id;
+            }
+
             foreach (var equipo in afectados)
             {
-                await AsignarValorCampo(equipo, campoKey, valorNormalizado);
+                if (campoKey == "tipo-ram")
+                {
+                    equipo.TipoRamId = nuevoTipoRamId;
+                }
+                else
+                {
+                    AsignarValorCampoSync(equipo, campoKey, valorNormalizado);
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -2118,19 +2141,19 @@ namespace PSInventory.Web.Controllers
             return grupos;
         }
 
-        private async Task<string?> ObtenerValorCampo(InfraEquipoComputo equipo, string campoKey)
+        private static string? ObtenerValorCampoSync(InfraEquipoComputo equipo, string campoKey)
         {
             return campoKey switch
             {
                 "almacenamiento" => equipo.Almacenamiento,
                 "cpu" => equipo.CpuDetalle,
                 "marca" => equipo.Marca,
-                "tipo-ram" => (await _context.InfraTiposRam.FindAsync(equipo.TipoRamId))?.Nombre,
+                "tipo-ram" => equipo.TipoRam?.Nombre,
                 _ => null
             };
         }
 
-        private async Task AsignarValorCampo(InfraEquipoComputo equipo, string campoKey, string? valor)
+        private static void AsignarValorCampoSync(InfraEquipoComputo equipo, string campoKey, string? valor)
         {
             switch (campoKey)
             {
@@ -2142,20 +2165,6 @@ namespace PSInventory.Web.Controllers
                     break;
                 case "marca":
                     equipo.Marca = valor;
-                    break;
-                case "tipo-ram":
-                    if (!string.IsNullOrWhiteSpace(valor))
-                    {
-                        var tipoRam = await _context.InfraTiposRam
-                            .FirstOrDefaultAsync(tr => !tr.Eliminado && tr.Nombre.ToLower() == valor.Trim().ToLower());
-                        if (tipoRam == null)
-                        {
-                            tipoRam = new InfraTipoRam { Nombre = valor.Trim(), Activo = true };
-                            _context.InfraTiposRam.Add(tipoRam);
-                            await _context.SaveChangesAsync();
-                        }
-                        equipo.TipoRamId = tipoRam.Id;
-                    }
                     break;
             }
         }

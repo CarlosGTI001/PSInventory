@@ -488,12 +488,23 @@
                 if (!select) return;
                 const options = Array.from(select.options);
                 const normalizedText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const bestMatch = options.find(opt => {
-                    if (!opt.value) return false;
-                    const optText = opt.textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    return normalizedText.includes(optText) || optText.includes(normalizedText);
-                });
-                if (bestMatch) select.value = bestMatch.value;
+                
+                // Buscamos todas las coincidencias y nos quedamos con la más larga (la más específica)
+                const matches = options
+                    .filter(opt => {
+                        if (!opt.value) return false;
+                        const optText = opt.textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        return normalizedText.includes(optText) || optText.includes(normalizedText);
+                    })
+                    .sort((a, b) => {
+                        const aText = a.textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const bText = b.textContent.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        return bText.length - aText.length; // Ordenar por longitud descendente
+                    });
+
+                if (matches.length > 0) {
+                    select.value = matches[0].value;
+                }
             }
 
             const regionSelect = document.getElementById('RegionId');

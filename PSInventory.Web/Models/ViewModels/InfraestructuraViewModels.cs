@@ -222,6 +222,8 @@ public class InfraNormalizacionViewModel
     public List<InfraNormalizacionGrupoViewModel> GruposCpu { get; set; } = new();
     public List<InfraNormalizacionGrupoViewModel> GruposTipoRam { get; set; } = new();
     public List<InfraNormalizacionGrupoViewModel> GruposMarca { get; set; } = new();
+    public List<InfraNormalizacionGrupoViewModel> GruposProcesadorMaestro { get; set; } = new();
+    public List<InfraNormalizacionGrupoViewModel> GruposOsMaestro { get; set; } = new();
 }
 
 public class InfraNormalizacionGrupoViewModel
@@ -236,6 +238,7 @@ public class InfraNormalizacionVarianteViewModel
 {
     public string Valor { get; set; } = string.Empty;
     public int Cantidad { get; set; }
+    public List<int> OriginalIds { get; set; } = new();
 }
 
 public class InfraReporteGraficoExportViewModel

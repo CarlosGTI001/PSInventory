@@ -248,4 +248,5 @@ public class InfraChartExportItem
 {
     public string Titulo { get; set; } = string.Empty;
     public string Base64Image { get; set; } = string.Empty;
+    public string? RawData { get; set; }
 }

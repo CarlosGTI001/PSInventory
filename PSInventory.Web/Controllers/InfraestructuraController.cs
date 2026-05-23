@@ -402,9 +402,9 @@ namespace PSInventory.Web.Controllers
 
             var usuario = HttpContext.Session.GetString("UserName") ?? "Sistema";
             
-            // Generar el prompt con datos reales para el análisis AI
-            var promptData = await GenerarPromptInfraestructura();
-            data.AnalisisAi = await _cohereAiService.GenerarAnalisisInfraestructura(promptData);
+            // Construimos un resumen textual basado en los datos reales de los gráficos enviados
+            var resumenTecnico = GenerarResumenDesdeGraficos(data.Graficos);
+            data.AnalisisAi = await _cohereAiService.GenerarAnalisisInfraestructura(resumenTecnico);
 
             var pdfBytes = PdfReportService.GenerarPdfInfraestructuraGrafica(usuario, data);
             
@@ -415,42 +415,21 @@ namespace PSInventory.Web.Controllers
             });
         }
 
-        private async Task<string> GenerarPromptInfraestructura()
+        private string GenerarResumenDesdeGraficos(List<InfraChartExportItem> graficos)
         {
-            var totalEquipos = await _context.InfraEquiposComputo.CountAsync(e => !e.Eliminado);
-            var totalServicios = await _context.InfraServiciosSucursal.CountAsync(s => !s.Eliminado);
-            var totalAccesorios = await _context.InfraSucursalesAccesorio.CountAsync(a => !a.Eliminado);
-
-            var equipos = await _context.InfraEquiposComputo
-                .Where(e => !e.Eliminado)
-                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
-                .Include(e => e.SistemaOperativo)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var distZonas = equipos
-                .GroupBy(e => e.Sucursal?.Region?.Nombre ?? "N/D")
-                .Select(g => $"{g.Key}: {g.Count()}")
-                .ToList();
-
-            var distOS = equipos
-                .GroupBy(e => e.SistemaOperativo?.Nombre ?? "N/D")
-                .Select(g => $"{g.Key}: {g.Count()}")
-                .ToList();
-
-            var distRam = equipos
-                .GroupBy(e => e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "N/D")
-                .Select(g => $"{g.Key}: {g.Count()}")
-                .ToList();
-
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Resumen General: {totalEquipos} equipos, {totalServicios} servicios de red, {totalAccesorios} accesorios.");
-            sb.AppendLine($"Distribución por Zonas: {string.Join(", ", distZonas)}");
-            sb.AppendLine($"Sistemas Operativos: {string.Join(", ", distOS)}");
-            sb.AppendLine($"Capacidad de RAM: {string.Join(", ", distRam)}");
+            sb.AppendLine("RESUMEN TÉCNICO DE INFRAESTRUCTURA PARA ANÁLISIS:");
+            
+            foreach (var g in graficos)
+            {
+                sb.AppendLine($"- {g.Titulo}: {g.RawData}");
+            }
 
             return sb.ToString();
         }
+
+        // Eliminar GenerarPromptInfraestructura si ya no se usa o dejarlo como backup
+        // ... (resto de métodos) ...
 
         // GET: Infraestructura/ExportarEquiposExcel
         public async Task<IActionResult> ExportarEquiposExcel(string q = "", int? regionId = null, string? sucursalId = null, int? departamentoId = null)

@@ -232,7 +232,10 @@
                     { id: 'chartPorRam', titulo: 'Capacidad de RAM' },
                     { id: 'chartPorProcesador', titulo: 'Tipos de Procesador' },
                     { id: 'chartPorTipoDisco', titulo: 'Tecnología de Disco' },
-                    { id: 'chartPorCapacidadDisco', titulo: 'Capacidad de Almacenamiento' }
+                    { id: 'chartPorCapacidadDisco', titulo: 'Capacidad de Almacenamiento' },
+                    { id: 'chartPorAlmacenamiento', titulo: 'Detalle de Almacenamiento' },
+                    { id: 'chartPorTipoServicio', titulo: 'Servicios de Sucursal' },
+                    { id: 'chartPorTipoAccesorio', titulo: 'Tipos de Accesorios' }
                 ];
 
                 const exportData = {
@@ -242,11 +245,22 @@
                 for (const chartInfo of charts) {
                     const canvas = document.getElementById(chartInfo.id);
                     if (canvas) {
-                        // Capturamos la imagen en alta resolución (usando el canvas actual)
+                        // Capturamos la imagen
                         const base64 = canvas.toDataURL('image/png', 1.0);
+                        
+                        // Extraemos los datos técnicos del gráfico para la IA
+                        let rawDataText = "Sin datos";
+                        const chartInstance = Chart.getChart(canvas);
+                        if (chartInstance && chartInstance.data) {
+                            const labels = chartInstance.data.labels;
+                            const values = chartInstance.data.datasets[0].data;
+                            rawDataText = labels.map((l, i) => `${l}: ${values[i]}`).join(', ');
+                        }
+
                         exportData.graficos.push({
                             titulo: chartInfo.titulo,
-                            base64Image: base64
+                            base64Image: base64,
+                            rawData: rawDataText
                         });
                     }
                 }

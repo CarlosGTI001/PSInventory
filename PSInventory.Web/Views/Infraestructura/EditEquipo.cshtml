@@ -432,13 +432,40 @@
                     'almacenamiento': [/almacenamiento|storage|disk/i, 'Almacenamiento']
                 };
 
+                let lastKey = null;
+
                 lines.forEach(line => {
-                    const parts = line.split(':');
-                    if (parts.length < 2) return;
-                    const key = parts[0].trim().toLowerCase();
-                    const value = parts.slice(1).join(':').trim();
-                    for (const id in mappings) {
-                        if (mappings[id][0].test(key)) result[id] = value;
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) return;
+
+                    // Caso A: Línea con Dos Puntos (Posible nueva clave)
+                    if (trimmedLine.includes(':')) {
+                        const parts = trimmedLine.split(':');
+                        const key = parts[0].trim().toLowerCase();
+                        const value = parts.slice(1).join(':').trim();
+
+                        let found = false;
+                        for (const id in mappings) {
+                            if (mappings[id][0].test(key)) {
+                                result[id] = value;
+                                lastKey = id;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) lastKey = null; // Clave desconocida
+                    } 
+                    // Caso B: Línea que empieza con guion o espacio (Sub-dato del anterior)
+                    else if (lastKey && (line.startsWith(' ') || trimmedLine.startsWith('-'))) {
+                        const value = trimmedLine.replace(/^-+\s*/, '');
+                        if (result[lastKey]) {
+                            // Concatenar si ya tiene algo (para múltiples discos)
+                            if (!result[lastKey].includes(value)) {
+                                result[lastKey] += (result[lastKey] ? ' | ' : '') + value;
+                            }
+                        } else {
+                            result[lastKey] = value;
+                        }
                     }
                 });
                 return result;

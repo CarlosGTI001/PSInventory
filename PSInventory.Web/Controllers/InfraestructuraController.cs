@@ -421,23 +421,27 @@ namespace PSInventory.Web.Controllers
             var totalServicios = await _context.InfraServiciosSucursal.CountAsync(s => !s.Eliminado);
             var totalAccesorios = await _context.InfraSucursalesAccesorio.CountAsync(a => !a.Eliminado);
 
-            var distZonas = await _context.InfraEquiposComputo
+            var equipos = await _context.InfraEquiposComputo
                 .Where(e => !e.Eliminado)
-                .GroupBy(e => e.Sucursal != null && e.Sucursal.Region != null ? e.Sucursal.Region.Nombre : "N/D")
-                .Select(g => $"{g.Key}: {g.Count()}")
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .AsNoTracking()
                 .ToListAsync();
 
-            var distOS = await _context.InfraEquiposComputo
-                .Where(e => !e.Eliminado)
-                .GroupBy(e => e.SistemaOperativo != null ? e.SistemaOperativo.Nombre : "N/D")
+            var distZonas = equipos
+                .GroupBy(e => e.Sucursal?.Region?.Nombre ?? "N/D")
                 .Select(g => $"{g.Key}: {g.Count()}")
-                .ToListAsync();
+                .ToList();
 
-            var distRam = await _context.InfraEquiposComputo
-                .Where(e => !e.Eliminado)
+            var distOS = equipos
+                .GroupBy(e => e.SistemaOperativo?.Nombre ?? "N/D")
+                .Select(g => $"{g.Key}: {g.Count()}")
+                .ToList();
+
+            var distRam = equipos
                 .GroupBy(e => e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "N/D")
                 .Select(g => $"{g.Key}: {g.Count()}")
-                .ToListAsync();
+                .ToList();
 
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Resumen General: {totalEquipos} equipos, {totalServicios} servicios de red, {totalAccesorios} accesorios.");

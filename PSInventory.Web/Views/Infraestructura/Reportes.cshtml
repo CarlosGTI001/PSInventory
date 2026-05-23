@@ -19,6 +19,7 @@
         </p>
     </div>
     <div style="display: flex; gap: 12px;">
+        @Html.AntiForgeryToken()
         <md-outlined-button onclick="window.location.href='@Url.Action("ExportarEquiposExcel")'">
             <md-icon slot="icon">table_chart</md-icon> Excel General
         </md-outlined-button>
@@ -221,7 +222,7 @@
         }
 
         async function exportarGraficosPdf() {
-            LoadingHelper.show('Generando análisis con IA y preparando PDF...');
+            showLoading('Generando análisis con IA y preparando PDF...');
             
             try {
                 const charts = [
@@ -250,16 +251,6 @@
                     }
                 }
 
-                const response = await fetch('@Url.Action("ExportarReporteGrafico")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                    },
-                    body: JsonSerializer.serialize(exportData) // Usamos el helper global si existe o JSON.stringify
-                });
-
-                // Si JsonSerializer no está definido en el layout, usamos JSON.stringify
                 const finalResponse = await fetch('@Url.Action("ExportarReporteGrafico")', {
                     method: 'POST',
                     headers: {
@@ -268,6 +259,11 @@
                     },
                     body: JSON.stringify(exportData)
                 });
+
+                if (!finalResponse.ok) {
+                    const errorText = await finalResponse.text();
+                    throw new Error(errorText || 'Error en el servidor');
+                }
 
                 const result = await finalResponse.json();
 
@@ -278,13 +274,13 @@
                     link.click();
                     showSnackbar('Reporte generado exitosamente con análisis de IA.', 'success');
                 } else {
-                    showSnackbar('Error al generar el reporte.', 'error');
+                    showSnackbar(result.message || 'Error al generar el reporte.', 'error');
                 }
             } catch (error) {
                 console.error('Error al exportar reporte gráfico:', error);
-                showSnackbar('Error crítico al procesar el reporte.', 'error');
+                showSnackbar('Error: ' + error.message, 'error');
             } finally {
-                LoadingHelper.hide();
+                hideLoading();
             }
         }
     </script>

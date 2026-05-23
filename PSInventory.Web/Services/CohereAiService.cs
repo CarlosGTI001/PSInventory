@@ -26,9 +26,12 @@ namespace PSInventory.Web.Services
             {
                 var requestBody = new
                 {
-                    model = "command-r-plus", // Modelo potente disponible en Cohere
-                    message = $"Eres un experto en auditoría de infraestructura TI. Analiza los siguientes datos y genera un resumen profesional de 3 a 5 párrafos en español con recomendaciones:\n\n{resumenDatos}",
-                    preamble = "Eres un asistente especializado en análisis de inventario tecnológico y auditoría de sistemas."
+                    model = "command-r-plus",
+                    messages = new[]
+                    {
+                        new { role = "user", content = $"Eres un experto en auditoría de infraestructura TI. Analiza los siguientes datos de inventario y genera un resumen profesional, estructurado y accionable de 3 a 5 párrafos en español con recomendaciones de actualización y posibles cuellos de botella:\n\n{resumenDatos}" }
+                    },
+                    stream = false
                 };
 
                 var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
@@ -36,17 +39,19 @@ namespace PSInventory.Web.Services
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
                 _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
 
-                var response = await _httpClient.PostAsync("https://api.cohere.ai/v1/chat", content);
+                // Endpoint V2 oficial según documentación
+                var response = await _httpClient.PostAsync("https://api.cohere.com/v2/chat", content);
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var responseBody = await response.Content.ReadAsStringAsync();
                     using var doc = JsonDocument.Parse(responseBody);
-                    return doc.RootElement.GetProperty("text").GetString() ?? "No se pudo generar el análisis.";
+                    // Estructura V2: message.content[0].text
+                    return doc.RootElement.GetProperty("message").GetProperty("content")[0].GetProperty("text").GetString() ?? "No se pudo generar el análisis.";
                 }
                 
                 var errorInfo = await response.Content.ReadAsStringAsync();
-                return $"Nota: El servicio de IA (Cohere) respondió con un error. Mostrando solo gráficos. Detalle: {response.StatusCode}";
+                return $"Nota: El servicio de IA (Cohere V2) respondió con un error {response.StatusCode}. Mostrando solo gráficos.";
             }
             catch (Exception ex)
             {

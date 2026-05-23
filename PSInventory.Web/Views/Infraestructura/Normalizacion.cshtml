@@ -1,7 +1,10 @@
 @model PSInventory.Web.Models.ViewModels.InfraNormalizacionViewModel
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
 
 @{
     ViewData["Title"] = "Normalización de Datos - Infraestructura";
+    var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 
 <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px;">
@@ -37,7 +40,6 @@
     </div>
 }
 
-@* Pestañas para organizar la normalización *@
 <md-tabs style="margin-bottom: 24px;">
     <md-primary-tab id="tab-campos" active>Datos Técnicos (Equipos)</md-primary-tab>
     <md-primary-tab id="tab-maestros">Registros Maestros (Selects)</md-primary-tab>
@@ -45,17 +47,32 @@
 
 <div id="panel-campos">
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-        @renderGrupo("Almacenamiento (Disco)", "storage", "almacenamiento", Model.GruposAlmacenamiento, "badge-primary")
-        @renderGrupo("Detalle de CPU", "memory", "cpu", Model.GruposCpu, "badge-secondary", "var(--md-sys-color-secondary)")
-        @renderGrupo("Tipo de RAM", "settings_input_component", "tipo-ram", Model.GruposTipoRam, "", "#6366f1")
-        @renderGrupo("Marcas de Equipos", "branding_watermark", "marca", Model.GruposMarca, "", "#a855f7")
+        @{
+            ViewData["Token"] = token;
+            ViewData["Titulo"] = "Almacenamiento (Disco)"; ViewData["Icono"] = "storage"; ViewData["CampoId"] = "almacenamiento"; ViewData["BadgeColor"] = "var(--md-sys-color-primary)";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposAlmacenamiento)
+
+            ViewData["Titulo"] = "Detalle de CPU"; ViewData["Icono"] = "memory"; ViewData["CampoId"] = "cpu"; ViewData["BadgeColor"] = "var(--md-sys-color-secondary)";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposCpu)
+
+            ViewData["Titulo"] = "Tipo de RAM"; ViewData["Icono"] = "settings_input_component"; ViewData["CampoId"] = "tipo-ram"; ViewData["BadgeColor"] = "#6366f1";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposTipoRam)
+
+            ViewData["Titulo"] = "Marcas de Equipos"; ViewData["Icono"] = "branding_watermark"; ViewData["CampoId"] = "marca"; ViewData["BadgeColor"] = "#a855f7";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposMarca)
+        }
     </div>
 </div>
 
 <div id="panel-maestros" style="display: none;">
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-        @renderGrupo("Catálogo de Procesadores", "developer_board", "maestro-procesador", Model.GruposProcesadorMaestro, "", "#ef4444")
-        @renderGrupo("Catálogo de S.O.", "grid_view", "maestro-os", Model.GruposOsMaestro, "", "#14b8a6")
+        @{
+            ViewData["Titulo"] = "Catálogo de Procesadores"; ViewData["Icono"] = "developer_board"; ViewData["CampoId"] = "maestro-procesador"; ViewData["BadgeColor"] = "#ef4444";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposProcesadorMaestro)
+
+            ViewData["Titulo"] = "Catálogo de S.O."; ViewData["Icono"] = "grid_view"; ViewData["CampoId"] = "maestro-os"; ViewData["BadgeColor"] = "#14b8a6";
+            @await Html.PartialAsync("_NormalizacionGrupo", Model.GruposOsMaestro)
+        }
     </div>
 </div>
 
@@ -72,62 +89,6 @@
         </div>
     </div>
 </div>
-
-@functions {
-    public Microsoft.AspNetCore.Html.IHtmlContent renderGrupo(string titulo, string icono, string campoId, List<PSInventory.Web.Models.ViewModels.InfraNormalizacionGrupoViewModel> grupos, string badgeClass, string badgeColor = "") {
-        var sb = new System.Text.StringBuilder();
-        sb.Append($@"<div class='column'>
-            <div style='display:flex; align-items:center; gap:12px; margin-bottom:16px;'>
-                <md-icon style='color: {(string.IsNullOrEmpty(badgeColor) ? "var(--md-sys-color-primary)" : badgeColor)};'>{icono}</md-icon>
-                <h3 class='md-typescale-title-medium' style='margin: 0;'>{titulo}</h3>
-            </div>");
-
-        if (!grupos.Any()) {
-            sb.Append($@"<div class='card' style='padding: 24px; text-align: center; background: var(--md-sys-color-surface-container-low);'>
-                <md-icon style='font-size: 48px; color: var(--md-sys-color-outline-variant); margin-bottom: 12px;'>done_all</md-icon>
-                <p class='md-typescale-body-medium' style='color: var(--md-sys-color-on-surface-variant);'>No se detectaron inconsistencias.</p>
-            </div>");
-        } else {
-            foreach (var grupo in grupos) {
-                sb.Append($@"<div class='card' style='margin-bottom: 16px; border: 1px solid var(--md-sys-color-outline-variant);'>
-                    <div style='padding: 16px; border-bottom: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface-container-low); display: flex; justify-content: space-between; align-items: center;'>
-                        <div>
-                            <span class='md-typescale-label-medium' style='color: var(--md-sys-color-on-surface-variant); text-transform: uppercase;'>Patrón detectado</span>
-                            <div class='md-typescale-title-small'>{grupo.Clave}</div>
-                        </div>
-                        <span class='badge {badgeClass}' style='{(string.IsNullOrEmpty(badgeColor) ? "" : $"background: {badgeColor}; color: white;")}' title='Registros a unificar'>{grupo.Total} registros</span>
-                    </div>
-                    <div style='padding: 16px;'>
-                        <p class='md-typescale-body-small' style='margin-bottom: 12px; color: var(--md-sys-color-on-surface-variant);'>Variantes encontradas:</p>
-                        <div style='display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;'>");
-                
-                foreach (var v in grupo.Variantes) {
-                    sb.Append($@"<div style='padding: 4px 12px; border-radius: 16px; background: var(--md-sys-color-surface-container-high); border: 1px solid var(--md-sys-color-outline-variant); font-size: 13px;'>
-                        <strong>{v.Valor}</strong>
-                    </div>");
-                }
-
-                sb.Append($@"</div>
-                        <form method='post' action='{Url.Action("AplicarNormalizacion")}' style='display: flex; gap: 8px; align-items: center;'>
-                            <input type='hidden' name='campo' value='{campoId}' />
-                            <input type='hidden' name='clave' value='{grupo.Clave}' />
-                            <md-filled-text-field name='nuevoValor' label='Valor unificado' value='{grupo.Sugerencia}' style='flex: 1;'></md-filled-text-field>
-                            <md-filled-button type='submit' style='--md-filled-button-container-color: {(string.IsNullOrEmpty(badgeColor) ? "var(--md-sys-color-primary)" : badgeColor)}; --md-filled-button-container-shape: 8px;'>Unificar</md-filled-button>
-                            <input type='hidden' name='__RequestVerificationToken' value='{GetAntiforgeryToken()}' />
-                        </form>
-                    </div>
-                </div>");
-            }
-        }
-        sb.Append("</div>");
-        return new Microsoft.AspNetCore.Mvc.ViewFeatures.HtmlString(sb.ToString());
-    }
-
-    private string GetAntiforgeryToken() {
-        var tokens = Context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>().GetAndStoreTokens(Context);
-        return tokens.RequestToken!;
-    }
-}
 
 @section Scripts {
     <script>

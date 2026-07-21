@@ -27,13 +27,52 @@
 
 <div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start;">
 
-    <!-- Columna izquierda: Buscador + resultados -->
+    <!-- Columna izquierda: Escáner + Buscador + resultados -->
     <div>
+        <!-- Escáner Directo por Código de Barras / Serial -->
+        <div class="card" style="margin-bottom: 20px; border: 2px solid var(--md-sys-color-primary); background: rgba(4, 115, 148, 0.03);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="padding: 8px; border-radius: 8px; background: var(--md-sys-color-primary); color: white;">
+                        <md-icon style="display:block;">qr_code_scanner</md-icon>
+                    </div>
+                    <div>
+                        <h3 class="md-typescale-title-medium" style="margin:0; color: var(--md-sys-color-primary); font-weight:700;">Escanear Serial (Escáner de Barras)</h3>
+                        <p class="md-typescale-body-small" style="margin:2px 0 0; color: var(--md-sys-color-on-surface-variant);">
+                            Escanea la etiqueta para agregar el ítem directamente al envío sin buscar el artículo previamente
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div class="form-field" style="flex: 1;">
+                    <md-filled-text-field
+                        id="directSerialScanner"
+                        label="Número de Serial (Escáner / Código de Barras) *"
+                        placeholder="Escanea o escribe el serial..."
+                        supporting-text="Presiona Enter o gatilla el lector de código de barras"
+                        style="width: 100%;"
+                        autofocus>
+                        <md-icon slot="leading-icon">qr_code</md-icon>
+                    </md-filled-text-field>
+                </div>
+                <md-filled-button id="btnScanSerial" type="button" style="height: 52px; align-self: flex-start; margin-top: 4px;" onclick="procesarEscaneoDirecto()">
+                    <md-icon slot="icon">add</md-icon>
+                    Agregar Serial
+                </md-filled-button>
+            </div>
+
+            <!-- Feedback estado escaneo -->
+            <div id="scannerFeedback" style="display:none; margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; align-items: center; gap: 8px;">
+            </div>
+        </div>
+
         <!-- Buscador -->
         <div class="card" style="margin-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                 <md-icon style="color: var(--md-sys-color-primary);">search</md-icon>
-                <h3 class="md-typescale-title-medium" style="margin:0;">Buscar Artículo</h3>
+                <h3 class="md-typescale-title-medium" style="margin:0;">Buscar Artículo Manualmente</h3>
             </div>
             <div class="form-field">
                 <md-filled-text-field
@@ -328,6 +367,98 @@
 <script>
     // ─── Estado del carrito ───────────────────────────────────────────────────
     const cart = [];  // [{ itemId, articuloNombre, serial, lote, cantidad, maxCantidad, requiereSerial }]
+
+    // ─── Escáner de Código de Barras Directo ──────────────────────────────────
+    const directSerialScanner = document.getElementById('directSerialScanner');
+    const scannerFeedback = document.getElementById('scannerFeedback');
+
+    if (directSerialScanner) {
+        directSerialScanner.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                procesarEscaneoDirecto();
+            }
+        });
+        // Auto-enfoque inicial
+        setTimeout(() => { directSerialScanner.focus(); }, 300);
+    }
+
+    function mostrarFeedbackEscaneo(mensaje, tipo = 'success') {
+        if (!scannerFeedback) return;
+        scannerFeedback.style.display = 'flex';
+        if (tipo === 'success') {
+            scannerFeedback.style.background = 'rgba(46, 125, 50, 0.12)';
+            scannerFeedback.style.color = '#2e7d32';
+            scannerFeedback.style.border = '1px solid rgba(46, 125, 50, 0.3)';
+            scannerFeedback.innerHTML = `<md-icon style="color:#2e7d32;">check_circle</md-icon> <span>${mensaje}</span>`;
+        } else if (tipo === 'warning') {
+            scannerFeedback.style.background = 'rgba(237, 108, 2, 0.12)';
+            scannerFeedback.style.color = '#e65100';
+            scannerFeedback.style.border = '1px solid rgba(237, 108, 2, 0.3)';
+            scannerFeedback.innerHTML = `<md-icon style="color:#e65100;">warning</md-icon> <span>${mensaje}</span>`;
+        } else {
+            scannerFeedback.style.background = 'rgba(176, 0, 32, 0.12)';
+            scannerFeedback.style.color = 'var(--md-sys-color-error)';
+            scannerFeedback.style.border = '1px solid rgba(176, 0, 32, 0.3)';
+            scannerFeedback.innerHTML = `<md-icon style="color:var(--md-sys-color-error);">error</md-icon> <span>${mensaje}</span>`;
+        }
+    }
+
+    async function procesarEscaneoDirecto() {
+        if (!directSerialScanner) return;
+        const serial = directSerialScanner.value.trim();
+        if (!serial) {
+            mostrarFeedbackEscaneo('Ingresa o escanea un número de serial.', 'warning');
+            directSerialScanner.focus();
+            return;
+        }
+
+        // Verificar si ya está en la lista de envío
+        if (cart.some(c => c.serial && c.serial.toLowerCase() === serial.toLowerCase())) {
+            mostrarFeedbackEscaneo(`El serial '${serial}' ya fue agregado a la lista de envío.`, 'warning');
+            directSerialScanner.value = '';
+            directSerialScanner.focus();
+            return;
+        }
+
+        const btn = document.getElementById('btnScanSerial');
+        if (btn) btn.disabled = true;
+
+        try {
+            const resp = await fetch(`/Despacho/BuscarSerialDirecto?serial=${encodeURIComponent(serial)}`);
+            const data = await resp.json();
+
+            if (btn) btn.disabled = false;
+
+            if (!data.found) {
+                mostrarFeedbackEscaneo(data.mensaje || `Serial '${serial}' no encontrado o no disponible.`, 'error');
+                directSerialScanner.value = '';
+                directSerialScanner.focus();
+                return;
+            }
+
+            // Agregar directamente al carrito
+            cart.push({
+                itemId: data.itemId,
+                articuloId: null,
+                articuloNombre: data.articuloNombre,
+                serial: data.serial,
+                cantidad: 1,
+                maxCantidad: 1,
+                requiereSerial: true
+            });
+
+            mostrarFeedbackEscaneo(`✓ Ítem agregado: ${data.serial} (${data.articuloNombre})`, 'success');
+            renderCart();
+
+            directSerialScanner.value = '';
+            directSerialScanner.focus();
+        } catch (ex) {
+            if (btn) btn.disabled = false;
+            mostrarFeedbackEscaneo('Error al comunicarse con el servidor.', 'error');
+            directSerialScanner.focus();
+        }
+    }
 
     // ─── Búsqueda con debounce ────────────────────────────────────────────────
     const searchInput = document.getElementById('searchInput');

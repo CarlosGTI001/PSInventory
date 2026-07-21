@@ -18,6 +18,11 @@ namespace PSInventory.Web.Controllers
     {
         private readonly PSDatos _context;
         private readonly CohereAiService _cohereAiService;
+        private static readonly string[] InfraChartPalette = new[]
+        {
+            "#047394", "#0D9488", "#2563EB", "#7C3AED", "#DB2777",
+            "#EA580C", "#D97706", "#65A30D", "#059669", "#4F46E5"
+        };
 
         public InfraestructuraController(PSDatos context, CohereAiService cohereAiService)
         {
@@ -724,6 +729,84 @@ namespace PSInventory.Web.Controllers
                         borderRadius = 6
                     }
                 }
+            };
+        }
+
+        private async Task<List<SelectListItem>> ObtenerRegionesSelect()
+        {
+            return await _context.Regiones
+                .Where(r => !r.Eliminado)
+                .OrderBy(r => r.Nombre)
+                .Select(r => new SelectListItem { Value = r.RegionId.ToString(), Text = r.Nombre })
+                .ToListAsync();
+        }
+
+        private async Task<List<SelectListItem>> ObtenerSucursalesSelect(int? regionId = null)
+        {
+            var q = _context.Sucursales.Where(s => !s.Eliminado);
+            if (regionId.HasValue && regionId.Value > 0)
+                q = q.Where(s => s.RegionId == regionId.Value);
+            return await q.OrderBy(s => s.Nombre)
+                .Select(s => new SelectListItem { Value = s.Id, Text = s.Nombre })
+                .ToListAsync();
+        }
+
+        private async Task<List<SelectListItem>> ObtenerDepartamentosSelect()
+        {
+            return await _context.Departamentos
+                .Where(d => !d.Eliminado)
+                .OrderBy(d => d.Nombre)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Nombre })
+                .ToListAsync();
+        }
+
+        private static InfraEquipoListItemViewModel MapEquipoListItem(InfraEquipoComputo e)
+        {
+            return new InfraEquipoListItemViewModel
+            {
+                Id = e.Id,
+                NombreEquipo = e.NombreEquipo,
+                CodigoActivo = e.CodigoActivo,
+                Serial = e.Serial,
+                Marca = e.Marca,
+                Modelo = e.Modelo,
+                Sucursal = e.Sucursal?.Nombre ?? "Sin Asignar",
+                Region = e.Sucursal?.Region?.Nombre ?? "Sin Asignar",
+                SistemaOperativo = e.SistemaOperativo?.Nombre ?? "N/D",
+                Ram = e.RamCantidadGb.HasValue ? $"{e.RamCantidadGb} GB" : "N/D",
+                Procesador = e.TipoProcesador?.Nombre ?? "N/D",
+                DireccionIp = e.DireccionIp ?? "N/D",
+                Activo = e.Activo
+            };
+        }
+
+        private static InfraServicioListItemViewModel MapServicioListItem(InfraServicioSucursal s)
+        {
+            return new InfraServicioListItemViewModel
+            {
+                Id = s.Id,
+                TipoServicio = s.TipoServicio?.Nombre ?? "N/D",
+                Operador = s.OperadorServicio?.Nombre ?? "N/D",
+                Sucursal = s.Sucursal?.Nombre ?? "Sin Asignar",
+                Region = s.Sucursal?.Region?.Nombre ?? "Sin Asignar",
+                NumeroServicio = s.NumeroServicio ?? "N/D",
+                VelocidadBajadaMbps = s.VelocidadBajadaMbps,
+                VelocidadSubidaMbps = s.VelocidadSubidaMbps,
+                Activo = s.Activo
+            };
+        }
+
+        private static InfraAccesorioListItemViewModel MapAccesorioListItem(InfraSucursalAccesorio a)
+        {
+            return new InfraAccesorioListItemViewModel
+            {
+                Id = a.Id,
+                TipoAccesorio = a.TipoAccesorio?.Nombre ?? "N/D",
+                Cantidad = a.Cantidad,
+                Sucursal = a.Sucursal?.Nombre ?? "Sin Asignar",
+                Region = a.Sucursal?.Region?.Nombre ?? "Sin Asignar",
+                Especificaciones = a.Especificaciones,
+                Activo = a.Activo
             };
         }
     }

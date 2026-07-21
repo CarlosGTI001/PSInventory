@@ -250,6 +250,57 @@ namespace PSInventory.Web.Controllers
             return Json(new { found = true, itemId = item.Id, serial = item.Serial });
         }
 
+        // GET: Despacho/BuscarSerialDirecto?serial=ABC123
+        [HttpGet]
+        public async Task<IActionResult> BuscarSerialDirecto(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+                return Json(new { found = false, mensaje = "Ingrese o escanee un serial." });
+
+            var serialLimpio = serial.Trim();
+
+            var item = await _context.Items
+                .Include(i => i.Articulo)
+                    .ThenInclude(a => a.Categoria)
+                .FirstOrDefaultAsync(i =>
+                    !i.Eliminado &&
+                    i.Estado == "Disponible" &&
+                    i.SucursalId == null &&
+                    i.Serial != null &&
+                    (i.Serial == serialLimpio || i.Serial.ToLower() == serialLimpio.ToLower()));
+
+            if (item == null)
+            {
+                var itemNoDisponible = await _context.Items
+                    .Include(i => i.Articulo)
+                    .FirstOrDefaultAsync(i => !i.Eliminado && i.Serial != null && (i.Serial == serialLimpio || i.Serial.ToLower() == serialLimpio.ToLower()));
+
+                if (itemNoDisponible != null)
+                {
+                    var estadoTexto = itemNoDisponible.Estado;
+                    if (itemNoDisponible.SucursalId != null) estadoTexto += " (Asignado a Sucursal)";
+                    return Json(new
+                    {
+                        found = false,
+                        mensaje = $"El serial '{serialLimpio}' existe ({itemNoDisponible.Articulo?.Marca} {itemNoDisponible.Articulo?.Modelo}) pero está en estado: {estadoTexto}."
+                    });
+                }
+
+                return Json(new { found = false, mensaje = $"Serial '{serialLimpio}' no existe en el inventario." });
+            }
+
+            return Json(new
+            {
+                found = true,
+                itemId = item.Id,
+                serial = item.Serial,
+                articuloId = item.ArticuloId,
+                articuloNombre = $"{item.Articulo.Marca} {item.Articulo.Modelo}",
+                categoria = item.Articulo?.Categoria?.Nombre ?? "",
+                requiereSerial = true
+            });
+        }
+
         // POST: Despacho/Enviar
         [HttpPost]
         [ValidateAntiForgeryToken]

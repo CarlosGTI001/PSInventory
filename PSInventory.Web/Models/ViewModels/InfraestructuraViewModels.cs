@@ -38,11 +38,28 @@ public class InfraSucursalResumenViewModel
     public int EquiposActivos { get; set; }
     public int TotalServicios { get; set; }
     public int TotalAccesorios { get; set; }
+    public int TotalArticulos { get; set; }
 
     public List<string> DepartamentosRelacionados { get; set; } = new();
     public List<InfraEquipoListItemViewModel> Equipos { get; set; } = new();
     public List<InfraServicioListItemViewModel> Servicios { get; set; } = new();
     public List<InfraAccesorioListItemViewModel> Accesorios { get; set; } = new();
+    public List<InfraArticuloListItemViewModel> Articulos { get; set; } = new();
+}
+
+public class InfraArticuloListItemViewModel
+{
+    public int ItemId { get; set; }
+    public int ArticuloId { get; set; }
+    public string Marca { get; set; } = string.Empty;
+    public string Modelo { get; set; } = string.Empty;
+    public string Categoria { get; set; } = string.Empty;
+    public string? Serial { get; set; }
+    public int Cantidad { get; set; } = 1;
+    public string Estado { get; set; } = string.Empty;
+    public string? Responsable { get; set; }
+    public DateTime? FechaAsignacion { get; set; }
+    public string? Observaciones { get; set; }
 }
 
 public class InfraSucursalInfoViewModel

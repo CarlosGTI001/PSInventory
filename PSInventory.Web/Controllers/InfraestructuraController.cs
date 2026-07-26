@@ -125,6 +125,238 @@ namespace PSInventory.Web.Controllers
             return View(vm);
         }
 
+        // GET: Infraestructura/Sucursal
+        public async Task<IActionResult> Sucursal(string? codigoSucursal, string layout = "vertical")
+        {
+            var sucursalesSelect = await ObtenerSucursalesSelect();
+            var vm = new InfraSucursalResumenViewModel
+            {
+                CodigoSucursal = codigoSucursal ?? string.Empty,
+                Sucursales = sucursalesSelect,
+                ViewLayout = layout
+            };
+
+            if (string.IsNullOrWhiteSpace(codigoSucursal))
+            {
+                return View(vm);
+            }
+
+            var sucursal = await BuscarSucursalPorCodigoONombre(codigoSucursal);
+            if (sucursal == null)
+            {
+                vm.Mensaje = $"No se encontró ninguna sucursal con el código o nombre '{codigoSucursal}'.";
+                return View(vm);
+            }
+
+            vm.CodigoSucursal = sucursal.Id;
+            vm.Sucursal = new InfraSucursalInfoViewModel
+            {
+                Id = sucursal.Id,
+                Nombre = sucursal.Nombre,
+                Region = sucursal.Region?.Nombre ?? "Sin Asignar",
+                Direccion = sucursal.Direccion,
+                Telefono = sucursal.Telefono
+            };
+
+            // Cargar Equipos
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.SucursalId == sucursal.Id)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .OrderBy(e => e.NombreEquipo)
+                .ToListAsync();
+
+            // Cargar Servicios
+            var servicios = await _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado && s.SucursalId == sucursal.Id)
+                .Include(s => s.Sucursal).ThenInclude(s => s.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .OrderBy(s => s.TipoServicio.Nombre)
+                .ToListAsync();
+
+            // Cargar Accesorios
+            var accesorios = await _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado && a.SucursalId == sucursal.Id)
+                .Include(a => a.Sucursal).ThenInclude(s => s.Region)
+                .Include(a => a.TipoAccesorio)
+                .OrderBy(a => a.TipoAccesorio.Nombre)
+                .ToListAsync();
+
+            // Cargar Artículos de Inventario
+            var items = await _context.Items
+                .Where(i => !i.Eliminado && i.SucursalId == sucursal.Id)
+                .Include(i => i.Articulo).ThenInclude(a => a.Categoria)
+                .OrderByDescending(i => i.FechaAsignacion)
+                .ToListAsync();
+
+            var articulosVm = items.Select(i => new InfraArticuloListItemViewModel
+            {
+                ItemId = i.Id,
+                ArticuloId = i.ArticuloId,
+                Marca = i.Articulo?.Marca ?? "N/D",
+                Modelo = i.Articulo?.Modelo ?? "N/D",
+                Categoria = i.Articulo?.Categoria?.Nombre ?? "Sin Categoría",
+                Serial = i.Serial,
+                Cantidad = i.Cantidad,
+                Estado = i.Estado,
+                Responsable = i.ResponsableEmpleado,
+                FechaAsignacion = i.FechaAsignacion,
+                Observaciones = i.Observaciones
+            }).ToList();
+
+            var depts = equipos
+                .SelectMany(e => e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre))
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Distinct()
+                .Select(n => n!)
+                .ToList();
+
+            vm.TotalEquipos = equipos.Count;
+            vm.EquiposActivos = equipos.Count(e => e.Activo);
+            vm.TotalServicios = servicios.Count;
+            vm.TotalAccesorios = accesorios.Sum(a => a.Cantidad);
+            vm.TotalArticulos = articulosVm.Sum(a => a.Cantidad);
+            vm.DepartamentosRelacionados = depts;
+
+            vm.Equipos = equipos.Select(MapEquipoListItem).ToList();
+            vm.Servicios = servicios.Select(MapServicioListItem).ToList();
+            vm.Accesorios = accesorios.Select(MapAccesorioListItem).ToList();
+            vm.Articulos = articulosVm;
+
+            return View(vm);
+        }
+
+        // GET: Infraestructura/ExportarSucursalPdf
+        public async Task<IActionResult> ExportarSucursalPdf(string codigoSucursal, string layout = "vertical")
+        {
+            if (string.IsNullOrWhiteSpace(codigoSucursal))
+            {
+                return RedirectToAction(nameof(Sucursal));
+            }
+
+            var sucursal = await BuscarSucursalPorCodigoONombre(codigoSucursal);
+            if (sucursal == null)
+            {
+                TempData["Error"] = $"No se encontró la sucursal '{codigoSucursal}'.";
+                return RedirectToAction(nameof(Sucursal));
+            }
+
+            var vm = new InfraSucursalResumenViewModel
+            {
+                CodigoSucursal = sucursal.Id,
+                ViewLayout = layout,
+                Sucursal = new InfraSucursalInfoViewModel
+                {
+                    Id = sucursal.Id,
+                    Nombre = sucursal.Nombre,
+                    Region = sucursal.Region?.Nombre ?? "Sin Asignar",
+                    Direccion = sucursal.Direccion,
+                    Telefono = sucursal.Telefono
+                }
+            };
+
+            var equipos = await _context.InfraEquiposComputo
+                .Where(e => !e.Eliminado && e.SucursalId == sucursal.Id)
+                .Include(e => e.Sucursal).ThenInclude(s => s.Region)
+                .Include(e => e.SistemaOperativo)
+                .Include(e => e.TipoProcesador)
+                .Include(e => e.TipoRam)
+                .Include(e => e.EquiposDepartamentos).ThenInclude(ed => ed.Departamento)
+                .OrderBy(e => e.NombreEquipo)
+                .ToListAsync();
+
+            var servicios = await _context.InfraServiciosSucursal
+                .Where(s => !s.Eliminado && s.SucursalId == sucursal.Id)
+                .Include(s => s.Sucursal).ThenInclude(s => s.Region)
+                .Include(s => s.TipoServicio)
+                .Include(s => s.OperadorServicio)
+                .OrderBy(s => s.TipoServicio.Nombre)
+                .ToListAsync();
+
+            var accesorios = await _context.InfraSucursalesAccesorio
+                .Where(a => !a.Eliminado && a.SucursalId == sucursal.Id)
+                .Include(a => a.Sucursal).ThenInclude(s => s.Region)
+                .Include(a => a.TipoAccesorio)
+                .OrderBy(a => a.TipoAccesorio.Nombre)
+                .ToListAsync();
+
+            var items = await _context.Items
+                .Where(i => !i.Eliminado && i.SucursalId == sucursal.Id)
+                .Include(i => i.Articulo).ThenInclude(a => a.Categoria)
+                .OrderByDescending(i => i.FechaAsignacion)
+                .ToListAsync();
+
+            var articulosVm = items.Select(i => new InfraArticuloListItemViewModel
+            {
+                ItemId = i.Id,
+                ArticuloId = i.ArticuloId,
+                Marca = i.Articulo?.Marca ?? "N/D",
+                Modelo = i.Articulo?.Modelo ?? "N/D",
+                Categoria = i.Articulo?.Categoria?.Nombre ?? "Sin Categoría",
+                Serial = i.Serial,
+                Cantidad = i.Cantidad,
+                Estado = i.Estado,
+                Responsable = i.ResponsableEmpleado,
+                FechaAsignacion = i.FechaAsignacion,
+                Observaciones = i.Observaciones
+            }).ToList();
+
+            var depts = equipos
+                .SelectMany(e => e.EquiposDepartamentos.Select(ed => ed.Departamento?.Nombre))
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Distinct()
+                .Select(n => n!)
+                .ToList();
+
+            vm.TotalEquipos = equipos.Count;
+            vm.EquiposActivos = equipos.Count(e => e.Activo);
+            vm.TotalServicios = servicios.Count;
+            vm.TotalAccesorios = accesorios.Sum(a => a.Cantidad);
+            vm.TotalArticulos = articulosVm.Sum(a => a.Cantidad);
+            vm.DepartamentosRelacionados = depts;
+
+            vm.Equipos = equipos.Select(MapEquipoListItem).ToList();
+            vm.Servicios = servicios.Select(MapServicioListItem).ToList();
+            vm.Accesorios = accesorios.Select(MapAccesorioListItem).ToList();
+            vm.Articulos = articulosVm;
+
+            var usuario = User.Identity?.Name ?? "Sistema";
+            var pdfBytes = PdfReportService.GenerarPdfSucursalInfraestructura(usuario, vm);
+            return File(pdfBytes, "application/pdf", $"Infraestructura_{sucursal.Id}.pdf");
+        }
+
+        private async Task<Sucursal?> BuscarSucursalPorCodigoONombre(string codigoSucursal)
+        {
+            var term = codigoSucursal.Trim().ToLower();
+            var posiblesIds = new List<string> { term };
+
+            if (int.TryParse(term, out int num))
+            {
+                posiblesIds.Add($"suc-{num:D3}");
+                posiblesIds.Add($"suc-{num:D2}");
+                posiblesIds.Add($"suc-{num}");
+            }
+            if (term.StartsWith("suc-"))
+            {
+                var rawNumStr = term.Replace("suc-", "");
+                if (int.TryParse(rawNumStr, out int parsedNum))
+                {
+                    posiblesIds.Add($"suc-{parsedNum:D3}");
+                    posiblesIds.Add($"suc-{parsedNum:D2}");
+                    posiblesIds.Add($"suc-{parsedNum}");
+                }
+            }
+
+            return await _context.Sucursales
+                .Include(s => s.Region)
+                .Where(s => !s.Eliminado)
+                .FirstOrDefaultAsync(s => posiblesIds.Contains(s.Id.ToLower()) || s.Nombre.ToLower().Contains(term));
+        }
+
         // GET: Infraestructura/Normalizacion
         public async Task<IActionResult> Normalizacion()
         {

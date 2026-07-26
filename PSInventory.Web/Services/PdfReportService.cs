@@ -352,5 +352,219 @@ namespace PSInventory.Web.Services
 
             return document.GeneratePdf();
         }
+
+        public static byte[] GenerarPdfSucursalInfraestructura(string usuario, InfraSucursalResumenViewModel data)
+        {
+            if (data.Sucursal == null)
+            {
+                return GenerarPdfVacio("Reporte por Sucursal", "No se encontró información de la sucursal.");
+            }
+
+            var isLandscape = data.ViewLayout == "horizontal";
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(isLandscape ? PageSizes.Letter.Landscape() : PageSizes.Letter);
+                    page.Margin(30);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+
+                    page.Header().Element(c => GenerarHeader(c, $"Reporte de Sucursal: {data.Sucursal.Id} - {data.Sucursal.Nombre}", usuario));
+
+                    page.Content().PaddingVertical(10).Column(column =>
+                    {
+                        // Info Sucursal
+                        column.Item().PaddingBottom(12).Background(Colors.Grey.Lighten4).Padding(10).Column(infoCol =>
+                        {
+                            infoCol.Item().Text(x =>
+                            {
+                                x.Span("Sucursal: ").Bold();
+                                x.Span($"{data.Sucursal.Id} - {data.Sucursal.Nombre}").Bold().FontColor(ColorPrimario);
+                                x.Span($" | Zona: {data.Sucursal.Region}");
+                                if (!string.IsNullOrEmpty(data.Sucursal.Direccion)) x.Span($" | Dirección: {data.Sucursal.Direccion}");
+                                if (!string.IsNullOrEmpty(data.Sucursal.Telefono)) x.Span($" | Tel: {data.Sucursal.Telefono}");
+                            });
+                            if (data.DepartamentosRelacionados.Any())
+                            {
+                                infoCol.Item().PaddingTop(4).Text($"Departamentos: {string.Join(", ", data.DepartamentosRelacionados)}").FontSize(8).FontColor(Colors.Grey.Darken2);
+                            }
+                        });
+
+                        // Resumen Estadísticas
+                        column.Item().PaddingBottom(12).Row(r =>
+                        {
+                            r.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(6).AlignCenter().Text(t => { t.Span("Equipos: ").Bold(); t.Span(data.TotalEquipos.ToString()); });
+                            r.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(6).AlignCenter().Text(t => { t.Span("Activos: ").Bold(); t.Span(data.EquiposActivos.ToString()); });
+                            r.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(6).AlignCenter().Text(t => { t.Span("Servicios: ").Bold(); t.Span(data.TotalServicios.ToString()); });
+                            r.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(6).AlignCenter().Text(t => { t.Span("Accesorios: ").Bold(); t.Span(data.TotalAccesorios.ToString()); });
+                            r.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(6).AlignCenter().Text(t => { t.Span("Artículos Inv.: ").Bold(); t.Span(data.TotalArticulos.ToString()); });
+                        });
+
+                        // Sección Equipos
+                        if (data.Equipos.Any())
+                        {
+                            column.Item().PaddingBottom(15).Column(eqCol =>
+                            {
+                                eqCol.Item().PaddingBottom(5).Text("EQUIPOS DE CÓMPUTO").Style(ReportStyles.SectionTitle);
+                                eqCol.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.ConstantColumn(60);
+                                        cols.RelativeColumn(2);
+                                        cols.ConstantColumn(80);
+                                        cols.RelativeColumn(2);
+                                        cols.RelativeColumn(1.5f);
+                                        cols.ConstantColumn(50);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Código").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Equipo").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Serial").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Especificaciones").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Departamentos").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Estado").Style(ReportStyles.TableHeader);
+                                    });
+
+                                    foreach (var eq in data.Equipos)
+                                    {
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(eq.CodigoActivo ?? "—");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(eq.NombreEquipo).Bold();
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(eq.Serial);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text($"{eq.Marca} {eq.Modelo} | {eq.Procesador} | {eq.Ram} | {eq.Almacenamiento}");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(string.IsNullOrEmpty(eq.Departamentos) ? "—" : eq.Departamentos);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(eq.Activo ? "Activo" : "Inactivo");
+                                    }
+                                });
+                            });
+                        }
+
+                        // Sección Artículos de Inventario
+                        if (data.Articulos.Any())
+                        {
+                            column.Item().PaddingBottom(15).Column(artCol =>
+                            {
+                                artCol.Item().PaddingBottom(5).Text("ARTÍCULOS DE INVENTARIO ASIGNADOS").Style(ReportStyles.SectionTitle);
+                                artCol.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.RelativeColumn(2);
+                                        cols.RelativeColumn(1.5f);
+                                        cols.ConstantColumn(80);
+                                        cols.ConstantColumn(45);
+                                        cols.ConstantColumn(60);
+                                        cols.RelativeColumn(1.5f);
+                                        cols.ConstantColumn(65);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Artículo (Marca/Modelo)").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Categoría").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Serial / ID").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Cant.").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Estado").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Responsable").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Fecha").Style(ReportStyles.TableHeader);
+                                    });
+
+                                    foreach (var art in data.Articulos)
+                                    {
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text($"{art.Marca} {art.Modelo}").Bold();
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.Categoria);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.Serial ?? $"ID: {art.ItemId}");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.Cantidad.ToString());
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.Estado);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.Responsable ?? "—");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(art.FechaAsignacion?.ToString("dd/MM/yyyy") ?? "—");
+                                    }
+                                });
+                            });
+                        }
+
+                        // Sección Servicios
+                        if (data.Servicios.Any())
+                        {
+                            column.Item().PaddingBottom(15).Column(srvCol =>
+                            {
+                                srvCol.Item().PaddingBottom(5).Text("SERVICIOS Y CONECTIVIDAD").Style(ReportStyles.SectionTitle);
+                                srvCol.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.RelativeColumn(2);
+                                        cols.RelativeColumn(2);
+                                        cols.RelativeColumn(2);
+                                        cols.RelativeColumn(2);
+                                        cols.ConstantColumn(50);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Tipo Servicio").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Operador").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Nº Servicio").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Velocidad").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Estado").Style(ReportStyles.TableHeader);
+                                    });
+
+                                    foreach (var srv in data.Servicios)
+                                    {
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(srv.TipoServicio).Bold();
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(srv.Operador);
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(srv.NumeroServicio ?? "—");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text($"{srv.VelocidadBajadaMbps?.ToString("0.##") ?? "0"} ↓ / {srv.VelocidadSubidaMbps?.ToString("0.##") ?? "0"} ↑ Mbps");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(srv.Activo ? "Activo" : "Inactivo");
+                                    }
+                                });
+                            });
+                        }
+
+                        // Sección Accesorios
+                        if (data.Accesorios.Any())
+                        {
+                            column.Item().PaddingBottom(15).Column(accCol =>
+                            {
+                                accCol.Item().PaddingBottom(5).Text("ACCESORIOS Y OTROS").Style(ReportStyles.SectionTitle);
+                                accCol.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.RelativeColumn(2);
+                                        cols.ConstantColumn(50);
+                                        cols.RelativeColumn(4);
+                                        cols.ConstantColumn(50);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Tipo Accesorio").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Cant.").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Especificaciones").Style(ReportStyles.TableHeader);
+                                        header.Cell().Background(ColorPrimario).Padding(4).Text("Estado").Style(ReportStyles.TableHeader);
+                                    });
+
+                                    foreach (var acc in data.Accesorios)
+                                    {
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(acc.TipoAccesorio).Bold();
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(acc.Cantidad.ToString());
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(acc.Especificaciones ?? "—");
+                                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(acc.Activo ? "Activo" : "Inactivo");
+                                    }
+                                });
+                            });
+                        }
+                    });
+
+                    page.Footer().Element(c => GenerarFooter(c, usuario));
+                });
+            });
+
+            return document.GeneratePdf();
+        }
     }
 }

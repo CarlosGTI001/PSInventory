@@ -110,6 +110,12 @@
         </div>
         <div class="stat-card">
             <div class="stat-card-header">
+                <div><div class="stat-card-value" style="color: var(--md-sys-color-primary);">@Model.TotalArticulos</div><div class="stat-card-label">Artículos (Inventario)</div></div>
+                <div class="stat-card-icon" style="background: rgba(4, 115, 148, 0.15);"><md-icon style="color: var(--md-sys-color-primary);">inventory_2</md-icon></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header">
                 <div><div class="stat-card-value">@Model.TotalServicios</div><div class="stat-card-label">Servicios</div></div>
                 <div class="stat-card-icon"><md-icon>wifi</md-icon></div>
             </div>
@@ -201,6 +207,74 @@
                             <td>@(item.VelocidadBajadaMbps?.ToString("0.##") ?? "0") ↓ / @(item.VelocidadSubidaMbps?.ToString("0.##") ?? "0") ↑ Mbps</td>
                             <td>@(item.Activo ? "Activo" : "Inactivo")</td>
                         </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="md-typescale-title-medium" style="margin:0;">
+                <md-icon style="vertical-align:middle; margin-right:6px; color:var(--md-sys-color-primary);">inventory_2</md-icon>
+                Artículos de Inventario Asignados (@Model.TotalArticulos unidades)
+            </h3>
+        </div>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Categoría</th>
+                        <th>Serial / ID</th>
+                        <th style="text-align:center;">Cantidad</th>
+                        <th>Estado</th>
+                        <th>Responsable</th>
+                        <th>Fecha Asignación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Articulos.Any())
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:20px; color:var(--md-sys-color-outline);">
+                                No hay artículos de inventario asignados a esta sucursal.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Articulos)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@item.Marca @item.Modelo</strong>
+                                    @if (!string.IsNullOrWhiteSpace(item.Observaciones))
+                                    {
+                                        <div style="font-size:11px; color:var(--md-sys-color-on-surface-variant);">@item.Observaciones</div>
+                                    }
+                                </td>
+                                <td><span class="badge" style="background:rgba(4,115,148,0.1); color:var(--md-sys-color-primary);">@item.Categoria</span></td>
+                                <td><strong>@(item.Serial ?? $"ID: {item.ItemId}")</strong></td>
+                                <td style="text-align:center;"><strong>@item.Cantidad</strong></td>
+                                <td>
+                                    @if (item.Estado == "Disponible")
+                                    {
+                                        <span class="badge badge-success">@item.Estado</span>
+                                    }
+                                    else if (item.Estado == "Asignado")
+                                    {
+                                        <span class="badge" style="background:rgba(4,115,148,0.12); color:var(--md-sys-color-primary);">@item.Estado</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge">@item.Estado</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.Responsable) ? "—" : item.Responsable)</td>
+                                <td>@(item.FechaAsignacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
